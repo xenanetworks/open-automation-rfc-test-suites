@@ -2,3 +2,4 @@ config.py
 *.log
 *.json
 *.v2544
+*.pyc
