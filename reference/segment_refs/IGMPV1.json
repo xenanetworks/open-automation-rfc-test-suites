@@ -1,0 +1,37 @@
+{
+    "Name": "IGMPV1",
+    "Description": "Internet Group Mgmt Protocol v1",
+    "SegmentType": "IGMPV1",
+    "ChecksumOffset": 2,
+    "ProtocolFields": [
+        {
+            "Name": "Version",
+            "BitLength": 4,
+            "DisplayType": "Hex",
+            "DefaultValue": "0x01"
+        },
+        {
+            "Name": "Type",
+            "BitLength": 4,
+            "DisplayType": "Hex",
+            "DefaultValue": "0x01",
+            "ValueMapName": "IgmpV1Types"
+        },
+        {
+            "Name": "(unused)",
+            "BitLength": 8,
+            "DisplayType": "Hex",
+            "IsReserved": true
+        },
+        {
+            "Name": "Checksum",
+            "BitLength": 16,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Group Address",
+            "BitLength": 32,
+            "DisplayType": "IpV4Address"
+        }
+    ]
+}

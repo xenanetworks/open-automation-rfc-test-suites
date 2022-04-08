@@ -1,0 +1,55 @@
+{
+	"Name": "GTPV2L0",
+	"Description": "GTPv2 (no options), GPRS Tunneling Protocol version 2",
+	"SegmentType": "GTPV2L0",
+	"EnclosedTypeIndex": -1,
+
+	"ProtocolFields": [
+		{
+			"Name": "Version",
+			"BitLength": 3,
+			"DisplayType": "Decimal",
+			"DefaultValue": "0x02"
+		},
+		{
+			"Name": "Piggyback Flag",
+			"BitLength": 1,
+			"DisplayType": "Binary",
+			"DefaultValue": "0x00"
+		},
+		{
+			"Name": "TEID Flag",
+			"BitLength": 1,
+			"DisplayType": "Binary",
+			"DefaultValue": "0x00"
+		},
+		{
+			"Name": "(reserved)",
+			"BitLength": 3,
+			"IsReserved" : true,
+			"DisplayType": "Binary"
+		},
+		{
+			"Name": "Message Type",
+			"BitLength": 8,
+			"DisplayType": "Hex"
+		},
+		{
+			"Name": "Total Length",
+			"BitLength": 16,
+			"DisplayType": "Decimal"
+		},
+		{
+			"Name": "Sequence No",
+			"BitLength": 24,
+			"DisplayType": "Decimal"
+		},
+		{
+			"Name": "(reserved)",
+			"BitLength": 8,
+			"IsReserved" : true,
+			"DisplayType": "Hex"
+		}
+	]
+}
+

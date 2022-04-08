@@ -1,0 +1,75 @@
+{
+	"Name": "PFC",
+	"Description": "MAC Control for PFC",
+	"SegmentType": "MACCTRL_PFC",
+
+	"ProtocolFields": [
+		{
+			"Name": "Opcode",
+			"BitLength": 16,
+			"DisplayType": "Hex",
+			"ValueMapName": "MacCtrlTypes",
+			"DefaultValue": "0x01,0x01"
+		},
+		{
+			"Name": "(reserved)",
+			"BitLength": 8,
+			"DisplayType": "Binary",
+			"IsReserved" : true
+		},
+		{
+			"Name": "Class-Enable Vector",
+			"BitLength": 8,
+			"DisplayType": "Binary",
+			"DefaultValue": "0xFF"
+		},
+		{
+			"Name": "Time 0",
+			"BitLength": 16,
+			"DisplayType": "Hex",
+			"DefaultValue": "0xFF,0xFF"
+		},
+		{
+			"Name": "Time 1",
+			"BitLength": 16,
+			"DisplayType": "Hex",
+			"DefaultValue": "0xFF,0xFF"
+		},
+		{
+			"Name": "Time 2",
+			"BitLength": 16,
+			"DisplayType": "Hex",
+			"DefaultValue": "0xFF,0xFF"
+		},
+		{
+			"Name": "Time 3",
+			"BitLength": 16,
+			"DisplayType": "Hex",
+			"DefaultValue": "0xFF,0xFF"
+		},
+		{
+			"Name": "Time 4",
+			"BitLength": 16,
+			"DisplayType": "Hex",
+      "DefaultValue": "0xFF,0xFF"
+		},
+		{
+			"Name": "Time 5",
+			"BitLength": 16,
+			"DisplayType": "Hex",
+			"DefaultValue": "0xFF,0xFF"
+		},
+		{
+			"Name": "Time 6",
+			"BitLength": 16,
+			"DisplayType": "Hex",
+			"DefaultValue": "0xFF,0xFF"
+		},
+		{
+			"Name": "Time 7",
+			"BitLength": 16,
+			"DisplayType": "Hex",
+			"DefaultValue": "0xFF,0xFF"
+		}
+	]
+}

@@ -1,0 +1,28 @@
+{
+    "Name": "MPLS",
+    "Description": "Multi Protocol Label Switching",
+    "SegmentType": "MPLS",
+    "ProtocolFields": [
+        {
+            "Name": "Label",
+            "BitLength": 20,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Exp/CoS",
+            "BitLength": 3,
+            "DisplayType": "Binary"
+        },
+        {
+            "Name": "Bottom",
+            "BitLength": 1,
+            "DisplayType": "Binary",
+            "DefaultValue": "0x01"
+        },
+        {
+            "Name": "Time to Live",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        }
+    ]
+}

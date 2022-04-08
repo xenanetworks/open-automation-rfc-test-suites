@@ -1,0 +1,27 @@
+{
+	"Name": "Ethernet802.3",
+	"Description": "Ethernet 802.3",
+	"SegmentType": "ETHERNET_8023",
+	"EnclosedTypeIndex" : 2,
+
+	"ProtocolFields": [
+		{
+			"Name": "DMAC Address",
+			"BitLength": 48,
+			"DisplayType": "MacAddress",
+			"DefaultValue": "0,0,0,0,0,0"
+		},
+		{
+			"Name": "SMAC Address",
+			"BitLength": 48,
+			"DisplayType": "MacAddress",
+			"DefaultValue": "0,0,0,0,0,0"
+		},
+		{
+			"Name": "Length",
+			"BitLength": 16,
+			"DisplayType": "Decimal",
+			"DefaultValue": "0x00,0x00"
+		}
+	]
+}

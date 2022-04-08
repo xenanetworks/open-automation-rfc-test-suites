@@ -1,0 +1,12 @@
+{
+    "Name": "Raw",
+    "Description": "Raw Segment",
+    "SegmentType": "Raw",
+    "ProtocolFields": [
+        {
+            "Name": "Raw Value",
+            "BitLength": 0,
+            "DisplayType": "Hex"
+        }
+    ]
+}

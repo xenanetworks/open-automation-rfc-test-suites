@@ -1,0 +1,27 @@
+{
+    "Name": "Ethernet",
+    "Description": "Ethernet II",
+    "SegmentType": "ETHERNET",
+    "EnclosedTypeIndex": 2,
+    "ProtocolFields": [
+        {
+            "Name": "Dst MAC addr",
+            "BitLength": 48,
+            "DisplayType": "MacAddress",
+            "DefaultValue": "0,0,0,0,0,0"
+        },
+        {
+            "Name": "Src MAC addr",
+            "BitLength": 48,
+            "DisplayType": "MacAddress",
+            "DefaultValue": "0,0,0,0,0,0"
+        },
+        {
+            "Name": "EtherType",
+            "BitLength": 16,
+            "DisplayType": "Hex",
+            "ValueMapName": "EtherType",
+            "DefaultValue": "0xff,0xff"
+        }
+    ]
+}

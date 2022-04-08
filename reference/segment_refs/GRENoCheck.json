@@ -1,0 +1,33 @@
+{
+    "Name": "GRE",
+    "Description": "Generic Routing Encapsulation (no checksum)",
+    "SegmentType": "GRE_NOCHECK",
+    "EnclosedTypeIndex": 3,
+    "ProtocolFields": [
+        {
+            "Name": "Flags",
+            "BitLength": 4,
+            "DisplayType": "Binary",
+            "DefaultValue": "0"
+        },
+        {
+            "Name": "(reserved)",
+            "BitLength": 9,
+            "DisplayType": "Decimal",
+            "IsReserved": true
+        },
+        {
+            "Name": "Version",
+            "BitLength": 3,
+            "DisplayType": "Binary",
+            "DefaultValue": "0"
+        },
+        {
+            "Name": "ProtocolType",
+            "BitLength": 16,
+            "DisplayType": "Hex",
+            "ValueMapName": "EtherType",
+            "DefaultValue": "0xFF,0xFF"
+        }
+    ]
+}

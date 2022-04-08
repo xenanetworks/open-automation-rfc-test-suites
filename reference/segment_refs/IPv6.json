@@ -1,0 +1,52 @@
+{
+    "Name": "IPv6",
+    "Description": "Internet Protocol v6",
+    "SegmentType": "IPv6",
+    "EnclosedTypeIndex": 4,
+    "ProtocolFields": [
+        {
+            "Name": "Version",
+            "BitLength": 4,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0x06"
+        },
+        {
+            "Name": "Traffic Class",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Flow Label",
+            "BitLength": 20,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Payload Length",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Next Header",
+            "BitLength": 8,
+            "DisplayType": "Decimal",
+            "ValueMapName": "IpTypes",
+            "DefaultValue": "59"
+        },
+        {
+            "Name": "Hop Limit",
+            "BitLength": 8,
+            "DisplayType": "Decimal",
+            "DefaultValue": "255"
+        },
+        {
+            "Name": "Src IPv6 Addr",
+            "BitLength": 128,
+            "DisplayType": "IpV6Address"
+        },
+        {
+            "Name": "Dest IPv6 Addr",
+            "BitLength": 128,
+            "DisplayType": "IpV6Address"
+        }
+    ]
+}

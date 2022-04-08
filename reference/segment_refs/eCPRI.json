@@ -1,0 +1,44 @@
+{
+    "Name": "eCPRI",
+    "Description": "Enhanced Common Public Radio Interface",
+    "SegmentType": "eCPRI",
+    "EnclosedTypeIndex": -1,
+
+    "ProtocolFields": [
+        {
+            "Name": "Version",
+            "BitLength": 4,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Reserved",
+            "BitLength": 3,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Concatenation",
+            "BitLength": 1,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Message type",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Payload size",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Rtcid / Pcid",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Seqid",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        }
+    ]
+}

@@ -1,0 +1,33 @@
+{
+    "Name": "VLAN",
+    "Description": "Virtual LAN",
+    "SegmentType": "VLAN",
+    "EnclosedTypeIndex": 3,
+    "ProtocolFields": [
+        {
+            "Name": "PCP",
+            "BitLength": 3,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0"
+        },
+        {
+            "Name": "CFI/DEI",
+            "BitLength": 1,
+            "DisplayType": "Binary",
+            "DefaultValue": "0"
+        },
+        {
+            "Name": "VLAN Tag",
+            "BitLength": 12,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0,0"
+        },
+        {
+            "Name": "EtherType",
+            "BitLength": 16,
+            "DisplayType": "Hex",
+            "ValueMapName": "EtherType",
+            "DefaultValue": "0xFF,0xFF"
+        }
+    ]
+}

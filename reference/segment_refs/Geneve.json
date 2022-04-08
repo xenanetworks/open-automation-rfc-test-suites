@@ -1,0 +1,58 @@
+{
+	"Name": "Geneve",
+	"Description": "Generic Network Virtualization Encapsulation",
+	"SegmentType": "GENEVE",
+	"EnclosedTypeIndex": 5,
+
+	"ProtocolFields": [
+		{
+			"Name": "Ver",
+			"BitLength": 2,
+			"DisplayType": "Decimal",
+			"DefaultValue": "0"
+		},
+		{
+			"Name": "Opt Len",
+			"BitLength": 6,
+			"DisplayType": "Decimal",
+			"DefaultValue": "0"
+		},
+		{
+			"Name": "O bit",
+			"BitLength": 1,
+			"DisplayType": "Binary",
+			"DefaultValue": "0"
+		},
+		{
+			"Name": "C bit",
+			"BitLength": 1,
+			"DisplayType": "Binary",
+			"DefaultValue": "0"
+		},
+		{
+			"Name": "(reserved)",
+			"BitLength": 6,
+			"DisplayType": "Decimal",
+			"IsReserved": true,
+			"DefaultValue": "0"
+		},
+		{
+			"Name": "Protocol Type",
+			"BitLength": 16,
+			"DisplayType": "Hex",
+			"ValueMapName": "EtherType"
+		},
+		{
+			"Name": "VNI",
+			"BitLength": 24,
+			"DisplayType": "Decimal"
+		},
+		{
+			"Name": "(reserved)",
+			"BitLength": 8,
+			"DisplayType": "Decimal",
+			"IsReserved": true,
+			"DefaultValue": "0"
+		}
+	]
+}

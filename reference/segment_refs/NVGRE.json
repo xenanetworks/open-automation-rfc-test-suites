@@ -1,0 +1,44 @@
+{
+    "Name": "NVGRE",
+    "Description": "Generic Routing Encapsulation (Network Virtualization)",
+    "SegmentType": "NVGRE",
+    "EnclosedTypeIndex": -1,
+    "ChecksumOffset": -1,
+    "ProtocolFields": [
+        {
+            "Name": "Flags",
+            "BitLength": 4,
+            "DisplayType": "Binary",
+            "DefaultValue": "2"
+        },
+        {
+            "Name": "(reserved)",
+            "BitLength": 9,
+            "DisplayType": "Decimal",
+            "IsReserved": true
+        },
+        {
+            "Name": "Version",
+            "BitLength": 3,
+            "DisplayType": "Binary",
+            "DefaultValue": "0"
+        },
+        {
+            "Name": "ProtocolType",
+            "BitLength": 16,
+            "DisplayType": "Hex",
+            "ValueMapName": "EtherType",
+            "DefaultValue": "0x65,0x58"
+        },
+        {
+            "Name": "VSID",
+            "BitLength": 24,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "FlowId",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        }
+    ]
+}
