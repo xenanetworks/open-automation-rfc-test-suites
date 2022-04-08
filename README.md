@@ -27,6 +27,7 @@ The user documentation is hosted:
 
 
     async def my_awesome_script():
+        ...
         
 
     def main():
