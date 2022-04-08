@@ -1,0 +1,67 @@
+{
+    "Name": "FC",
+    "Description": "Fiber Channel",
+    "SegmentType": "FC",
+    "ProtocolFields": [
+        {
+            "Name": "R_CTL",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Dest Addr",
+            "BitLength": 24,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "CS_CTL",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Src Addr",
+            "BitLength": 24,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Type",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "F_CTL",
+            "BitLength": 24,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Seq ID",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "DF_CTL",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Seq Count",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "OX ID",
+            "BitLength": 16,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "RX ID",
+            "BitLength": 16,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Parameter",
+            "BitLength": 32,
+            "DisplayType": "Hex"
+        }
+    ]
+}

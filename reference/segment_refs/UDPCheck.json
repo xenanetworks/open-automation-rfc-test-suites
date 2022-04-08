@@ -1,0 +1,32 @@
+{
+    "Name": "UDPCheck",
+    "Description": "UDP, with checksum",
+    "SegmentType": "UDPCHECK",
+    "EnclosedTypeField": 1,
+    "ProtocolFields": [
+        {
+            "Name": "Src Port",
+            "BitLength": 16,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0x00,0x00",
+            "ValueMapName": "UdpPorts"
+        },
+        {
+            "Name": "Dest Port",
+            "BitLength": 16,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0x00,0x00",
+            "ValueMapName": "UdpPorts"
+        },
+        {
+            "Name": "Length",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Checksum",
+            "BitLength": 16,
+            "DisplayType": "Hex"
+        }
+    ]
+}

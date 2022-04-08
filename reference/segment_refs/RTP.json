@@ -1,0 +1,53 @@
+{
+    "Name": "RTP",
+    "Description": "Real-time Transport Protocol",
+    "SegmentType": "RTP",
+    "ProtocolFields": [
+        {
+            "Name": "Version",
+            "BitLength": 2,
+            "DisplayType": "Binary",
+            "DefaultValue": "2"
+        },
+        {
+            "Name": "Padding",
+            "BitLength": 1,
+            "DisplayType": "Binary"
+        },
+        {
+            "Name": "Extension",
+            "BitLength": 1,
+            "DisplayType": "Binary"
+        },
+        {
+            "Name": "CSRC Count",
+            "BitLength": 4,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Marker",
+            "BitLength": 1,
+            "DisplayType": "Binary"
+        },
+        {
+            "Name": "Payload Type",
+            "BitLength": 7,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Sequence",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Timestamp",
+            "BitLength": 32,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Sync Source",
+            "BitLength": 32,
+            "DisplayType": "Decimal"
+        }
+    ]
+}

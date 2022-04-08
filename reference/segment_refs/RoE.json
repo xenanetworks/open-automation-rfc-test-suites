@@ -1,0 +1,29 @@
+{
+    "Name": "RoE",
+    "Description": "Radio over Ethernet",
+    "SegmentType": "RoE",
+    "EnclosedTypeIndex": -1,
+
+    "ProtocolFields": [
+        {
+            "Name": "Subtype",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Flow Id",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Frame length",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Order info",
+            "BitLength": 32,
+            "DisplayType": "Decimal"
+        }
+    ]
+}

@@ -1,0 +1,35 @@
+{
+    "Name": "ICMPv4",
+    "Description": "Internet Control Message Protocol v4",
+    "SegmentType": "ICMP",
+    "ChecksumOffset": 2,
+    "EnclosedTypeIndex": -1,
+    "ProtocolFields": [
+        {
+            "Name": "Type",
+            "BitLength": 8,
+            "DisplayType": "Decimal",
+            "ValueMapName": "IcmpTypes"
+        },
+        {
+            "Name": "Code",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Checksum",
+            "BitLength": 16,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "ID",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Sequence",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        }
+    ]
+}

@@ -1,0 +1,27 @@
+{
+    "Name": "SCTP",
+    "Description": "Stream Control Transmission Protocol",
+    "SegmentType": "SCTP",
+    "ProtocolFields": [
+        {
+            "Name": "Src port",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Dest port",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Verification Tag",
+            "BitLength": 32,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Checksum",
+            "BitLength": 32,
+            "DisplayType": "Hex"
+        }
+    ]
+}

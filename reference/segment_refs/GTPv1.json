@@ -1,0 +1,74 @@
+{
+    "Name": "GTPv1",
+    "Description": "GPRS Tunneling Protocol v1",
+    "SegmentType": "GTP",
+    "EnclosedTypeIndex": -1,
+    "ProtocolFields": [
+        {
+            "Name": "Version",
+            "BitLength": 3,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0x01"
+        },
+        {
+            "Name": "Protocol Type",
+            "BitLength": 1,
+            "DisplayType": "Binary",
+            "DefaultValue": "0x01"
+        },
+        {
+            "Name": "(reserved)",
+            "BitLength": 1,
+            "IsReserved": true,
+            "DisplayType": "Binary"
+        },
+        {
+            "Name": "EH flag",
+            "BitLength": 1,
+            "DisplayType": "Binary",
+            "DefaultValue": "0x00"
+        },
+        {
+            "Name": "SN flag",
+            "BitLength": 1,
+            "DisplayType": "Binary",
+            "DefaultValue": "0x00"
+        },
+        {
+            "Name": "N-PDU flag",
+            "BitLength": 1,
+            "DisplayType": "Binary",
+            "DefaultValue": "0x00"
+        },
+        {
+            "Name": "Message Type",
+            "BitLength": 8,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Length",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "TEID",
+            "BitLength": 32,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Sequence Number",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "N-PDU Number",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Next EH Type",
+            "BitLength": 8,
+            "DisplayType": "Hex"
+        }
+    ]
+}

@@ -1,0 +1,33 @@
+{
+    "Name": "RTCP",
+    "Description": "Real-time Transport Control Protocol",
+    "SegmentType": "RTCP",
+    "ProtocolFields": [
+        {
+            "Name": "Version",
+            "BitLength": 2,
+            "DisplayType": "Binary",
+            "DefaultValue": "2"
+        },
+        {
+            "Name": "Padding",
+            "BitLength": 1,
+            "DisplayType": "Binary"
+        },
+        {
+            "Name": "Report Count",
+            "BitLength": 5,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Packet Type",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Length",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        }
+    ]
+}

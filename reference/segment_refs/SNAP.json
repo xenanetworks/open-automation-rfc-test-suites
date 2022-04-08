@@ -1,0 +1,20 @@
+{
+    "Name": "SNAP",
+    "Description": "Subnetwork Access Protocol",
+    "SegmentType": "SNAP",
+    "EnclosedTypeIndex": 1,
+    "ProtocolFields": [
+        {
+            "Name": "OUI",
+            "BitLength": 24,
+            "DisplayType": "Hex",
+            "DefaultValue": "0x00,0x00,0x00"
+        },
+        {
+            "Name": "EtherType",
+            "BitLength": 16,
+            "DisplayType": "Hex",
+            "ValueMapName": "EtherType"
+        }
+    ]
+}

@@ -1,0 +1,28 @@
+{
+	"Name": "PWE",
+	"Description": "PW Ethernet Control Word",
+	"SegmentType": "PWETHCTRL",
+	"EnclosedTypeIndex": -1,
+
+	"ProtocolFields": [
+		{
+			"Name": "PW Type",
+			"BitLength": 4,
+			"DisplayType": "Binary",
+			"DefaultValue": "0x00"
+		},
+		{
+			"Name": "(reserved)",
+			"BitLength": 12,
+			"DisplayType": "Binary",
+			"DefaultValue": "0x00,0x00",
+			"IsReserved": true
+		},
+		{
+			"Name": "Sequence Number",
+			"BitLength": 12,
+			"DisplayType": "Decimal",
+			"DefaultValue": "0x00,0x00"
+		}
+    ]
+}

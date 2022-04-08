@@ -1,0 +1,80 @@
+{
+    "Name": "STP",
+    "Description": "Spanning Tree Protocol",
+    "SegmentType": "STP",
+    "ProtocolFields": [
+        {
+            "Name": "Protocol Id",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Version",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Message Type",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "TC Ack",
+            "BitLength": 1,
+            "DisplayType": "Binary"
+        },
+        {
+            "Name": "Flags",
+            "BitLength": 6,
+            "DisplayType": "Binary"
+        },
+        {
+            "Name": "TC",
+            "BitLength": 1,
+            "DisplayType": "Binary"
+        },
+        {
+            "Name": "Root Id",
+            "BitLength": 64,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Cost of Path",
+            "BitLength": 32,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Bridge Id",
+            "BitLength": 64,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Port Id",
+            "BitLength": 16,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Message Age",
+            "BitLength": 16,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Maximum Age",
+            "BitLength": 16,
+            "DisplayType": "Hex",
+            "DefaultValue": "0x14,0x00"
+        },
+        {
+            "Name": "Hello Time",
+            "BitLength": 16,
+            "DisplayType": "Hex",
+            "DefaultValue": "0x02,0x00"
+        },
+        {
+            "Name": "Forward Delay",
+            "BitLength": 16,
+            "DisplayType": "Hex",
+            "DefaultValue": "0x0f,0x00"
+        }
+    ]
+}

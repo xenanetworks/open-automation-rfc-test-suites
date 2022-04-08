@@ -1,0 +1,19 @@
+{
+    "Name": "MAC-Ctrl",
+    "Description": "MAC Control",
+    "SegmentType": "MACCTRL",
+    "ProtocolFields": [
+        {
+            "Name": "Opcode",
+            "BitLength": 16,
+            "DisplayType": "Decimal",
+            "ValueMapName": "MacCtrlTypes",
+            "DefaultValue": "0x00,0x01"
+        },
+        {
+            "Name": "Value",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        }
+    ]
+}
