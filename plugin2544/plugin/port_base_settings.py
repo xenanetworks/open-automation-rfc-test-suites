@@ -11,9 +11,9 @@ from xoa_driver.enums import (
     FECMode,
     AutoNegMode,
     AutoNegTecAbility,
-    AutoNegFecOption,
+    AutoNegFECOption,
     PauseMode,
-    LinkTrainMode,
+    LinkTrainingMode,
     PAM4FrameSize,
     LinkTrainingInitCondition,
     NRZPreset,
@@ -159,8 +159,8 @@ def set_anlt(port: "ports.GenericL23Port", anlt_enabled: bool) -> List["Token"]:
                 port.pcs_pma.auto_neg.settings.set(
                     AutoNegMode.ANEG_ON,
                     AutoNegTecAbility.DEFAULT_TECH_MODE,
-                    AutoNegFecOption.NO_FEC,
-                    AutoNegFecOption.NO_FEC,
+                    AutoNegFECOption.NO_FEC,
+                    AutoNegFECOption.NO_FEC,
                     PauseMode.NO_PAUSE,
                 )
             )
@@ -171,7 +171,7 @@ def set_anlt(port: "ports.GenericL23Port", anlt_enabled: bool) -> List["Token"]:
         if bool(port.info.capabilities.can_set_link_train):
             tokens.append(
                 port.pcs_pma.link_training.settings.set(
-                    LinkTrainMode.FORCE_ENABLE,
+                    LinkTrainingMode.FORCE_ENABLE,
                     PAM4FrameSize.N16K_FRAME,
                     LinkTrainingInitCondition.NO_INIT,
                     NRZPreset.NRZ_NO_PRESET,

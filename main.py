@@ -1,9 +1,7 @@
-import sys
 import asyncio
 import json
-from config import XMP_PATH, INPUT_DATA_PATH, JSON_PATH
+from config import INPUT_DATA_PATH, JSON_PATH
 
-sys.path.append(XMP_PATH)
 from plugin2544.conversion.adapter import Converter
 from plugin2544.plugin import TestSuit2544
 from plugin2544 import function_factory
