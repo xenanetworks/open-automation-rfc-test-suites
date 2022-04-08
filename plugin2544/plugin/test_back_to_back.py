@@ -293,7 +293,7 @@ async def back_to_back_binary_search(
             is_stream_based,
         )
         await set_tx_time_limit(
-            source_port_structs, back_to_back_conf.common_options.actual_duration
+            source_port_structs, back_to_back_conf.common_options.actual_duration * 1_000_000
         )
         await clear_port_stats(control_ports)
         await set_traffic_status(

@@ -324,7 +324,7 @@ async def throughput_binary_search(
             # False,
         )
         await set_tx_time_limit(
-            source_port_structs, throughput_conf.common_options.actual_duration
+            source_port_structs, throughput_conf.common_options.actual_duration* 1_000_000
         )
         await clear_port_stats(control_ports)
         await set_traffic_status(

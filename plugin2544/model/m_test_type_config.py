@@ -47,9 +47,7 @@ class CommonOptions(BaseModel):
 
     @validator("actual_duration", pre=True, always=True)
     def set_actual_duration(cls, v, values):
-        return Decimal(str(values['duration'])) * Decimal(
-                str(values['duration_time_unit'].scale) * 1_000_000
-            )
+        return values['duration'] * values['duration_time_unit'].scale 
 
 
     # @validator("actual_frames", pre=True, always=True)

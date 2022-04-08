@@ -9,12 +9,15 @@ import os
 
 
 async def test():
-    with open(INPUT_DATA_PATH) as f:
-        d = json.load(f)
-        data = Converter(config_data=d).gen()
-    with open(JSON_PATH, "w") as f:
-        f.write(data.json(indent=2))
-    await TestSuit2544(function_factory, data).start()
+    try:
+        with open(INPUT_DATA_PATH) as f:
+            d = json.load(f)
+            data = Converter(config_data=d).gen()
+        with open(JSON_PATH, "w") as f:
+            f.write(data.json(indent=2))
+        await TestSuit2544(function_factory, data).start()
+    except Exception as e:
+        print(e)
 
 
 if __name__ == "__main__":
