@@ -78,7 +78,9 @@ class StateChecker:
 
     def los(self) -> bool:
         if self.should_stop_on_los:
-            return all(self.sync_dic.values()) 
+            for k, v in self.sync_dic.items():
+                logger.error(f"{k.kind} {v}")
+            return not all(self.sync_dic.values()) 
         return False
 
 def should_quit(state_checker:"StateChecker", start_time:float, actual_duration: Decimal):
