@@ -26,28 +26,35 @@ class CommonOptions(BaseModel):
     duration_type: DurationType
     duration: Decimal
     duration_time_unit: DurationTimeUnit
-    duration_frames: PositiveInt
-    duration_frame_unit: DurationFrameUnit
+    # duration_frames: PositiveInt
+    # duration_frame_unit: DurationFrameUnit
     iterations: PositiveInt
 
     # computed properties
     actual_duration: Decimal = Decimal("0")
-    actual_frames: Decimal = Decimal("0")
+    # actual_frames: Decimal = Decimal("0")
 
-    def get_set_actual_duration(
-        self, actual_duration: Decimal = Decimal("0")
-    ) -> Decimal:
-        if self.duration_type == DurationType.TIME or actual_duration == Decimal("0"):
-            self.actual_duration = Decimal(str(self.duration)) * Decimal(
-                str(self.duration_time_unit.scale)
+    # def get_set_actual_duration(
+    #     self, actual_duration: Decimal = Decimal("0")
+    # ) -> Decimal:
+    #     if self.duration_type == DurationType.TIME or actual_duration == Decimal("0"):
+    #         self.actual_duration = Decimal(str(self.duration)) * Decimal(
+    #             str(self.duration_time_unit.scale)
+    #         )
+    #     else:
+    #         self.actual_duration = actual_duration
+    #     return self.actual_duration
+
+    @validator("actual_duration", pre=True, always=True)
+    def set_actual_duration(cls, v, values):
+        return Decimal(str(values['duration'])) * Decimal(
+                str(values['duration_time_unit'].scale) * 1_000_000
             )
-        else:
-            self.actual_duration = actual_duration
-        return self.actual_duration
 
-    @validator("actual_frames", pre=True, always=True)
-    def set_actual_frames(cls, v, values):
-        return values["duration_frames"] * values["duration_frame_unit"].scale
+
+    # @validator("actual_frames", pre=True, always=True)
+    # def set_actual_frames(cls, v, values):
+    #     return values["duration_frames"] * values["duration_frame_unit"].scale
 
 
 class RateIterationOptions(BaseModel):

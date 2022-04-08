@@ -8,11 +8,11 @@ from typing import TYPE_CHECKING, List, Dict, Optional, Tuple
 from loguru import logger
 from ..utils.field import NonNegativeDecimal
 from ..utils.constants import TestResultState
-from ..utils.scheduler import schedule
+# from ..utils.scheduler import schedule
 from .common import get_source_port_structs
 from .mac_learning import add_L2_trial_learning_steps
 from .flow_based_learning import add_flow_based_learning_preamble_steps
-from .statistics import clear_port_stats, set_traffic_status
+from .statistics import clear_port_stats, set_tx_time_limit, set_traffic_status
 from .l3_learning import (
     AddressRefreshHandler,
     schedule_arp_refresh,
@@ -68,26 +68,27 @@ async def get_initial_boundaries(
     for port_struct in source_port_structs:
         rate = get_port_rate(port_struct, rate_percent_dic)
         port_speed = await get_use_port_speed(port_struct)
-        if back_to_back_conf.common_options.duration_type.is_time_duration:
-            max_value = (
-                Decimal(str(back_to_back_conf.common_options.get_set_actual_duration()))
-                * Decimal(rate)
-                / Decimal("100")
-                * Decimal(str(port_speed))
-                / (
-                    Decimal("8")
-                    * (
-                        Decimal(str(current_packet_size))
-                        + Decimal(str(port_struct.port_conf.inter_frame_gap))
-                    )
+        # if back_to_back_conf.common_options.duration_type.is_time_duration:
+        max_value = (
+            # Decimal(str(back_to_back_conf.common_options.get_set_actual_duration()))
+            Decimal(str(back_to_back_conf.common_options.actual_duration))
+            * Decimal(rate)
+            / Decimal("100")
+            * Decimal(str(port_speed))
+            / (
+                Decimal("8")
+                * (
+                    Decimal(str(current_packet_size))
+                    + Decimal(str(port_struct.port_conf.inter_frame_gap))
                 )
             )
-        else:
-            max_value = (
-                Decimal(str(back_to_back_conf.common_options.actual_frames))
-                * Decimal(str(rate))
-                / Decimal("100")
-            )
+        )
+        # else:
+        #     max_value = (
+        #         Decimal(str(back_to_back_conf.common_options.actual_frames))
+        #         * Decimal(str(rate))
+        #         / Decimal("100")
+        #     )
         result[port_struct.properties.identity] = BackToBackBoutEntry(
             current=max_value,
             next=max_value,
@@ -117,7 +118,7 @@ async def run_back_to_back_test(
         stream_lists,
         has_l3,
         test_conf,
-        back_to_back_conf.common_options,
+        # back_to_back_conf.common_options,
         current_packet_size,
         state_checker,
     )
@@ -269,8 +270,8 @@ async def back_to_back_binary_search(
         await set_traffic_status(
             source_port_structs,
             test_conf,
-            back_to_back_conf.common_options,
-            False,
+            # back_to_back_conf.common_options,
+            # False,
             False,
         )
         should_continue, test_passed = check_boundaries(
@@ -291,13 +292,16 @@ async def back_to_back_binary_search(
             boundaries,
             is_stream_based,
         )
+        await set_tx_time_limit(
+            source_port_structs, back_to_back_conf.common_options.actual_duration
+        )
         await clear_port_stats(control_ports)
         await set_traffic_status(
             source_port_structs,
             test_conf,
-            back_to_back_conf.common_options,
+            # back_to_back_conf.common_options,
             True,
-            False,
+            # False,
         )
         await schedule_arp_refresh(state_checker, address_refresh_handler)
         result_group = await collect_back_to_back_statistics(

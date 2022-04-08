@@ -8,6 +8,7 @@ from ..utils.field import NonNegativeDecimal
 
 from .statistics import (
     clear_port_stats,
+    set_tx_time_limit,
     set_traffic_status,
 )
 from ..utils.constants import TestResultState
@@ -116,7 +117,10 @@ async def collect_frame_loss_statistics(
         stream_params=stream_params,
     )
     await collect_frame_loss_live_statistics(
-        stream_lists, state_checker, result_handler, common_params, 
+        stream_lists,
+        state_checker,
+        result_handler,
+        common_params,
     )
     await collect_frame_loss_final_statistics(
         stream_lists, result_handler, common_params, frame_loss_conf
@@ -163,14 +167,17 @@ async def run_frame_loss_test(
             for port_struct in control_ports
         }
         await set_traffic_status(
-            source_port_structs, test_conf, frame_loss_conf.common_options, False, False
+            # source_port_structs, test_conf, frame_loss_conf.common_options, False, False
+            source_port_structs,
+            test_conf,
+            False,
         )
         address_refresh_handler = await add_L3_learning_preamble_steps(
             control_ports,
             stream_lists,
             has_l3,
             test_conf,
-            frame_loss_conf.common_options,
+            # frame_loss_conf.common_options,
             current_packet_size,
             state_checker,
         )
@@ -190,14 +197,20 @@ async def run_frame_loss_test(
             source_port_structs,
             stream_lists,
             test_conf.flow_creation_type,
-            frame_loss_conf.common_options,
+            # frame_loss_conf.common_options,
             rate_percent_dic,
             current_packet_size,
-            False,
+            # False,
+        )
+        await set_tx_time_limit(
+            source_port_structs, frame_loss_conf.common_options.actual_duration
         )
         await clear_port_stats(control_ports)
         await set_traffic_status(
-            source_port_structs, test_conf, frame_loss_conf.common_options, True, False
+            # source_port_structs, test_conf, frame_loss_conf.common_options, True, False
+            source_port_structs,
+            test_conf,
+            True,
         )
         await schedule_arp_refresh(state_checker, address_refresh_handler)
         await collect_frame_loss_statistics(

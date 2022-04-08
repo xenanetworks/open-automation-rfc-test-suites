@@ -1,3 +1,4 @@
+from decimal import Decimal
 import math
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 from .test_operations import StateChecker
@@ -16,12 +17,12 @@ from ..utils.constants import (
     SegmentType,
     TestState,
 )
-from ..model import (
-    CommonOptions,
-)
+# from ..model import (
+#     CommonOptions,
+# )
 from .common import get_dest_port_structs, get_source_port_structs
 from .setup_source_port_rates import setup_source_port_rates
-from .statistics import reset_tx_time_limit
+from .statistics import set_tx_time_limit
 from ..utils.field import IPv4Address, IPv6Address
 from ..utils.packet import ARPPacket, MacAddress, NDPPacket
 from .common import get_dest_port_structs, get_source_port_structs
@@ -332,7 +333,7 @@ class AddressRefreshHandler:
 
 async def generate_l3_learning_packets(
     count: int,
-    state_checker:  StateChecker,
+    state_checker: StateChecker,
     address_refresh_handler: "AddressRefreshHandler",
 ) -> bool:
     tokens = address_refresh_handler.get_batch()
@@ -342,7 +343,7 @@ async def generate_l3_learning_packets(
 
 
 async def send_l3_learning_packets(
-    state_checker:  StateChecker,
+    state_checker: StateChecker,
     address_refresh_handler: "AddressRefreshHandler",
 ) -> None:
     await schedule(
@@ -355,7 +356,7 @@ async def send_l3_learning_packets(
 
 
 async def schedule_arp_refresh(
-   state_checker: StateChecker,
+    state_checker: StateChecker,
     address_refresh_handler: Optional["AddressRefreshHandler"],
     state: TestState = TestState.RUNNING_TEST,
 ):
@@ -371,7 +372,7 @@ async def add_L3_learning_preamble_steps(
     stream_lists: List["StreamInfo"],
     has_l3: bool,
     test_conf: "TestConfiguration",
-    common_option: "CommonOptions",
+    # common_option: "CommonOptions",
     current_packet_size: NonNegativeDecimal,
     state_checker: "StateChecker",
 ) -> Optional["AddressRefreshHandler"]:  # AddL3LearningPreambleSteps
@@ -393,13 +394,13 @@ async def add_L3_learning_preamble_steps(
         source_port_structs,
         stream_lists,
         test_conf.flow_creation_type,
-        common_option,
+        # common_option,
         rate_percent_dic,
         current_packet_size,
-        is_learning=True,
+        # is_learning=True,
     )
     await schedule_arp_refresh(
         state_checker, address_refresh_handler, TestState.L3_LEARNING
     )
-    await reset_tx_time_limit(source_port_structs)
+    await set_tx_time_limit(source_port_structs, Decimal(0))
     return address_refresh_handler

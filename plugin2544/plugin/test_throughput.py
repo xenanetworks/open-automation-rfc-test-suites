@@ -19,7 +19,7 @@ from .l3_learning import (
 
 from .mac_learning import add_L2_trial_learning_steps
 from .setup_source_port_rates import setup_source_port_rates
-from .statistics import clear_port_stats, set_traffic_status
+from .statistics import clear_port_stats, set_tx_time_limit, set_traffic_status
 from .test_result_structure import (
     AllResult,
     BoutEntry,
@@ -205,6 +205,7 @@ async def collect_throughput_live_statistics(
             break
         await asyncio.sleep(1)
 
+
 async def throughput_statistic_collect(
     stream_lists: List["StreamInfo"],
     control_ports: List["Structure"],
@@ -259,7 +260,7 @@ async def run_throughput_test(
         stream_lists,
         has_l3,
         test_conf,
-        throughput_conf.common_options,
+        # throughput_conf.common_options,
         current_packet_size,
         state_checker,
     )
@@ -317,14 +318,20 @@ async def throughput_binary_search(
             source_port_structs,
             stream_lists,
             test_conf.flow_creation_type,
-            throughput_conf.common_options,
+            # throughput_conf.common_options,
             rate_percent_dic,
             current_packet_size,
-            False,
+            # False,
+        )
+        await set_tx_time_limit(
+            source_port_structs, throughput_conf.common_options.actual_duration
         )
         await clear_port_stats(control_ports)
         await set_traffic_status(
-            source_port_structs, test_conf, throughput_conf.common_options, True, False
+            # source_port_structs, test_conf, throughput_conf.common_options, True, False
+            source_port_structs,
+            test_conf,
+            True,
         )
         await schedule_arp_refresh(state_checker, address_refresh_handler)
         result_group = await throughput_statistic_collect(

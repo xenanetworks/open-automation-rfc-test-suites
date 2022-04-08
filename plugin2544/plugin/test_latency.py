@@ -13,7 +13,7 @@ from .common import get_source_port_structs
 from .mac_learning import add_L2_trial_learning_steps
 from .flow_based_learning import add_flow_based_learning_preamble_steps
 from .setup_source_port_rates import setup_source_port_rates
-from .statistics import clear_port_stats, set_traffic_status
+from .statistics import clear_port_stats, set_tx_time_limit, set_traffic_status
 from .l3_learning import (
     add_L3_learning_preamble_steps,
     schedule_arp_refresh,
@@ -157,14 +157,17 @@ async def run_latency_test(
         }
 
         await set_traffic_status(
-            source_port_structs, test_conf, latency_conf.common_options, False, False
+            # source_port_structs, test_conf, latency_conf.common_options, False, False
+            source_port_structs,
+            test_conf,
+            False,
         )
         address_refresh_handler = await add_L3_learning_preamble_steps(
             control_ports,
             stream_lists,
             has_l3,
             test_conf,
-            latency_conf.common_options,
+            # latency_conf.common_options,
             current_packet_size,
             state_checker,
         )
@@ -184,14 +187,20 @@ async def run_latency_test(
             source_port_structs,
             stream_lists,
             test_conf.flow_creation_type,
-            latency_conf.common_options,
+            # latency_conf.common_options,
             rate_percent_dic,
             current_packet_size,
-            False,
+            # False,
+        )
+        await set_tx_time_limit(
+            source_port_structs, latency_conf.common_options.actual_duration
         )
         await clear_port_stats(control_ports)
         await set_traffic_status(
-            source_port_structs, test_conf, latency_conf.common_options, True, False
+            # source_port_structs, test_conf, latency_conf.common_options, True, False
+            source_port_structs,
+            test_conf,
+            True,
         )
         await schedule_arp_refresh(state_checker, address_refresh_handler)
         await collect_latency_statistics(

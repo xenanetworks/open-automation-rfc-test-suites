@@ -1,9 +1,10 @@
 import asyncio
+from decimal import Decimal
 from ..utils.field import NonNegativeDecimal
 
 from .test_result_structure import BoutEntry
 from .setup_source_port_rates import setup_source_port_rates
-from .statistics import set_traffic_status
+from .statistics import set_traffic_status, set_tx_time_limit
 from typing import TYPE_CHECKING, List
 from xoa_driver.utils import apply
 
@@ -44,15 +45,18 @@ async def add_flow_based_learning_preamble_steps(
         source_ports,
         stream_lists,
         test_conf.flow_creation_type,
-        common_option,
+        # common_option,
         rate_percent_dic,
         current_packet_size,
-        True,
+        # True,
     )
     await _setup_flow_based_learning_frame_count(
         source_ports, test_conf.flow_based_learning_frame_count
     )
 
-    await set_traffic_status(source_ports, test_conf, common_option, True)
+    # await set_traffic_status(source_ports, test_conf, common_option, True)
+    await set_tx_time_limit(source_ports, Decimal(test_conf.learning_duration_second * 1000))
+    await set_traffic_status(source_ports, test_conf, True)
     await asyncio.sleep(test_conf.delay_after_flow_based_learning_ms / 1000)
-    await set_traffic_status(source_ports, test_conf, common_option, False)
+    # await set_traffic_status(source_ports, test_conf, common_option, False)
+    await set_traffic_status(source_ports, test_conf, False)

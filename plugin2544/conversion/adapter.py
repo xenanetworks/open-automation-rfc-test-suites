@@ -172,8 +172,8 @@ class Converter:
             duration_type=test_type_conf.duration_type.core,
             duration=test_type_conf.duration,
             duration_time_unit=test_type_conf.duration_time_unit,
-            duration_frames=test_type_conf.duration_frames,
-            duration_frame_unit=test_type_conf.duration_frame_unit.core,
+            # duration_frames=test_type_conf.duration_frames,
+            # duration_frame_unit=test_type_conf.duration_frame_unit.core,
             iterations=test_type_conf.iterations,
         )
 

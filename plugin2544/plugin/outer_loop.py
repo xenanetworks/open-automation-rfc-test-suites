@@ -30,7 +30,10 @@ async def test_run(
 ) -> None:
     result_handler = test_case_result.get_result_handler(type_conf.test_type)
     await set_traffic_status(
-        control_ports, test_conf, type_conf.common_options, False, False
+        # control_ports, test_conf, type_conf.common_options, False, False
+        control_ports,
+        test_conf,
+        False,
     )
     await setup_packet_size(control_ports, test_conf.frame_sizes, current_packet_size)
 
