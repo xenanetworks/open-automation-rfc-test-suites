@@ -71,7 +71,7 @@ async def collect_latency_final_statistics(
 ) -> ResultGroup:
     common_params.is_live = False
     common_params.test_result_state = TestResultState.PASS
-    await asyncio.sleep(1)
+  
     return await get_latency_result(common_params, stream_lists, result_handler)
 
 
@@ -126,6 +126,7 @@ async def collect_latency_statistics(
     await collect_latency_live_statistics(
         stream_lists, result_handler, common_params, state_checker
     )
+    await asyncio.sleep(1)
     return await collect_latency_final_statistics(
         stream_lists, result_handler, common_params
     )
