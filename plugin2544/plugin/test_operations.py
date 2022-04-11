@@ -86,7 +86,7 @@ class StateChecker:
 def should_quit(state_checker:"StateChecker", start_time:float, actual_duration: Decimal):
     test_finished = not state_checker.test_running()
     elapsed = time() - start_time
-    actual_duration_elapsed = (elapsed >= actual_duration)
+    actual_duration_elapsed = (elapsed >= actual_duration + 5)
     los = state_checker.los()
     if los:
         logger.error("Test is stopped due to the loss of signal of ports.")
