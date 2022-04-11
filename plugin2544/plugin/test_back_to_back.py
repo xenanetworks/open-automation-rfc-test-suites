@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, List, Dict, Optional, Tuple
 from loguru import logger
 from ..utils.field import NonNegativeDecimal
 from ..utils.constants import TestResultState
+
 # from ..utils.scheduler import schedule
 from .common import get_source_port_structs
 from .mac_learning import add_L2_trial_learning_steps
@@ -111,7 +112,7 @@ async def run_back_to_back_test(
 ) -> None:
     if not back_to_back_conf.enabled:
         return
-    state_checker = StateChecker(control_ports, test_conf.should_stop_on_los)
+    state_checker = await StateChecker(control_ports, test_conf.should_stop_on_los)
     source_port_structs = get_source_port_structs(control_ports)
     address_refresh_handler = await add_L3_learning_preamble_steps(
         control_ports,
@@ -293,7 +294,8 @@ async def back_to_back_binary_search(
             is_stream_based,
         )
         await set_tx_time_limit(
-            source_port_structs, back_to_back_conf.common_options.actual_duration * 1_000_000
+            source_port_structs,
+            back_to_back_conf.common_options.actual_duration * 1_000_000,
         )
         await clear_port_stats(control_ports)
         await set_traffic_status(

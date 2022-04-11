@@ -71,7 +71,7 @@ async def collect_latency_final_statistics(
 ) -> ResultGroup:
     common_params.is_live = False
     common_params.test_result_state = TestResultState.PASS
-  
+
     return await get_latency_result(common_params, stream_lists, result_handler)
 
 
@@ -145,7 +145,7 @@ async def run_latency_test(
 ) -> None:
     if not latency_conf.enabled:
         return
-    state_checker = StateChecker(control_ports, test_conf.should_stop_on_los)
+    state_checker = await StateChecker(control_ports, test_conf.should_stop_on_los)
     source_port_structs = get_source_port_structs(control_ports)
     rate_sweep_list = get_rate_sweep_list(latency_conf, throuput_result)
 
@@ -194,7 +194,7 @@ async def run_latency_test(
             # False,
         )
         await set_tx_time_limit(
-            source_port_structs, latency_conf.common_options.actual_duration* 1_000_000
+            source_port_structs, latency_conf.common_options.actual_duration * 1_000_000
         )
         await clear_port_stats(control_ports)
         await set_traffic_status(

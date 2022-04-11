@@ -156,7 +156,7 @@ async def run_frame_loss_test(
 ):
     if not frame_loss_conf.enabled:
         return
-    state_checker = StateChecker(control_ports, test_conf.should_stop_on_los)
+    state_checker = await StateChecker(control_ports, test_conf.should_stop_on_los)
     source_port_structs = get_source_port_structs(control_ports)
     rate_sweep_list = frame_loss_conf.rate_sweep_list
     for rate_percent in rate_sweep_list:
@@ -203,7 +203,8 @@ async def run_frame_loss_test(
             # False,
         )
         await set_tx_time_limit(
-            source_port_structs, frame_loss_conf.common_options.actual_duration* 1_000_000
+            source_port_structs,
+            frame_loss_conf.common_options.actual_duration * 1_000_000,
         )
         await clear_port_stats(control_ports)
         await set_traffic_status(

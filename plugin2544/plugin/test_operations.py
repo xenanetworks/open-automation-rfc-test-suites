@@ -48,14 +48,28 @@ class StateChecker:
         self.should_stop_on_los = should_stop_on_los
         self.started_dic = {}
         self.sync_dic = {}
-        if should_stop_on_los:
-            for port_struct in control_ports:
-                self.sync_dic[port_struct.port] = True
-                port_struct.port.on_receive_sync_change(self._change_sync_status)
+        self.control_ports = control_ports
+        self.should_stop_on_los = should_stop_on_los
 
-        for src_port_struct in source_port_structs:
-            self.started_dic[src_port_struct.port] = True
-            src_port_struct.port.on_traffic_change(self._change_traffic_status)
+    async def __ask(self):
+
+        if self.should_stop_on_los:
+            for port_struct in self.control_ports:
+                port = port_struct.port
+                self.sync_dic[port] = bool((await port.sync_status.get()).sync_status)
+                port.on_receive_sync_change(self._change_sync_status)
+
+        for src_port_struct in get_source_port_structs(self.control_ports):
+            src_port = src_port_struct.port
+            self.started_dic[src_port] = bool(
+                (await src_port.traffic.state.get()).on_off
+            )
+            src_port.on_traffic_change(self._change_traffic_status)
+
+        return self
+
+    def __await__(self):
+        return self.__ask().__await__()
 
     async def _change_sync_status(
         self, port: "GenericL23Port", get_attr: "P_RECEIVESYNC.GetDataAttr"
@@ -73,26 +87,26 @@ class StateChecker:
 
     def test_running(self) -> bool:
         running = any(self.started_dic.values())
-       
+
         return running
 
     def los(self) -> bool:
         if self.should_stop_on_los:
-            for k, v in self.sync_dic.items():
-                logger.error(f"{k.kind} {v}")
-            return not all(self.sync_dic.values()) 
+            return not all(self.sync_dic.values())
         return False
 
-def should_quit(state_checker:"StateChecker", start_time:float, actual_duration: Decimal):
+
+def should_quit(
+    state_checker: "StateChecker", start_time: float, actual_duration: Decimal
+):
     test_finished = not state_checker.test_running()
     elapsed = time() - start_time
-    actual_duration_elapsed = (elapsed >= actual_duration + 5)
+    actual_duration_elapsed = elapsed >= actual_duration + 5
     los = state_checker.los()
     if los:
         logger.error("Test is stopped due to the loss of signal of ports.")
     should_quit = test_finished or los or actual_duration_elapsed
     return should_quit
-
 
 
 async def generate_port_params(

@@ -253,7 +253,7 @@ async def run_throughput_test(
 ) -> None:
     if not throughput_conf.enabled:
         return
-    state_checker = StateChecker(control_ports, test_conf.should_stop_on_los)
+    state_checker = await StateChecker(control_ports, test_conf.should_stop_on_los)
     source_port_structs = get_source_port_structs(control_ports)
     address_refresh_handler = await add_L3_learning_preamble_steps(
         control_ports,
@@ -324,7 +324,8 @@ async def throughput_binary_search(
             # False,
         )
         await set_tx_time_limit(
-            source_port_structs, throughput_conf.common_options.actual_duration* 1_000_000
+            source_port_structs,
+            throughput_conf.common_options.actual_duration * 1_000_000,
         )
         await clear_port_stats(control_ports)
         await set_traffic_status(
