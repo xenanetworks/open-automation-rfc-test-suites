@@ -267,78 +267,77 @@ async def aggregate_test_results(
     ports_result = {}
 
     for stream_info in stream_lists:
-        port_index = stream_info.port_struct.properties.identity
         stream_id = stream_info.stream_id
+        tpld_id = stream_info.tpldid
         tx_port = stream_info.port_struct.port
+        port_index = stream_info.port_struct.properties.identity
+        peer_index = stream_info.peer_struct.properties.identity
+
+        # TODO
+        burst_frames = Decimal(0)
+        # TODO
+
+        current_stream_result = StreamResult(
+            port_index=port_index,
+            peer_index=peer_index,
+            stream_id=stream_id,
+            tpld_id=tpld_id,
+            is_live=is_live,
+            current_packet_size=current_packet_size,
+            test_result_state=test_result_state,
+            rate=common_params.port_params[(port_index,)].rate,
+            iteration=iteration,
+            burst_frames=burst_frames,
+        )
+        stream_result[(stream_id, tpld_id)] = current_stream_result
+
+        if (port_index,) in ports_result:
+            current_port_result = ports_result[(port_index,)]
+        else:
+            current_port_result = ports_result[(port_index,)] = PortResult(
+                port_index=port_index,
+                is_live=is_live,
+                current_packet_size=current_packet_size,
+                iteration=iteration,
+                test_result_state=test_result_state,
+                rate=common_params.port_params[(port_index,)].rate,
+                burst_frames=burst_frames,
+            )
+        pt_stream_index = len(tokens)
+        pt_stream = tx_port.statistics.tx.obtain_from_stream(stream_id).get()
+        current_stream_result.add_tx(pt_stream_index)
+        current_port_result.add_tx(pt_stream_index)
+        tokens.append(pt_stream)
+
         rx_port_list = stream_info.rx_ports
         for rx_port_struct in rx_port_list:
             rx_port = rx_port_struct.port
-            peer_index = rx_port_struct.properties.identity
-
-            tpld = rx_port.statistics.rx.access_tpld(tpld_id=stream_info.tpldid)
-            if (port_index, peer_index, stream_id) in common_params.stream_params:
-                burst_frames = common_params.stream_params[
-                    (port_index, peer_index, stream_id)
-                ].burst_frames
-            else:
-                burst_frames = Decimal("0")
-            current_stream_result = StreamResult(
-                port_index=port_index,
-                peer_index=peer_index,
-                stream_id=stream_id,
-                is_live=is_live,
-                current_packet_size=current_packet_size,
-                test_result_state=test_result_state,
-                rate=common_params.port_params[(port_index,)].rate,
-                iteration=iteration,
-                burst_frames=burst_frames,
-            )
-            stream_result[(port_index, peer_index, stream_id)] = current_stream_result
-
-            if (port_index,) not in ports_result:
-                current_port_result = PortResult(
-                    port_index=port_index,
+            
+            real_peer_index = rx_port_struct.properties.identity
+            if (real_peer_index,) not in ports_result:
+                current_peer_result = ports_result[(real_peer_index,)] = PortResult(
+                    port_index=real_peer_index,
                     is_live=is_live,
                     current_packet_size=current_packet_size,
                     iteration=iteration,
                     test_result_state=test_result_state,
-                    rate=common_params.port_params[(port_index,)].rate,
-                    burst_frames=burst_frames,
+                    rate=common_params.port_params[(real_peer_index,)].rate,
                 )
-                ports_result[(port_index,)] = current_port_result
             else:
-                current_port_result = ports_result[(port_index,)]
-                current_port_result.add_burst_frames(burst_frames)
-            if (peer_index,) not in ports_result:
-                current_peer_result = PortResult(
-                    port_index=peer_index,
-                    is_live=is_live,
-                    current_packet_size=current_packet_size,
-                    iteration=iteration,
-                    test_result_state=test_result_state,
-                    rate=common_params.port_params[(peer_index,)].rate,
-                )
-                ports_result[(peer_index,)] = current_peer_result
-            else:
-                current_peer_result = ports_result[(peer_index,)]
-            pt_stream_index = len(tokens)
-            pt_stream = tx_port.statistics.tx.obtain_from_stream(stream_id).get()
-            current_stream_result.add_tx(len(tokens))
-            current_port_result.add_tx(len(tokens))
-            tokens.append(pt_stream)
-
+                current_peer_result = ports_result[(real_peer_index,)]
+            tpld_obj = rx_port.statistics.rx.access_tpld(tpld_id=stream_info.tpldid)
             pr_tpldtraffic_index = len(tokens)
-            pr_tpldtraffic = tpld.traffic.get()
-            current_stream_result.add_rx(len(tokens))
-            current_peer_result.add_rx(len(tokens))
+            pr_tpldtraffic = tpld_obj.traffic.get()
+            current_stream_result.add_rx(pr_tpldtraffic_index)
+            current_peer_result.add_rx(pr_tpldtraffic_index)
             tokens.append(pr_tpldtraffic)
 
-            pr_tpldlatency = tpld.latency.get()
+            pr_tpldlatency = tpld_obj.latency.get()
             current_stream_result.add_la(len(tokens))
             current_peer_result.add_la(len(tokens))
             tokens.append(pr_tpldlatency)
 
-            pr_tpldjitter = tpld.jitter.get()
+            pr_tpldjitter = tpld_obj.jitter.get()
             current_stream_result.add_ji(len(tokens))
             current_peer_result.add_ji(len(tokens))
             tokens.append(pr_tpldjitter)
@@ -348,15 +347,106 @@ async def aggregate_test_results(
             current_peer_result.add_ex(len(tokens))
             tokens.append(pr_extra)
 
-            pr_error = tpld.errors.get()
-            current_stream_result.add_rr(len(tokens))
 
-            # tx port should count for rr of its rx port
+            #  tx port should count for rr of its rx port
+            pr_error = tpld_obj.errors.get()
             current_port_result.add_rr(pt_stream_index)
             current_port_result.add_rr(pr_tpldtraffic_index)
             current_port_result.add_rr(len(tokens))
-
             tokens.append(pr_error)
+
+
+    # for stream_info in stream_lists:
+    #     port_index = stream_info.port_struct.properties.identity
+    #     stream_id = stream_info.stream_id
+    #     tx_port = stream_info.port_struct.port
+    #     rx_port_list = stream_info.rx_ports
+    #     for rx_port_struct in rx_port_list:
+    #         rx_port = rx_port_struct.port
+    #         peer_index = rx_port_struct.properties.identity
+
+    #         tpld = rx_port.statistics.rx.access_tpld(tpld_id=stream_info.tpldid)
+    #         if (port_index, peer_index, stream_id) in common_params.stream_params:
+    #             burst_frames = common_params.stream_params[
+    #                 (port_index, peer_index, stream_id)
+    #             ].burst_frames
+    #         else:
+    #             burst_frames = Decimal("0")
+    #         current_stream_result = StreamResult(
+    #             port_index=port_index,
+    #             peer_index=peer_index,
+    #             stream_id=stream_id,
+    #             is_live=is_live,
+    #             current_packet_size=current_packet_size,
+    #             test_result_state=test_result_state,
+    #             rate=common_params.port_params[(port_index,)].rate,
+    #             iteration=iteration,
+    #             burst_frames=burst_frames,
+    #         )
+    #         stream_result[(port_index, peer_index, stream_id)] = current_stream_result
+
+    #         if (port_index,) not in ports_result:
+    #             current_port_result = PortResult(
+    #                 port_index=port_index,
+    #                 is_live=is_live,
+    #                 current_packet_size=current_packet_size,
+    #                 iteration=iteration,
+    #                 test_result_state=test_result_state,
+    #                 rate=common_params.port_params[(port_index,)].rate,
+    #                 burst_frames=burst_frames,
+    #             )
+    #             ports_result[(port_index,)] = current_port_result
+    #         else:
+    #             current_port_result = ports_result[(port_index,)]
+    #             current_port_result.add_burst_frames(burst_frames)
+    #         if (peer_index,) not in ports_result:
+    #             current_peer_result = PortResult(
+    #                 port_index=peer_index,
+    #                 is_live=is_live,
+    #                 current_packet_size=current_packet_size,
+    #                 iteration=iteration,
+    #                 test_result_state=test_result_state,
+    #                 rate=common_params.port_params[(peer_index,)].rate,
+    #             )
+    #             ports_result[(peer_index,)] = current_peer_result
+    #         else:
+    #             current_peer_result = ports_result[(peer_index,)]
+    #         pt_stream_index = len(tokens)
+    #         pt_stream = tx_port.statistics.tx.obtain_from_stream(stream_id).get()
+    #         current_stream_result.add_tx(len(tokens))
+    #         current_port_result.add_tx(len(tokens))
+    #         tokens.append(pt_stream)
+
+    #         pr_tpldtraffic_index = len(tokens)
+    #         pr_tpldtraffic = tpld.traffic.get()
+    #         current_stream_result.add_rx(len(tokens))
+    #         current_peer_result.add_rx(len(tokens))
+    #         tokens.append(pr_tpldtraffic)
+
+    #         pr_tpldlatency = tpld.latency.get()
+    #         current_stream_result.add_la(len(tokens))
+    #         current_peer_result.add_la(len(tokens))
+    #         tokens.append(pr_tpldlatency)
+
+    #         pr_tpldjitter = tpld.jitter.get()
+    #         current_stream_result.add_ji(len(tokens))
+    #         current_peer_result.add_ji(len(tokens))
+    #         tokens.append(pr_tpldjitter)
+
+    #         pr_extra = rx_port.statistics.rx.extra.get()
+    #         current_stream_result.add_ex(len(tokens))
+    #         current_peer_result.add_ex(len(tokens))
+    #         tokens.append(pr_extra)
+
+    #         pr_error = tpld.errors.get()
+    #         current_stream_result.add_rr(len(tokens))
+
+    #         # tx port should count for rr of its rx port
+    #         current_port_result.add_rr(pt_stream_index)
+    #         current_port_result.add_rr(pr_tpldtraffic_index)
+    #         current_port_result.add_rr(len(tokens))
+
+    #         tokens.append(pr_error)
 
     replies = await apply(*tokens)
     for sr in stream_result.values():

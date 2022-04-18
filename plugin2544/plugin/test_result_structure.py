@@ -73,6 +73,7 @@ class Kind:
     port_index: str = "all"
     peer_index: str = "all"
     stream_id: int = -1
+    tpld_id: int = -1
 
 
 @dataclass
