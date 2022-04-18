@@ -288,7 +288,7 @@ def apply_macaddress_for_modifier_mode(
 
     return [
         port_struct.port.net_config.mac_address.set(
-            f"0x{port_struct.properties.mac_address.to_hexstring()}"
+            f"{port_struct.properties.mac_address.to_hexstring()}"
         )
     ]
 
