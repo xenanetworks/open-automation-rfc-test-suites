@@ -32,8 +32,9 @@ def get_field_value_range(field_value_range: "FieldValueRange") -> int:
             current_value = field_value_range.start_value
             field_value_range.reset_current_count()
     else:
+        boundary = [field_value_range.start_value, field_value_range.stop_value]
         current_value = randint(
-            field_value_range.start_value, field_value_range.stop_value
+            min(boundary), max(boundary)
         )
     field_value_range.increase_current_count()
     return current_value
@@ -48,10 +49,10 @@ def setup_field_value_ranges(
 
         original_value = "".join([bin(byte)[2:].zfill(8) for byte in patched_value])
         final = (
-            original_value[: field_value_range.position]
+            original_value[: field_value_range.bit_offset]
             + bin_value
             + original_value[
-                field_value_range.position + field_value_range.bit_length :
+                field_value_range.bit_offset + field_value_range.bit_length :
             ]
         )
         patched_value = bytearray(

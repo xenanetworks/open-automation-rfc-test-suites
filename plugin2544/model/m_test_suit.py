@@ -221,7 +221,7 @@ class Model2544(BaseModel):  # Main Model
             v = len(gateways) == 1
         return v
 
-    @validator("has_l3")
+    @validator("has_l3", always=True)
     def set_has_l3(cls, v, values):
         if "ports_configuration" in values:
             confs = values["ports_configuration"]

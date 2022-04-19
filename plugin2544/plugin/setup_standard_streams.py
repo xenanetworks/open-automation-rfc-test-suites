@@ -68,7 +68,7 @@ def create_stream_for_modifier_mode(
     rx_ports = get_rx_ports_by_range(control_ports, modifier_range)
     new_modifier = HwModifier(
         field_name="Dst MAC addr",
-        offset=0,
+        offset=4,
         mask="0x00FF0000",
         start_value=modifier_range[0],
         stop_value=modifier_range[1],

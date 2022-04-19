@@ -299,9 +299,9 @@ class Converter:
                         )
                 for hvr in profile.stream_config.field_value_ranges:
                     if hvr.segment_id == hs.item_id:
-                        bit_length = get_field_bit_length(
-                            hs.segment_type, hvr.field_name
-                        )
+                        # bit_length = get_field_bit_length(
+                        #     hs.segment_type, hvr.field_name
+                        # )
                         field_value_ranges.append(
                             FieldValueRange(
                                 field_name=hvr.field_name,
@@ -310,7 +310,7 @@ class Converter:
                                 step_value=hvr.step_value,
                                 action=hvr.action.core,
                                 reset_for_each_port=hvr.reset_for_each_port,
-                                bit_length=bit_length,
+                                # bit_length=bit_length,
                             )
                         )
                 header_segments.append(

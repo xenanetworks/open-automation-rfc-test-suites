@@ -1,6 +1,7 @@
 from typing import List
 from pydantic import (
     BaseModel,
+    ConfigError,
     validator,
     NonNegativeInt,
 )
@@ -43,10 +44,10 @@ class FieldValueRange(BaseModel):
     stop_value: NonNegativeInt
     step_value: NonNegativeInt
     action: ModifierActionOption
-    bit_length: NonNegativeInt
     reset_for_each_port: bool
 
     # Computed Properties
+    bit_length: NonNegativeInt = 0
     bit_offset: int = 0  # bit offset from current_segment start
     position: NonNegativeInt = 0  # bit position from all segment start
     current_count: NonNegativeInt = 0
@@ -86,7 +87,12 @@ class HeaderSegment(BaseModel):
                 segment_def = get_segment_definition(segment_type)
                 for fvr in field_value_ranges:
                     field_def = get_field_definition(segment_def, fvr.field_name)
+                    fvr.bit_length = field_def.bit_length
                     fvr.bit_offset = field_def.bit_offset
+                    max_v = max(fvr.start_value, fvr.stop_value)
+                    can_max = pow(2, fvr.bit_length)
+                    if max_v >= can_max:
+                        raise ConfigError(f'Field Value Range {fvr.field_name} boundary can not larger than {can_max}')
 
         return field_value_ranges
 

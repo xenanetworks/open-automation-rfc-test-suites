@@ -10,7 +10,7 @@ from typing import List, Dict, Optional
 
 class FieldDefinition(BaseModel):
     name: str = Field(alias="Name")
-    bit_length: int = Field(alias="BitLength")
+    bit_length: int = Field(0, alias="BitLength")
     display_type: Optional[str] = Field(alias="DisplayType")
     default_value: Optional[str] = Field(alias="DefaultValue")
     value_map_name: Optional[str] = Field(alias="ValueMapName")
