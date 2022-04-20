@@ -24,7 +24,7 @@ class FieldDefinition(BaseModel):
     @validator("byte_length")
     def set_byte_length(cls, v):
         offset = 1 if v % 8 > 0 else 0
-        byte_length = v / 8 + offset
+        byte_length = v // 8 + offset
         return byte_length
 
 
@@ -47,7 +47,7 @@ class SegmentDefinition(BaseModel):
         # curr_byte_offset = 0
         for field_def in v:
             field_def.bit_offset = curr_bit_offset
-            field_def.byte_offset = int(curr_bit_offset / 8)
+            field_def.byte_offset = curr_bit_offset // 8
             field_def.bit_padding = curr_bit_offset % 8
 
             curr_bit_offset += field_def.bit_length

@@ -121,7 +121,7 @@ class ProtocolSegmentProfileConfig(BaseModel):
                         modifier.position = current_byte_offset + modifier.byte_offset
                         if modifier.field_name in ("Src IP Addr", "Dest IP Addr"):
                             modifier.position += modifier.offset
-                current_byte_offset += int(len(header_segment.segment_value) / 2)
+                current_byte_offset += len(header_segment.segment_value) // 2
         return v
 
     @validator("modifier_count", pre=True, always=True)

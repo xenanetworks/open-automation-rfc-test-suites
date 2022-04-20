@@ -118,7 +118,7 @@ class HeaderSegments(BaseModel):
     def validate_segment_type(cls, v, values):
         if isinstance(v, str):
             if v.lower().startswith("raw"):
-                return OSegmentType(f"raw_{len(values['segment_value'])//2}")
+                return OSegmentType(f"raw_{len(values['segment_value']) // 2}")
             else:
                 return OSegmentType(v)
         else:
