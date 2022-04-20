@@ -1,3 +1,4 @@
+import asyncio
 from decimal import Decimal
 import math
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
@@ -22,7 +23,7 @@ from ..utils.constants import (
 # )
 from .common import get_dest_port_structs, get_source_port_structs
 from .setup_source_port_rates import setup_source_port_rates
-from .statistics import set_tx_time_limit
+from .statistics import set_traffic_status, set_tx_time_limit
 from ..utils.field import IPv4Address, IPv6Address
 from ..utils.packet import ARPPacket, MacAddress, NDPPacket
 from .common import get_dest_port_structs, get_source_port_structs
@@ -384,6 +385,7 @@ async def add_L3_learning_preamble_steps(
     address_refresh_handler = await setup_address_arp_refresh(
         control_ports, stream_lists, test_conf
     )
+    address_refresh_handler.set_current_state(TestState.L3_LEARNING)
     rate_percent_dic = {
         port_struct.properties.identity: BoutEntry(
             port_struct.properties.identity, rate=test_conf.learning_rate_pct
@@ -394,13 +396,23 @@ async def add_L3_learning_preamble_steps(
         source_port_structs,
         stream_lists,
         test_conf.flow_creation_type,
-        # common_option,
         rate_percent_dic,
         current_packet_size,
-        # is_learning=True,
     )
+    await set_tx_time_limit(
+        source_port_structs,
+        Decimal(test_conf.learning_duration_second * 1000),
+    )
+    await set_traffic_status(
+        source_port_structs,
+        test_conf,
+        True,
+    )
+    await asyncio.gather(*address_refresh_handler.tokens)
     await schedule_arp_refresh(
         state_checker, address_refresh_handler, TestState.L3_LEARNING
     )
-    await set_tx_time_limit(source_port_structs, Decimal(0))
+    while state_checker.test_running():
+        await asyncio.sleep(1)
+
     return address_refresh_handler
