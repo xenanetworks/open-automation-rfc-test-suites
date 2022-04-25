@@ -91,54 +91,25 @@ async def test_run(
         )
 
 
-async def _setup_for_outer_loop_iterations(
-    stream_lists: List["StreamInfo"],
-    control_ports: List["Structure"],
+def gen_loop(
     type_conf: "TypeConf",
     test_conf: "TestConfiguration",
-    has_l3: bool,
     test_case_result: "TestCaseResult",
-) -> None:  # SetupForOuterLoopPacketSizes
+):
     max_iteration = type_conf.common_options.iterations
-    for iteration in range(1, max_iteration + 1):
-        for current_packet_size in test_conf.frame_sizes.packet_size_list:
-            await test_run(
-                stream_lists,
-                control_ports,
-                type_conf,
-                test_conf,
-                has_l3,
-                current_packet_size,
-                iteration,
-                test_case_result,
-            )
-    result_handler = test_case_result.get_result_handler(type_conf.test_type)
-    avg_result(result_handler, max_iteration, type_conf)
-
-
-async def _setup_for_outer_loop_packet_sizes(
-    stream_lists: List["StreamInfo"],
-    control_ports: List["Structure"],
-    type_conf: "TypeConf",
-    test_conf: "TestConfiguration",
-    has_l3: bool,
-    test_case_result: "TestCaseResult",
-) -> None:  # SetupForOuterLoopIterations
-    max_iteration = type_conf.common_options.iterations
-    for current_packet_size in test_conf.frame_sizes.packet_size_list:
+    packet_size_list = test_conf.frame_sizes.packet_size_list
+    if test_conf.outer_loop_mode.is_iteration:
         for iteration in range(1, max_iteration + 1):
-            await test_run(
-                stream_lists,
-                control_ports,
-                type_conf,
-                test_conf,
-                has_l3,
-                current_packet_size,
-                iteration,
-                test_case_result,
-            )
+            for current_packet_size in packet_size_list:
+                yield iteration, current_packet_size
         result_handler = test_case_result.get_result_handler(type_conf.test_type)
-        avg_result(result_handler, max_iteration, type_conf, current_packet_size)
+        avg_result(result_handler, max_iteration, type_conf)
+    else:
+        for current_packet_size in packet_size_list:
+            for iteration in range(1, max_iteration + 1):
+                yield iteration, current_packet_size
+            result_handler = test_case_result.get_result_handler(type_conf.test_type)
+            avg_result(result_handler, max_iteration, type_conf, current_packet_size)
 
 
 async def setup_for_outer_loop(
@@ -148,22 +119,95 @@ async def setup_for_outer_loop(
     test_conf: "TestConfiguration",
     has_l3: bool,
     test_case_result: "TestCaseResult",
-) -> None:
-    if test_conf.outer_loop_mode.is_iteration:
-        await _setup_for_outer_loop_iterations(
+):
+    for iteration, current_packet_size in gen_loop(
+        type_conf, test_conf, test_case_result
+    ):
+        await test_run(
             stream_lists,
             control_ports,
             type_conf,
             test_conf,
             has_l3,
+            current_packet_size,
+            iteration,
             test_case_result,
         )
-    else:
-        await _setup_for_outer_loop_packet_sizes(
-            stream_lists,
-            control_ports,
-            type_conf,
-            test_conf,
-            has_l3,
-            test_case_result,
-        )
+
+
+# async def _setup_for_outer_loop_iterations(
+#     stream_lists: List["StreamInfo"],
+#     control_ports: List["Structure"],
+#     type_conf: "TypeConf",
+#     test_conf: "TestConfiguration",
+#     has_l3: bool,
+#     test_case_result: "TestCaseResult",
+# ) -> None:  # SetupForOuterLoopPacketSizes
+#     max_iteration = type_conf.common_options.iterations
+#     for iteration in range(1, max_iteration + 1):
+#         for current_packet_size in test_conf.frame_sizes.packet_size_list:
+#             await test_run(
+#                 stream_lists,
+#                 control_ports,
+#                 type_conf,
+#                 test_conf,
+#                 has_l3,
+#                 current_packet_size,
+#                 iteration,
+#                 test_case_result,
+#             )
+#     result_handler = test_case_result.get_result_handler(type_conf.test_type)
+#     avg_result(result_handler, max_iteration, type_conf)
+
+
+# async def _setup_for_outer_loop_packet_sizes(
+#     stream_lists: List["StreamInfo"],
+#     control_ports: List["Structure"],
+#     type_conf: "TypeConf",
+#     test_conf: "TestConfiguration",
+#     has_l3: bool,
+#     test_case_result: "TestCaseResult",
+# ) -> None:  # SetupForOuterLoopIterations
+#     max_iteration = type_conf.common_options.iterations
+#     for current_packet_size in test_conf.frame_sizes.packet_size_list:
+#         for iteration in range(1, max_iteration + 1):
+#             await test_run(
+#                 stream_lists,
+#                 control_ports,
+#                 type_conf,
+#                 test_conf,
+#                 has_l3,
+#                 current_packet_size,
+#                 iteration,
+#                 test_case_result,
+#             )
+#         result_handler = test_case_result.get_result_handler(type_conf.test_type)
+#         avg_result(result_handler, max_iteration, type_conf, current_packet_size)
+
+
+# async def setup_for_outer_loop(
+#     stream_lists: List["StreamInfo"],
+#     control_ports: List["Structure"],
+#     type_conf: "TypeConf",
+#     test_conf: "TestConfiguration",
+#     has_l3: bool,
+#     test_case_result: "TestCaseResult",
+# ) -> None:
+#     if test_conf.outer_loop_mode.is_iteration:
+#         await _setup_for_outer_loop_iterations(
+#             stream_lists,
+#             control_ports,
+#             type_conf,
+#             test_conf,
+#             has_l3,
+#             test_case_result,
+#         )
+#     else:
+#         await _setup_for_outer_loop_packet_sizes(
+#             stream_lists,
+#             control_ports,
+#             type_conf,
+#             test_conf,
+#             has_l3,
+#             test_case_result,
+#         )
