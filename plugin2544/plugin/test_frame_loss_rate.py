@@ -104,7 +104,7 @@ async def collect_frame_loss_statistics(
         else 0
     )
     port_params = await generate_port_params(stream_lists, rate_percent_dic)
-    stream_params: Dict[Tuple[str, str, int], "TestStreamParam"] = {}
+    stream_params: Dict[Tuple[str, str, int, int], "TestStreamParam"] = {}
 
     common_params = TestCommonParam(
         TestResultState.PENDING,

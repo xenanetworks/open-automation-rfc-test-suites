@@ -273,9 +273,13 @@ async def aggregate_test_results(
         port_index = stream_info.port_struct.properties.identity
         peer_index = stream_info.peer_struct.properties.identity
 
-        # TODO
         burst_frames = Decimal(0)
-        # TODO
+        if (port_index, peer_index, stream_id, tpld_id) in common_params.stream_params:
+            burst_frames = common_params.stream_params[
+                (port_index, peer_index, stream_id, tpld_id)
+            ].burst_frames
+        else:
+            burst_frames = Decimal("0")
 
         current_stream_result = StreamResult(
             port_index=port_index,
@@ -312,7 +316,7 @@ async def aggregate_test_results(
         rx_port_list = stream_info.rx_ports
         for rx_port_struct in rx_port_list:
             rx_port = rx_port_struct.port
-            
+
             real_peer_index = rx_port_struct.properties.identity
             if (real_peer_index,) not in ports_result:
                 current_peer_result = ports_result[(real_peer_index,)] = PortResult(
@@ -322,6 +326,7 @@ async def aggregate_test_results(
                     iteration=iteration,
                     test_result_state=test_result_state,
                     rate=common_params.port_params[(real_peer_index,)].rate,
+                    burst_frames=burst_frames,
                 )
             else:
                 current_peer_result = ports_result[(real_peer_index,)]
@@ -347,14 +352,12 @@ async def aggregate_test_results(
             current_peer_result.add_ex(len(tokens))
             tokens.append(pr_extra)
 
-
             #  tx port should count for rr of its rx port
             pr_error = tpld_obj.errors.get()
             current_port_result.add_rr(pt_stream_index)
             current_port_result.add_rr(pr_tpldtraffic_index)
             current_port_result.add_rr(len(tokens))
             tokens.append(pr_error)
-
 
     # for stream_info in stream_lists:
     #     port_index = stream_info.port_struct.properties.identity

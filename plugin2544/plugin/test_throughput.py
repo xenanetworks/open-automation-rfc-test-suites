@@ -224,7 +224,7 @@ async def throughput_statistic_collect(
     )
     #  statistic jobs
     port_params = await generate_port_params(stream_lists, rate_percent_dic)
-    stream_params: Dict[Tuple[str, str, int], "TestStreamParam"] = {}
+    stream_params: Dict[Tuple[str, str, int, int], "TestStreamParam"] = {}
     common_params = TestCommonParam(
         TestResultState.PENDING,
         Decimal(str(average_packet_size)),

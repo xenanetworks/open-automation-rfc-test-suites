@@ -607,7 +607,7 @@ class TestCommonParam:
         ],
         "TestPortParam",
     ]
-    stream_params: Dict[Tuple[str, str, int], "TestStreamParam"]
+    stream_params: Dict[Tuple[str, str, int, int], "TestStreamParam"]
 
 
 def convert_l1_bit_rate_from_l2(

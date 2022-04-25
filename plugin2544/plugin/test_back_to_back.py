@@ -4,8 +4,6 @@ from decimal import Decimal
 import math
 from time import time
 from typing import TYPE_CHECKING, List, Dict, Optional, Tuple
-
-from loguru import logger
 from ..utils.field import NonNegativeDecimal
 from ..utils.constants import TestResultState
 
@@ -193,9 +191,11 @@ async def setup_source_port_burst_for_streams(
     current_packet_size: NonNegativeDecimal,
     boundaries: Dict[str, "BackToBackBoutEntry"],
     is_stream_based: bool,
-) -> Dict[Tuple[str, str, int], TestStreamParam]:
+) -> Dict[Tuple[str, str, int, int], TestStreamParam]:
     tokens = []
     burst_frame_dic = {}
+    if not is_stream_based:
+        return {}
     for port_struct in source_port_structs:
         src_port_speed = await get_use_port_speed(port_struct)
         dest_port_list = port_struct.properties.peers
@@ -204,8 +204,6 @@ async def setup_source_port_burst_for_streams(
         rate_percent = get_port_rate(port_struct, rate_percent_dic)
 
         for peer_struct in dest_port_list:
-            if not is_stream_based:
-                continue
             stream_info_list = [
                 stream_info
                 for stream_info in stream_lists
@@ -238,6 +236,7 @@ async def setup_source_port_burst_for_streams(
                         stream_info.port_struct.properties.identity,
                         stream_info.peer_struct.properties.identity,
                         stream_info.stream_id,
+                        stream_info.tpldid,
                     )
                 ] = TestStreamParam(stream_burst)
 
@@ -327,7 +326,7 @@ async def collect_back_to_back_statistics(
     iteration: int,
     rate_percent_dic: Dict[str, "BackToBackBoutEntry"],
     result_handler: "ResultHandler",
-    burst_frame_dic: Dict[Tuple[str, str, int], TestStreamParam],
+    burst_frame_dic: Dict[Tuple[str, str, int, int], TestStreamParam],
     state_checker: "StateChecker",
 ) -> ResultGroup:
     average_packet_size = (
@@ -338,7 +337,6 @@ async def collect_back_to_back_statistics(
     )
     #  statistic jobs
     port_params = await generate_port_params(stream_lists, rate_percent_dic)
-    stream_params = burst_frame_dic
     common_params = TestCommonParam(
         TestResultState.PENDING,
         Decimal(str(average_packet_size)),
@@ -347,7 +345,7 @@ async def collect_back_to_back_statistics(
         common_options.actual_duration,
         is_live=True,
         port_params=port_params,
-        stream_params=stream_params,
+        stream_params=burst_frame_dic,
     )
     await collect_back_to_back_live_statistics(
         state_checker, stream_lists, common_params, result_handler
