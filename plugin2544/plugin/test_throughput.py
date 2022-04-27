@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 
 from ..utils.field import NonNegativeDecimal
-from ..utils.constants import TestResultState
+from ..utils.constants import TestResultState, TestType
 
 from .common import get_source_port_structs
 from .flow_based_learning import add_flow_based_learning_preamble_steps
@@ -59,7 +59,7 @@ async def show_throughput_result(
     stream_lists: List["StreamInfo"],
 ) -> "ResultGroup":
     result_group = await aggregate_test_results(common_params, stream_lists)
-    show_result(result_group, "throughput")
+    show_result(result_group, TestType.THROUGHPUT)
     return result_group
 
 
@@ -208,7 +208,6 @@ async def collect_throughput_live_statistics(
 
 async def throughput_statistic_collect(
     stream_lists: List["StreamInfo"],
-    control_ports: List["Structure"],
     test_conf: "TestConfiguration",
     common_options: "CommonOptions",
     current_packet_size: NonNegativeDecimal,
@@ -310,7 +309,7 @@ async def throughput_binary_search(
             result_group, boundaries, throughput_conf
         )
         if result_group:
-            show_result(result_group, "throughput")
+            show_result(result_group, TestType.THROUGHPUT)
         if not should_continue:
             break
         rate_percent_dic = goto_next_percent(boundaries)
@@ -337,7 +336,6 @@ async def throughput_binary_search(
         await schedule_arp_refresh(state_checker, address_refresh_handler)
         result_group = await throughput_statistic_collect(
             stream_lists,
-            control_ports,
             test_conf,
             throughput_conf.common_options,
             current_packet_size,
@@ -399,5 +397,5 @@ def use_best_result(
         result_handler.all_result.extend(list(final_result.all.values()))
         result_handler.port_result.extend(list(final_result.port.values()))
         result_handler.stream_result.extend(list(final_result.stream.values()))
-        show_result(final_result, "throughput")
+        show_result(final_result, TestType.THROUGHPUT)
     return final_result

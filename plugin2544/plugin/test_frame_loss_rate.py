@@ -11,7 +11,7 @@ from .statistics import (
     set_tx_time_limit,
     set_traffic_status,
 )
-from ..utils.constants import TestResultState
+from ..utils.constants import TestResultState, TestType
 from .common import get_source_port_structs
 from .flow_based_learning import add_flow_based_learning_preamble_steps
 from .l3_learning import schedule_arp_refresh, add_L3_learning_preamble_steps
@@ -55,7 +55,7 @@ async def get_frame_loss_result(
         result_handler.all_result.extend(list(result_group.all.values()))
         result_handler.port_result.extend(list(result_group.port.values()))
         result_handler.stream_result.extend(list(result_group.stream.values()))
-    show_result(result_group, "frame_loss")
+    show_result(result_group, TestType.FRAME_LOSS_RATE)
     return result_group
 
 

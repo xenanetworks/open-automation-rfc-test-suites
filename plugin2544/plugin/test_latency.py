@@ -8,7 +8,7 @@ from ..model import rate_sweep_range
 from typing import TYPE_CHECKING, List, Dict
 
 
-from ..utils.constants import TestResultState
+from ..utils.constants import TestResultState, TestType
 from .common import get_source_port_structs
 from .mac_learning import add_L2_trial_learning_steps
 from .flow_based_learning import add_flow_based_learning_preamble_steps
@@ -60,7 +60,7 @@ async def get_latency_result(
         result_handler.all_result.extend(list(result_group.all.values()))
         result_handler.port_result.extend(list(result_group.port.values()))
         result_handler.stream_result.extend(list(result_group.stream.values()))
-    show_result(result_group, "latency")
+    show_result(result_group, TestType.LATENCY_JITTER)
     return result_group
 
 

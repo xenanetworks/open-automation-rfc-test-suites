@@ -1,5 +1,7 @@
 import asyncio
 from typing import Any, Dict, List
+
+from plugin2544.model.m_test_type_config import LatencyTest
 from .statistics import (
     stop_traffic,
 )
@@ -122,7 +124,7 @@ class TestSuit2544(PluginAbstract):
 
     async def __do_test(self) -> None:
         for type_conf in self.data.test_types_configuration.available_test:
-            if type_conf.test_type.is_latency:
+            if isinstance(type_conf, LatencyTest):
                 await setup_latency_mode(self.control_ports, type_conf.latency_mode)
             await setup_for_outer_loop(
                 self.stream_lists,

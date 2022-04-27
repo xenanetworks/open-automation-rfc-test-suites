@@ -5,7 +5,7 @@ import math
 from time import time
 from typing import TYPE_CHECKING, List, Dict, Optional, Tuple
 from ..utils.field import NonNegativeDecimal
-from ..utils.constants import TestResultState
+from ..utils.constants import TestResultState, TestType
 
 # from ..utils.scheduler import schedule
 from .common import get_source_port_structs
@@ -280,7 +280,7 @@ async def back_to_back_binary_search(
 
         if result_group:
             set_test_state(result_group, test_passed)
-            show_result(result_group, "back_to_back")
+            show_result(result_group, TestType.BACK_TO_BACK)
         if not should_continue:
             break
         boundaries = goto_next(boundaries)
@@ -367,7 +367,7 @@ async def get_back_to_back_result(
         result_handler.all_result.extend(list(result_group.all.values()))
         result_handler.port_result.extend(list(result_group.port.values()))
         result_handler.stream_result.extend(list(result_group.stream.values()))
-    show_result(result_group, "back_to_back")
+    show_result(result_group, TestType.BACK_TO_BACK)
     return result_group
 
 

@@ -9,8 +9,8 @@ from xoa_driver.utils import apply
 from xoa_driver.ports import GenericL23Port
 from xoa_driver.internals.core.commands import P_TRAFFIC, P_RECEIVESYNC
 
-from .test_result_structure import ResultGroup, PortResult, Result
-from ..model import BackToBackTest, FrameLossRateTest, LatencyTest, ThroughputTest
+from .test_result_structure import ResultGroup, PortResult
+from ..model import FrameLossRateTest
 from .test_result_show import (
     show_all_frame_loss_result,
     show_all_latency_result,
@@ -22,7 +22,7 @@ from .test_result_show import (
     show_port_back_to_back_result,
 )
 from .structure import TypeConf
-from ..utils.constants import AcceptableLossType
+from ..utils.constants import AcceptableLossType, TestType
 from ..utils.logger import logger
 from .test_result_structure import (
     AllResult,
@@ -44,7 +44,6 @@ class StateChecker:
     def __init__(
         self, control_ports: List["Structure"], should_stop_on_los: bool
     ) -> None:
-        source_port_structs = get_source_port_structs(control_ports)
         self.should_stop_on_los = should_stop_on_los
         self.started_dic = {}
         self.sync_dic = {}
@@ -76,14 +75,14 @@ class StateChecker:
     ) -> None:
         before = self.sync_dic[port]
         after = self.sync_dic[port] = bool(get_attr.sync_status)
-        logger.error(f"Change sync status from {before} to {after} ")
+        logger.warning(f"Change sync status from {before} to {after} ")
 
     async def _change_traffic_status(
         self, port: "GenericL23Port", get_attr: "P_TRAFFIC.GetDataAttr"
     ) -> None:
         before = self.started_dic[port]
         after = self.started_dic[port] = bool(get_attr.on_off)
-        logger.error(f"Change traffic status for {before} to {after}")
+        logger.warning(f"Change traffic status for {before} to {after}")
 
     def test_running(self) -> bool:
         running = any(self.started_dic.values())
@@ -225,33 +224,40 @@ def avg_result(
             all=average_all_result,
         )
 
-        if isinstance(type_conf, ThroughputTest):
-            show_type = "throughput"
-        elif isinstance(type_conf, LatencyTest):
-            show_type = "latency"
-        elif isinstance(type_conf, FrameLossRateTest):
-            show_type = "frame_loss"
+        if isinstance(type_conf, FrameLossRateTest):
             for final_result in result_group.all.values():
                 check_if_frame_loss_success(type_conf, final_result)
-        elif isinstance(type_conf, BackToBackTest):
-            show_type = "back_to_back"
-        show_result(result_group, show_type)
+        show_result(result_group, type_conf.test_type)
 
 
-def show_result(result: "ResultGroup", show_type: str) -> None:
-    if show_type == "throughput":
+def show_result(result: "ResultGroup", test_type: "TestType") -> None:
+    if test_type == TestType.THROUGHPUT:
         show_all_throughput_result(result.all)
         show_port_throughput_result(result.port)
-    elif show_type == "latency":
+    elif test_type == TestType.LATENCY_JITTER:
         show_all_latency_result(result.all)
         show_port_latency_result(result.port)
-    elif show_type == "frame_loss":
+    elif test_type == TestType.FRAME_LOSS_RATE:
         show_all_frame_loss_result(result.all)
         show_port_frame_loss_result(result.port)
-    elif show_type == "back_to_back":
+    elif test_type == TestType.BACK_TO_BACK:
         show_all_back_to_back_result(result.all)
         show_port_back_to_back_result(result.port)
 
+
+# def show_all_result(test_case_result):
+#     if test_type == TestType.THROUGHPUT:
+#         show_all_throughput_result(result.all)
+#         show_port_throughput_result(result.port)
+#     elif test_type == TestType.LATENCY_JITTER:
+#         show_all_latency_result(result.all)
+#         show_port_latency_result(result.port)
+#     elif test_type == TestType.FRAME_LOSS_RATE:
+#         show_all_frame_loss_result(result.all)
+#         show_port_frame_loss_result(result.port)
+#     elif test_type == TestType.BACK_TO_BACK:
+#         show_all_back_to_back_result(result.all)
+#         show_port_back_to_back_result(result.port)
 
 async def aggregate_test_results(
     common_params: "TestCommonParam",
