@@ -52,7 +52,7 @@ async def test_run(
 
     elif type_conf.test_type == TestType.LATENCY_JITTER:
         assert isinstance(type_conf, LatencyTest), "Type not matched!"
-        throughput_result = test_case_result.get_throughput_result()
+        throughput_result = test_case_result.get_throughput_result(current_packet_size)
         await run_latency_test(
             stream_lists,
             control_ports,

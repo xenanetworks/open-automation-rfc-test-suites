@@ -425,6 +425,7 @@ class TxRxFullResult(BaseResult):
 class PortResult(TxRxFullResult):
     loss_frames: Decimal = Decimal("0")
     loss_ratio: Decimal = Decimal("0")
+
     def add_burst_frames(self, burst_frames: Decimal) -> None:
         self.burst_frames += burst_frames
 
@@ -433,7 +434,7 @@ class PortResult(TxRxFullResult):
         return 100 * self.loss_ratio
 
     @classmethod
-    def average(cls, obj_list: List["Result"]) -> Dict[str, List["Result"]]:
+    def average(cls, obj_list: List["Result"]) -> Dict[str, "Result"]:
         dic = {}
         for k, v in groupby(obj_list, "port_index", "rate").items():
             r = PortResult()
@@ -495,7 +496,7 @@ def groupby(
 
 class AllResult(TxRxFullResult):
     @classmethod
-    def average(cls, obj_list: List["Result"]) -> Dict[str, List["Result"]]:
+    def average(cls, obj_list: List["Result"]) -> Dict[str, "Result"]:
         dic = {}
         for k, v in groupby(obj_list, "rate").items():
             r = AllResult()
@@ -865,9 +866,9 @@ def portize_rr(
     counter_list = [replies[t] for t in c_list]
     tx_all = 0
     for i in range(len(counter_list) // 3):
-        tx= counter_list[3 * i]            
-        rx =  counter_list[3 * i + 1]
-        rr = counter_list[3 * i + 2]        
+        tx = counter_list[3 * i]
+        rx = counter_list[3 * i + 1]
+        rr = counter_list[3 * i + 2]
         if result.is_live:
             result.loss_frames += Decimal(str(rr.non_incre_seq_event_count))
         else:
@@ -893,6 +894,8 @@ class ResultHandler:
     stream_result: List[StreamResult] = field(default_factory=list)
     port_result: List[PortResult] = field(default_factory=list)
     all_result: List[AllResult] = field(default_factory=list)
+    avg_all_result: List[AllResult] = field(default_factory=list)
+    avg_port_result: List[PortResult] = field(default_factory=list)
 
 
 @dataclass
@@ -912,13 +915,16 @@ class TestCaseResult:
         else:
             return self.back_to_back
 
-    def get_throughput_result(self) -> Optional[Decimal]:
-        result = None
-        if self.throughput and self.throughput.all_result:
-            throughput_result = self.throughput.all_result[0]
-            if throughput_result:
-                return throughput_result.rate
-        return result
+    def get_throughput_result(
+        self, packet_size: NonNegativeDecimal
+    ) -> Optional[Decimal]:
+        if self.throughput:
+            all_result = self.throughput.avg_all_result or self.throughput.all_result
+            if all_result:
+                for result in all_result:
+                    if result.current_packet_size == packet_size:
+                        return result.rate
+        return None
 
 
 class TrafficStateListener:

@@ -192,7 +192,6 @@ def avg_result(
     type_conf: "TypeConf",
     current_packet_size: Optional[NonNegativeDecimal] = None,
 ) -> None:
-    pass
     if max_iterations > 1:
         if current_packet_size is None:
             all_result = result_handler.all_result
@@ -218,6 +217,8 @@ def avg_result(
         average_all_result = AllResult.average(all_result)
         average_port_result = PortResult.average(port_result)
         average_stream_result = StreamResult.average(stream_result)
+        result_handler.avg_all_result = list(average_all_result.values())
+        result_handler.avg_port_result = list(average_port_result.values())
         result_group = ResultGroup(
             stream=average_stream_result,
             port=average_port_result,

@@ -21,6 +21,7 @@ def show_all_throughput_result(all_result: Dict[Tuple, "AllResult"]) -> None:
             + f"Result State: {v.test_result_state} "
             + f"Iter.#: {v.iteration} "
             + (f"Tx Off Rate(Percent): {v.rate} " if v.is_common else "")
+            + (f"Tx Act. Rate(Percent): {v.actual_rate} " if not v.is_common else "")
             + f"Tx(Frames): {float(v.tx_frames)} "
             + f"Tx Rate(L1)(Bits): {float(v.tx_rate_l1)} "
             + f"Tx Rate(L2)(Bits): {float(v.tx_rate_l2)} "
@@ -79,6 +80,7 @@ def show_all_latency_result(all_result: Dict[Tuple, "AllResult"]) -> None:
             + f"Result State: {v.test_result_state} "
             + f"Iter.#: {v.iteration} "
             + f"Tx Off Rate(Percent): {v.rate} "
+            + (f"Tx Act. Rate(Percent): {v.actual_rate} " if not v.is_common else "")
             + f"Tx Rate(L1)(Bits): {float(v.tx_rate_l1)} "
             + f"Tx Rate(Fps): {float(v.tx_fps)} "
             + f"Tx(Frames): {float(v.tx_frames)} "
@@ -120,6 +122,7 @@ def show_all_frame_loss_result(all_result: Dict[Tuple, "AllResult"]) -> None:
             + f"Result State: {v.test_result_state} "
             + f"Iter.#: {v.iteration if v.iteration > 0 else 'avg'} "
             + f"Tx Off Rate(Percent): {v.rate} "
+            + (f"Tx Act. Rate(Percent): {v.actual_rate} " if not v.is_common else "")
             + f"Tx Rate(L1)(Bits): {float(v.tx_rate_l1)} "
             + f"Tx Rate(Fps): {float(v.tx_fps)} "
             + f"Tx(Frames): {float(v.tx_frames)} "
@@ -167,6 +170,7 @@ def show_all_back_to_back_result(all_result: Dict[Tuple, "AllResult"]) -> None:
             + f"Result State: {v.test_result_state} "
             + f"Iter.#: {v.iteration} "
             + f"Tx Off Rate(Percent): {v.rate} "
+            + (f"Tx Act. Rate(Percent): {v.actual_rate} " if not v.is_common else "")
             + f"Tx(Frames): {float(v.tx_frames)} "
             + f"Rx(Frames): {float(v.rx_frames)} "
             + f"Tx Burst(Frames): {float(v.burst_frames)} "
