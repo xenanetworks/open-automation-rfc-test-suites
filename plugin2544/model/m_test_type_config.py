@@ -1,4 +1,4 @@
-from decimal import Decimal, getcontext
+from decimal import Decimal
 from typing import List, Union
 from pydantic import (
     BaseModel,
@@ -11,7 +11,7 @@ from pydantic import (
 from ..utils.constants import (
     DurationType,
     DurationTimeUnit,
-    DurationFrameUnit,
+    # DurationFrameUnit,
     SearchType,
     RateResultScopeType,
     TestType,
@@ -47,8 +47,7 @@ class CommonOptions(BaseModel):
 
     @validator("actual_duration", pre=True, always=True)
     def set_actual_duration(cls, v, values):
-        return values['duration'] * values['duration_time_unit'].scale 
-
+        return values["duration"] * values["duration_time_unit"].scale
 
     # @validator("actual_frames", pre=True, always=True)
     # def set_actual_frames(cls, v, values):
@@ -198,10 +197,14 @@ class TestTypesConfiguration(BaseModel):
     back_to_back_test: BackToBackTest
 
     # Computed Properties
-    available_test: List = []
+    available_test: List[
+        Union[ThroughputTest, LatencyTest, FrameLossRateTest, BackToBackTest]
+    ] = []
 
     @validator("available_test", pre=True, always=True)
-    def set_available_test(cls, v, values) -> List[Union[ThroughputTest, LatencyTest,FrameLossRateTest,BackToBackTest]]:
+    def set_available_test(
+        cls, v, values
+    ) -> List[Union[ThroughputTest, LatencyTest, FrameLossRateTest, BackToBackTest]]:
         v = []
         for test_type_config in values.values():
             if test_type_config.enabled:

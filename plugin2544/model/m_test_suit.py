@@ -14,7 +14,6 @@ from ..utils.constants import (
     TestSuiteType,
     RateResultScopeType,
     PortGroup,
-    TestTopology,
     TrafficDirection,
 )
 from ..utils.errors import ConfigError
@@ -35,7 +34,7 @@ class Model2544(BaseModel):  # Main Model
     with_same_gateway: bool = False
     has_l3: bool = False
 
-    @validator("ports_configuration")
+    @validator("ports_configuration", always=True)
     def set_ports_rx_tx_type(cls, v, values):
         if "test_configuration" in values:
             direction = values["test_configuration"].direction
@@ -56,7 +55,7 @@ class Model2544(BaseModel):  # Main Model
                         port.is_rx_port = False
         return v
 
-    @validator("ports_configuration")
+    @validator("ports_configuration", always=True)
     def set_ip_properties(cls, v, values):
         if "protocol_segments" in values:
             for _, port_config in v.items():
@@ -73,7 +72,7 @@ class Model2544(BaseModel):  # Main Model
                     raise ConfigError("You must assign an IP address to the port!")
         return v
 
-    @validator("ports_configuration")
+    @validator("ports_configuration", always=True)
     def check_port_count(cls, v, values):
         require_ports = 2
         if "test_configuration" in values:
@@ -86,7 +85,7 @@ class Model2544(BaseModel):  # Main Model
                 )
         return v
 
-    @validator("ports_configuration")
+    @validator("ports_configuration", always=True)
     def check_port_groups_and_peers(cls, v, values):
         if "test_configuration" in values:
             topology = values["test_configuration"].topology
@@ -108,7 +107,7 @@ class Model2544(BaseModel):  # Main Model
                         )
         return v
 
-    @validator("ports_configuration")
+    @validator("ports_configuration", always=True)
     def check_modifier_mode_and_segments(cls, v, values):
         if "test_configuration" in values:
             flow_creation_type = values["test_configuration"].flow_creation_type
@@ -121,8 +120,8 @@ class Model2544(BaseModel):  # Main Model
                     )
         return v
 
-    @validator("test_types_configuration")
-    def check_test_type_enable(cls, v):
+    @validator("test_types_configuration", always=True)
+    def check_test_type_enable(cls, v, values):
         if not any(
             {
                 v.throughput_test.enabled,
@@ -134,27 +133,30 @@ class Model2544(BaseModel):  # Main Model
             raise ConfigError("You have not enabled any test types.")
         return v
 
-    @validator("test_types_configuration")
+    @validator("test_types_configuration", always=True)
     def check_result_scope(cls, v, values):
-        if "test_configuration" in values:
-            if (
-                v.throughput_test.enabled
-                and v.throughput_test.rate_iteration_options.result_scope
-                == RateResultScopeType.PER_SOURCE_PORT
-                and not values["test_configuration"].flow_creation_type.is_stream_based
-            ):
-                raise ConfigError(
-                    "Cannot use per-port result for modifier-based flows."
-                )
+        if not "test_configuration" in values:
+            return v
+        if (
+            v.throughput_test.enabled
+            and v.throughput_test.rate_iteration_options.result_scope
+            == RateResultScopeType.PER_SOURCE_PORT
+            and not values["test_configuration"].flow_creation_type.is_stream_based
+        ):
+            raise ConfigError(
+                "Cannot use per-port result for modifier-based flows."
+            )
         return v
 
-    @validator("port_identities")
+
+
+    @validator("port_identities", always=True)
     def check_port_identities(cls, v):
         if not len(v):
             raise ConfigError("You need to connect to at least one chassis")
         return v
 
-    @validator("port_identities")
+    @validator("port_identities", always=True)
     def set_chassis_index(cls, v):
         chassis_ids = []
         for port_identity in v.values():
@@ -199,7 +201,7 @@ class Model2544(BaseModel):  # Main Model
         ):
             raise ConfigError("Inconsistent port peer definition!")
 
-    @validator("in_same_ipnetwork")
+    @validator("in_same_ipnetwork", always=True)
     def set_in_same_ipnetwork(cls, v, values):
         if "ports_configuration" in values:
             conf = values["ports_configuration"]
@@ -213,7 +215,7 @@ class Model2544(BaseModel):  # Main Model
             v = len(networks) == 1
         return v
 
-    @validator("with_same_gateway")
+    @validator("with_same_gateway", always=True)
     def set_with_same_gateway(cls, v, values):
         if "ports_configuration" in values:
             confs = values["ports_configuration"]
@@ -228,7 +230,7 @@ class Model2544(BaseModel):  # Main Model
             return any([conf.profile.protocol_version.is_l3 for conf in confs.values()])
         return False
 
-    @validator("ports_configuration")
+    @validator("ports_configuration", always=True)
     def check_port_group(cls, v, values):
         if "ports_configuration" in values and "test_configuration" in values:
             for k, p in values["ports_configuration"].items():
