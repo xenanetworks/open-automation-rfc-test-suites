@@ -1,3 +1,4 @@
+import asyncio
 from typing import List, Dict, Union, Tuple
 from ..utils.logger import logger
 from ..utils.constants import ARPSenarioType
@@ -66,10 +67,10 @@ async def set_arp_request(
                 )
 
                 await apply(
-                    # stream.packet.limit.set(-1),
+                    stream.packet.limit.set(-1),
                     stream.comment.set("Stream number 0"),
                     stream.rate.fraction.set(0),
-                    # stream.burst.burstiness.set(-1, 100),
+                    stream.burst.burstiness.set(-1, 100),
                     stream.burst.gap.set(0, 0),
                     stream.packet.header.protocol.set(segment_id_list),
                     stream.packet.header.data.set(packet_header),
@@ -77,13 +78,13 @@ async def set_arp_request(
                         LengthType.FIXED, 64, 1518
                     ),  # PS_PACKETLENGTH
                     stream.payload.content.set_incrementing(["0x00"]),
-                    # stream.tpld_id.set(-1),
+                    stream.tpld_id.set(-1),
                     stream.insert_packets_checksum.set_on(),
                     stream.gateway.ipv4.set("0.0.0.0"),
                     stream.gateway.ipv6.set("::"),
                     stream.enable.set_on(),
                 )
-
+                await asyncio.sleep(1)
                 result, *_ = await apply(stream.request.arp.get())
                 peer_mac_address = MacAddress(result.mac_address)
                 logger.debug(
