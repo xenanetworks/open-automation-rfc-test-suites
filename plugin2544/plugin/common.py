@@ -46,10 +46,6 @@ async def setup_macaddress(
         )
 
 
-
-    
-
-
 def is_ip_zero(address: Union["IPv4Address", "IPv6Address"]) -> bool:
     if isinstance(address, IPv4Address):
         return address != IPv4Address("0.0.0.0")
@@ -62,7 +58,6 @@ def is_same_ipnetwork(port_struct: "Structure", peer_struct: "Structure") -> boo
     if not port_properties or not peer_properties:
         raise ValueError("Please check IP properties values")
     return port_properties.network == peer_properties.network
-
 
 
 def get_pair_address(

@@ -6,10 +6,12 @@ from xoa_driver.enums import OnOff
 
 if TYPE_CHECKING:
     from .structure import Structure
-    from ..model import  TestConfiguration#, CommonOptions
+    from ..model import TestConfiguration  # , CommonOptions
+
     # from ..utils.constants import DurationType
     from xoa_driver.misc import Token
     from xoa_driver.testers import L23Tester
+
     # from xoa_driver.ports import GenericL23Port
 
 
@@ -50,11 +52,18 @@ async def set_tx_time_limit(
 #     return [port.tx_config.time_limit.set(tx_timelimit)]
 
 
+async def start_traffic_sync(tester: "L23Tester", module_port_list):
+    local_time = (await tester.time.get()).local_time
+    delay_seconds = 2
+    await apply(
+        tester.traffic_sync.set_on(local_time + delay_seconds, module_port_list)
+    )
+
+
 async def handle_port_traffic_sync_start(
     source_port: List["Structure"],
     traffic_status: bool,
 ) -> None:
-    tokens: List["Token"] = []
     mapping: Dict[str, List[int]] = {}
     testers_dict: Dict[str, "L23Tester"] = {}
     for port_struct in source_port:
@@ -67,10 +76,21 @@ async def handle_port_traffic_sync_start(
             port_struct.port.kind.port_id,
         ]
 
-    for chassis_id, module_port_list in mapping.items():
+    if len(mapping) == 1:
+        # same tester
+        chassis_id = list(mapping.keys())[0]
         tester = testers_dict[chassis_id]
-        tokens.append(tester.traffic.set(OnOff(traffic_status), module_port_list))
-    await apply(*tokens)
+        await apply(tester.traffic.set(OnOff(traffic_status), mapping[chassis_id]))
+    else:
+        # multi tester need to use c_trafficsync cmd
+        await asyncio.gather(
+            *[
+                start_traffic_sync(
+                    testers_dict[chassis_id], module_port_list
+                )
+                for chassis_id, module_port_list in mapping.items()
+            ]
+        )
 
 
 # async def set_traffic_timelimit(
