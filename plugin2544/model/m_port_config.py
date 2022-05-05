@@ -1,3 +1,4 @@
+from ipaddress import IPv4Network, IPv6Network, ip_network
 from typing import Union
 
 from pydantic import validator
@@ -34,6 +35,10 @@ class IPV6AddressProperties(BaseModel):
     remote_loop_address: IPv6Address = IPv6Address("::")
     ip_version: IPVersion = IPVersion.IPV6
 
+    @property
+    def network(self):
+        return IPv6Network(f"{self.address}/{self.routing_prefix}", strict=False)
+
     @staticmethod
     def is_ip_zero(ip_address: IPv6Address) -> bool:
         return ip_address == IPv6Address("::") or (not ip_address)
@@ -55,6 +60,10 @@ class IPV4AddressProperties(BaseModel):
     gateway: IPv4Address = IPv4Address("0.0.0.0")
     remote_loop_address: IPv4Address = IPv4Address("0.0.0.0")
     ip_version: IPVersion = IPVersion.IPV4
+
+    @property
+    def network(self):
+        return IPv4Network(f"{self.address}/{self.routing_prefix}", strict=False)
 
     @staticmethod
     def is_ip_zero(ip_address: IPv4Address) -> bool:

@@ -1,3 +1,4 @@
+from ipaddress import IPv4Network, IPv6Network
 import re
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
@@ -55,21 +56,13 @@ def is_ip_zero(address: Union["IPv4Address", "IPv6Address"]) -> bool:
     return address != IPv6Address("::")
 
 
-def is_port_on_same_subnet(port_struct: "Structure", peer_struct: "Structure") -> bool:
+def is_same_ipnetwork(port_struct: "Structure", peer_struct: "Structure") -> bool:
     port_properties = port_struct.port_conf.ip_properties
     peer_properties = peer_struct.port_conf.ip_properties
     if not port_properties or not peer_properties:
         raise ValueError("Please check IP properties values")
-    return port_properties.address.network(
-        port_properties.routing_prefix
-    ) == peer_properties.address.network(port_properties.routing_prefix)
+    return port_properties.network == peer_properties.network
 
-
-def is_same_ipnetwork(
-    source_ip: Union["IPv4Address", "IPv6Address"],
-    destination_ip: Union["IPv4Address", "IPv6Address"],
-) -> bool:
-    return source_ip.network == destination_ip.network
 
 
 def get_pair_address(
@@ -89,7 +82,7 @@ def get_pair_address(
     peer_conf = peer_struct.port_conf
     if use_gateway_mac_as_dmac and port_conf.profile.protocol_version.is_l3:
         if (
-            not is_same_ipnetwork(ip_properties.address, peer_ip_properties.address)
+            not is_same_ipnetwork(port_struct, peer_struct)
             and not ip_properties.gateway == peer_ip_properties.gateway
         ):
             destination_ip = ip_properties.gateway
