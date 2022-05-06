@@ -80,7 +80,7 @@ async def collect_latency_live_statistics(
     result_handler: "ResultHandler",
     common_params: "TestCommonParam",
     state_checker: "StateChecker",
-):
+) -> None:
     start_time = time.time()
     while True:
         await get_latency_result(
@@ -158,7 +158,6 @@ async def run_latency_test(
         }
 
         await set_traffic_status(
-            # source_port_structs, test_conf, latency_conf.common_options, False, False
             source_port_structs,
             test_conf,
             False,
@@ -168,7 +167,6 @@ async def run_latency_test(
             stream_lists,
             has_l3,
             test_conf,
-            # latency_conf.common_options,
             current_packet_size,
             state_checker,
         )
@@ -181,24 +179,20 @@ async def run_latency_test(
             stream_lists,
             source_port_structs,
             test_conf,
-            latency_conf.common_options,
             current_packet_size,
         )
         await setup_source_port_rates(
             source_port_structs,
             stream_lists,
             test_conf.flow_creation_type,
-            # latency_conf.common_options,
             rate_percent_dic,
             current_packet_size,
-            # False,
         )
         await set_tx_time_limit(
             source_port_structs, latency_conf.common_options.actual_duration * 1_000_000
         )
         await clear_port_stats(control_ports)
         await set_traffic_status(
-            # source_port_structs, test_conf, latency_conf.common_options, True, False
             source_port_structs,
             test_conf,
             True,

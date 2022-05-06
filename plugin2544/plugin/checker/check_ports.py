@@ -1,18 +1,15 @@
 import asyncio
 from typing import TYPE_CHECKING, List
 from ...utils.constants import FECModeStr
-
-
 from ...utils.errors import ConfigError
-
 from xoa_driver.enums import ProtocolOption
 
 if TYPE_CHECKING:
     from xoa_driver.ports import GenericL23Port
-    from valhalla_core.test_suit_plugin.plugins.plugin2544.plugin.structure import (
+    from ..structure import (
         Structure,
     )
-    from valhalla_core.test_suit_plugin.plugins.plugin2544.model import (
+    from ...model import (
         ProtocolSegmentProfileConfig,
         PortConfiguration,
     )
@@ -58,9 +55,13 @@ def check_can_fec(can_fec: int, fec_mode: FECModeStr) -> None:
         if is_mandatory:
             raise ConfigError(f"port is mandatory to set FECMODE")
     elif cap_mode == "100" and fec_mode != FECModeStr.FC_FEC:
-        raise ConfigError(f"port support FC_FEC Mode{ 'and OFF Mode' if not is_mandatory else ''}")
+        raise ConfigError(
+            f"port support FC_FEC Mode{ 'and OFF Mode' if not is_mandatory else ''}"
+        )
     elif cap_mode in ["010", "001"] and fec_mode != FECModeStr.ON:
-        raise ConfigError(f"port support RS_FEC Mode { 'and OFF Mode' if not is_mandatory else ''}")
+        raise ConfigError(
+            f"port support RS_FEC Mode { 'and OFF Mode' if not is_mandatory else ''}"
+        )
 
 
 async def check_custom_port_config(
@@ -83,7 +84,7 @@ async def check_custom_port_config(
         raise ConfigError(
             f"Custom interframe gap({port_conf.inter_frame_gap}) should between {cap.min_interframe_gap} and {cap.max_interframe_gap}"
         )
-    # check_can_fec(port.info.capabilities.can_fec, port_conf.fec_mode)
+    check_can_fec(port.info.capabilities.can_fec, port_conf.fec_mode)
     check_port_config_profile(port, port_conf.profile)
 
 

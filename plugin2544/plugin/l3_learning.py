@@ -18,9 +18,7 @@ from ..utils.constants import (
     SegmentType,
     TestState,
 )
-# from ..model import (
-#     CommonOptions,
-# )
+
 from .common import get_dest_port_structs, get_source_port_structs
 from .setup_source_port_rates import setup_source_port_rates
 from .statistics import set_traffic_status, set_tx_time_limit
@@ -373,7 +371,6 @@ async def add_L3_learning_preamble_steps(
     stream_lists: List["StreamInfo"],
     has_l3: bool,
     test_conf: "TestConfiguration",
-    # common_option: "CommonOptions",
     current_packet_size: NonNegativeDecimal,
     state_checker: "StateChecker",
 ) -> Optional["AddressRefreshHandler"]:  # AddL3LearningPreambleSteps

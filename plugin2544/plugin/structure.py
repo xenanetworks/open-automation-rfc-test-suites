@@ -39,7 +39,6 @@ class AddressCollection:
     dest_ipv4_address: IPv4Address = IPv4Address("0.0.0.0")
     src_ipv6_address: IPv6Address = IPv6Address("::")
     dest_ipv6_address: IPv6Address = IPv6Address("::")
-    # force_address: bool
 
     def change_dmac_address(self, mac_address: "MacAddress") -> None:
         self.dmac_address = mac_address

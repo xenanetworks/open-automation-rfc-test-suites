@@ -7,10 +7,10 @@ from .check_test_config import check_test_config
 
 if TYPE_CHECKING:
     from xoa_driver import testers
-    from valhalla_core.test_suit_plugin.plugins.plugin2544.plugin.structure import (
+    from ..structure import (
         Structure,
     )
-    from valhalla_core.test_suit_plugin.plugins.plugin2544.model import (
+    from ...model import (
         Model2544,
     )
 

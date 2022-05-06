@@ -122,7 +122,7 @@ async def check_needed_packet_length(
     port_struct: "Structure",
     min_packet_size: Union[NonNegativeDecimal, int],
     use_micro_tpld_on_demand,
-):
+) -> None:
     need_packet_length = get_needed_packet_length(port_struct, use_micro_tpld_on_demand)
     if min_packet_size < need_packet_length:
         raise ConfigError(
@@ -130,7 +130,7 @@ async def check_needed_packet_length(
         )
 
 
-async def check_payload_pattern(port: "GenericL23Port", payload_pattern: str):
+async def check_payload_pattern(port: "GenericL23Port", payload_pattern: str) -> None:
     if port.info.capabilities.max_pattern_length < len(payload_pattern) // 2:
         raise ConfigError(
             f"Custom payload pattern length({len(payload_pattern)}) should smaller than {port.info.capabilities.max_pattern_length}"
@@ -146,7 +146,7 @@ async def check_micro_tpld(port: "GenericL23Port", use_mocro_tpld: bool) -> None
 
 async def check_port_test_config(
     port_struct: "Structure", test_conf: "TestConfiguration"
-):
+) -> None:
     is_stream_based = test_conf.flow_creation_type.is_stream_based
     if test_conf.frame_sizes.packet_size_type.is_mix:
         packet_size_list = test_conf.frame_sizes.mixed_packet_length
@@ -173,7 +173,7 @@ async def check_port_test_config(
 
 async def check_test_config(
     control_ports: List["Structure"], test_conf: "TestConfiguration"
-):
+) -> None:
     is_stream_based = test_conf.flow_creation_type.is_stream_based
     scope = test_conf.tid_allocation_scope
     await asyncio.gather(

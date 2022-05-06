@@ -259,7 +259,6 @@ async def run_throughput_test(
         stream_lists,
         has_l3,
         test_conf,
-        # throughput_conf.common_options,
         current_packet_size,
         state_checker,
     )
@@ -272,7 +271,6 @@ async def run_throughput_test(
         stream_lists,
         source_port_structs,
         test_conf,
-        throughput_conf.common_options,
         current_packet_size,
     )
     await throughput_binary_search(
@@ -317,10 +315,8 @@ async def throughput_binary_search(
             source_port_structs,
             stream_lists,
             test_conf.flow_creation_type,
-            # throughput_conf.common_options,
             rate_percent_dic,
             current_packet_size,
-            # False,
         )
         await set_tx_time_limit(
             source_port_structs,
@@ -328,7 +324,6 @@ async def throughput_binary_search(
         )
         await clear_port_stats(control_ports)
         await set_traffic_status(
-            # source_port_structs, test_conf, throughput_conf.common_options, True, False
             source_port_structs,
             test_conf,
             True,

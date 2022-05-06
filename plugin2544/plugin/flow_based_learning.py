@@ -10,7 +10,7 @@ from xoa_driver.utils import apply
 
 
 if TYPE_CHECKING:
-    from ..model import TestConfiguration, CommonOptions
+    from ..model import TestConfiguration
     from .structure import Structure, StreamInfo
 
 
@@ -29,7 +29,6 @@ async def add_flow_based_learning_preamble_steps(
     stream_lists: List["StreamInfo"],
     source_ports: List["Structure"],
     test_conf: "TestConfiguration",
-    common_option: "CommonOptions",
     current_packet_size: NonNegativeDecimal,
 ) -> None:  # AddFlowBasedLearningPreambleSteps
     if not test_conf.use_flow_based_learning_preamble:
@@ -45,18 +44,14 @@ async def add_flow_based_learning_preamble_steps(
         source_ports,
         stream_lists,
         test_conf.flow_creation_type,
-        # common_option,
         rate_percent_dic,
         current_packet_size,
-        # True,
     )
     await _setup_flow_based_learning_frame_count(
         source_ports, test_conf.flow_based_learning_frame_count
     )
 
-    # await set_traffic_status(source_ports, test_conf, common_option, True)
     await set_tx_time_limit(source_ports, Decimal(test_conf.learning_duration_second * 1000))
     await set_traffic_status(source_ports, test_conf, True)
     await asyncio.sleep(test_conf.delay_after_flow_based_learning_ms / 1000)
-    # await set_traffic_status(source_ports, test_conf, common_option, False)
     await set_traffic_status(source_ports, test_conf, False)

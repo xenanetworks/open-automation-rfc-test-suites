@@ -97,15 +97,14 @@ class StateChecker:
 
 def should_quit(
     state_checker: "StateChecker", start_time: float, actual_duration: Decimal
-):
+) -> bool:
     test_finished = not state_checker.test_running()
     elapsed = time() - start_time
     actual_duration_elapsed = elapsed >= actual_duration + 5
     los = state_checker.los()
     if los:
         logger.error("Test is stopped due to the loss of signal of ports.")
-    should_quit = test_finished or los or actual_duration_elapsed
-    return should_quit
+    return test_finished or los or actual_duration_elapsed
 
 
 async def generate_port_params(
@@ -174,7 +173,7 @@ def get_port_rate(
 
 def check_if_frame_loss_success(
     frame_loss_conf: "FrameLossRateTest", result: "AllResult"
-):
+) -> None:
     result.set_result_state(True)
     if frame_loss_conf.use_pass_fail_criteria:
         if frame_loss_conf.acceptable_loss_type == AcceptableLossType.PERCENT:
@@ -244,20 +243,6 @@ def show_result(result: "ResultGroup", test_type: "TestType") -> None:
         show_all_back_to_back_result(result.all)
         show_port_back_to_back_result(result.port)
 
-
-# def show_all_result(test_case_result):
-#     if test_type == TestType.THROUGHPUT:
-#         show_all_throughput_result(result.all)
-#         show_port_throughput_result(result.port)
-#     elif test_type == TestType.LATENCY_JITTER:
-#         show_all_latency_result(result.all)
-#         show_port_latency_result(result.port)
-#     elif test_type == TestType.FRAME_LOSS_RATE:
-#         show_all_frame_loss_result(result.all)
-#         show_port_frame_loss_result(result.port)
-#     elif test_type == TestType.BACK_TO_BACK:
-#         show_all_back_to_back_result(result.all)
-#         show_port_back_to_back_result(result.port)
 
 async def aggregate_test_results(
     common_params: "TestCommonParam",
@@ -366,97 +351,6 @@ async def aggregate_test_results(
             current_port_result.add_rr(len(tokens))
             tokens.append(pr_error)
 
-    # for stream_info in stream_lists:
-    #     port_index = stream_info.port_struct.properties.identity
-    #     stream_id = stream_info.stream_id
-    #     tx_port = stream_info.port_struct.port
-    #     rx_port_list = stream_info.rx_ports
-    #     for rx_port_struct in rx_port_list:
-    #         rx_port = rx_port_struct.port
-    #         peer_index = rx_port_struct.properties.identity
-
-    #         tpld = rx_port.statistics.rx.access_tpld(tpld_id=stream_info.tpldid)
-    #         if (port_index, peer_index, stream_id) in common_params.stream_params:
-    #             burst_frames = common_params.stream_params[
-    #                 (port_index, peer_index, stream_id)
-    #             ].burst_frames
-    #         else:
-    #             burst_frames = Decimal("0")
-    #         current_stream_result = StreamResult(
-    #             port_index=port_index,
-    #             peer_index=peer_index,
-    #             stream_id=stream_id,
-    #             is_live=is_live,
-    #             current_packet_size=current_packet_size,
-    #             test_result_state=test_result_state,
-    #             rate=common_params.port_params[(port_index,)].rate,
-    #             iteration=iteration,
-    #             burst_frames=burst_frames,
-    #         )
-    #         stream_result[(port_index, peer_index, stream_id)] = current_stream_result
-
-    #         if (port_index,) not in ports_result:
-    #             current_port_result = PortResult(
-    #                 port_index=port_index,
-    #                 is_live=is_live,
-    #                 current_packet_size=current_packet_size,
-    #                 iteration=iteration,
-    #                 test_result_state=test_result_state,
-    #                 rate=common_params.port_params[(port_index,)].rate,
-    #                 burst_frames=burst_frames,
-    #             )
-    #             ports_result[(port_index,)] = current_port_result
-    #         else:
-    #             current_port_result = ports_result[(port_index,)]
-    #             current_port_result.add_burst_frames(burst_frames)
-    #         if (peer_index,) not in ports_result:
-    #             current_peer_result = PortResult(
-    #                 port_index=peer_index,
-    #                 is_live=is_live,
-    #                 current_packet_size=current_packet_size,
-    #                 iteration=iteration,
-    #                 test_result_state=test_result_state,
-    #                 rate=common_params.port_params[(peer_index,)].rate,
-    #             )
-    #             ports_result[(peer_index,)] = current_peer_result
-    #         else:
-    #             current_peer_result = ports_result[(peer_index,)]
-    #         pt_stream_index = len(tokens)
-    #         pt_stream = tx_port.statistics.tx.obtain_from_stream(stream_id).get()
-    #         current_stream_result.add_tx(len(tokens))
-    #         current_port_result.add_tx(len(tokens))
-    #         tokens.append(pt_stream)
-
-    #         pr_tpldtraffic_index = len(tokens)
-    #         pr_tpldtraffic = tpld.traffic.get()
-    #         current_stream_result.add_rx(len(tokens))
-    #         current_peer_result.add_rx(len(tokens))
-    #         tokens.append(pr_tpldtraffic)
-
-    #         pr_tpldlatency = tpld.latency.get()
-    #         current_stream_result.add_la(len(tokens))
-    #         current_peer_result.add_la(len(tokens))
-    #         tokens.append(pr_tpldlatency)
-
-    #         pr_tpldjitter = tpld.jitter.get()
-    #         current_stream_result.add_ji(len(tokens))
-    #         current_peer_result.add_ji(len(tokens))
-    #         tokens.append(pr_tpldjitter)
-
-    #         pr_extra = rx_port.statistics.rx.extra.get()
-    #         current_stream_result.add_ex(len(tokens))
-    #         current_peer_result.add_ex(len(tokens))
-    #         tokens.append(pr_extra)
-
-    #         pr_error = tpld.errors.get()
-    #         current_stream_result.add_rr(len(tokens))
-
-    #         # tx port should count for rr of its rx port
-    #         current_port_result.add_rr(pt_stream_index)
-    #         current_port_result.add_rr(pr_tpldtraffic_index)
-    #         current_port_result.add_rr(len(tokens))
-
-    #         tokens.append(pr_error)
 
     replies = await apply(*tokens)
     for sr in stream_result.values():
@@ -475,7 +369,7 @@ async def aggregate_test_results(
     return ResultGroup(stream_result, ports_result, all_result)
 
 
-def set_test_state(result_group: ResultGroup, result_state: bool):
+def set_test_state(result_group: ResultGroup, result_state: bool) -> None:
     if result_group:
         for i in result_group.all, result_group.port, result_group.stream:
             for v in i.values():

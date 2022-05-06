@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Iterator, List, Tuple
 from ..utils.field import NonNegativeDecimal
 from .statistics import set_traffic_status
 from .stream_base_settings import setup_packet_size
@@ -30,7 +30,6 @@ async def test_run(
 ) -> None:
     result_handler = test_case_result.get_result_handler(type_conf.test_type)
     await set_traffic_status(
-        # control_ports, test_conf, type_conf.common_options, False, False
         control_ports,
         test_conf,
         False,
@@ -95,7 +94,7 @@ def gen_loop(
     type_conf: "TypeConf",
     test_conf: "TestConfiguration",
     test_case_result: "TestCaseResult",
-):
+) -> Iterator[Tuple[int, NonNegativeDecimal]]:
     max_iteration = type_conf.common_options.iterations
     packet_size_list = test_conf.frame_sizes.packet_size_list
     if test_conf.outer_loop_mode.is_iteration:
@@ -119,7 +118,7 @@ async def setup_for_outer_loop(
     test_conf: "TestConfiguration",
     has_l3: bool,
     test_case_result: "TestCaseResult",
-):
+) -> None:
     for iteration, current_packet_size in gen_loop(
         type_conf, test_conf, test_case_result
     ):
@@ -133,81 +132,3 @@ async def setup_for_outer_loop(
             iteration,
             test_case_result,
         )
-
-
-# async def _setup_for_outer_loop_iterations(
-#     stream_lists: List["StreamInfo"],
-#     control_ports: List["Structure"],
-#     type_conf: "TypeConf",
-#     test_conf: "TestConfiguration",
-#     has_l3: bool,
-#     test_case_result: "TestCaseResult",
-# ) -> None:  # SetupForOuterLoopPacketSizes
-#     max_iteration = type_conf.common_options.iterations
-#     for iteration in range(1, max_iteration + 1):
-#         for current_packet_size in test_conf.frame_sizes.packet_size_list:
-#             await test_run(
-#                 stream_lists,
-#                 control_ports,
-#                 type_conf,
-#                 test_conf,
-#                 has_l3,
-#                 current_packet_size,
-#                 iteration,
-#                 test_case_result,
-#             )
-#     result_handler = test_case_result.get_result_handler(type_conf.test_type)
-#     avg_result(result_handler, max_iteration, type_conf)
-
-
-# async def _setup_for_outer_loop_packet_sizes(
-#     stream_lists: List["StreamInfo"],
-#     control_ports: List["Structure"],
-#     type_conf: "TypeConf",
-#     test_conf: "TestConfiguration",
-#     has_l3: bool,
-#     test_case_result: "TestCaseResult",
-# ) -> None:  # SetupForOuterLoopIterations
-#     max_iteration = type_conf.common_options.iterations
-#     for current_packet_size in test_conf.frame_sizes.packet_size_list:
-#         for iteration in range(1, max_iteration + 1):
-#             await test_run(
-#                 stream_lists,
-#                 control_ports,
-#                 type_conf,
-#                 test_conf,
-#                 has_l3,
-#                 current_packet_size,
-#                 iteration,
-#                 test_case_result,
-#             )
-#         result_handler = test_case_result.get_result_handler(type_conf.test_type)
-#         avg_result(result_handler, max_iteration, type_conf, current_packet_size)
-
-
-# async def setup_for_outer_loop(
-#     stream_lists: List["StreamInfo"],
-#     control_ports: List["Structure"],
-#     type_conf: "TypeConf",
-#     test_conf: "TestConfiguration",
-#     has_l3: bool,
-#     test_case_result: "TestCaseResult",
-# ) -> None:
-#     if test_conf.outer_loop_mode.is_iteration:
-#         await _setup_for_outer_loop_iterations(
-#             stream_lists,
-#             control_ports,
-#             type_conf,
-#             test_conf,
-#             has_l3,
-#             test_case_result,
-#         )
-#     else:
-#         await _setup_for_outer_loop_packet_sizes(
-#             stream_lists,
-#             control_ports,
-#             type_conf,
-#             test_conf,
-#             has_l3,
-#             test_case_result,
-#         )

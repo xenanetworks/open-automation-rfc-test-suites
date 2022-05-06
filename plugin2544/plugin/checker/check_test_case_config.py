@@ -1,16 +1,14 @@
 import asyncio
 from typing import TYPE_CHECKING, List
-
-
 from ...utils.errors import ConfigError
 
 if TYPE_CHECKING:
     from xoa_driver.ports import GenericL23Port
-    from valhalla_core.test_suit_plugin.plugins.plugin2544.plugin.structure import (
+    from ..structure import (
         Structure,
     )
 
-    from valhalla_core.test_suit_plugin.plugins.plugin2544.model import (
+    from ...model import (
         CommonOptions,
         TestTypesConfiguration,
     )
@@ -28,7 +26,7 @@ def check_common_option(port: "GenericL23Port", common_option: "CommonOptions") 
 
 async def check_port_test_type(
     port: "GenericL23Port", type_conf: "TestTypesConfiguration"
-):
+) -> None:
     for test_case in type_conf.available_test:
         check_common_option(port, test_case.common_options)
 

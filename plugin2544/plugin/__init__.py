@@ -57,7 +57,7 @@ class TestSuit2544(PluginAbstract):
         self.stream_lists: List["StreamInfo"] = []
         self.test_case_result = TestCaseResult()
 
-    async def __setup_macaddress(self):
+    async def __setup_macaddress(self) -> None:
         await asyncio.gather(
             *[
                 setup_macaddress(
@@ -69,9 +69,8 @@ class TestSuit2544(PluginAbstract):
             ]
         )
 
-    async def __configure_resource(self):
+    async def __configure_resource(self) -> None:
         await stop_traffic(self.control_ports)
-
         await asyncio.gather(
             *[
                 base_setting(self.test_conf, port_struct)
@@ -96,7 +95,7 @@ class TestSuit2544(PluginAbstract):
         setup_packet_header(self.stream_lists)
         await create_source_stream(self.stream_lists, self.test_conf)
 
-    async def __init_resource(self):
+    async def __init_resource(self) -> None:
         await connect_chasses_main(self.testers_saver, True)
         self.control_ports = collect_control_ports(
             self.testers_saver, self.data.ports_configuration
@@ -106,7 +105,7 @@ class TestSuit2544(PluginAbstract):
             self.test_conf.topology, self.control_ports
         )  # setup test_port_index
 
-    async def __prepare_data(self):
+    async def __prepare_data(self) -> None:
         await check_config(
             self.data, self.testers_saver.get_all_testers(), self.control_ports
         )

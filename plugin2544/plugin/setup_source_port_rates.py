@@ -5,26 +5,19 @@ from decimal import Decimal
 from ..utils.field import NonNegativeDecimal
 from .test_operations import get_port_rate, get_use_port_speed
 from .test_result_structure import IterationEntry
-# from ..utils.constants import MAX_PACKET_LIMIT_VALUE
 from xoa_driver.utils import apply
 
 if TYPE_CHECKING:
     from .structure import Structure, StreamInfo
-    from ..model import CommonOptions
     from ..utils.constants import FlowCreationType
-
-    from xoa_driver.misc import GenuineStream
-    from xoa_driver.misc import Token
 
 
 async def setup_source_port_rates(
     source_port_structs: List["Structure"],
     stream_lists: List["StreamInfo"],
     flow_creation_type: "FlowCreationType",
-    # common_option: "CommonOptions",
     rate_percent_dic: Dict[str, IterationEntry],
     current_packet_size: NonNegativeDecimal,
-    # is_learning: bool,
 ) -> None:  # SetupSourcePortRatesForLearning
     for port_struct in source_port_structs:
         src_port_speed = await get_use_port_speed(port_struct)
@@ -38,8 +31,6 @@ async def setup_source_port_rates(
                 src_port_speed,
                 rate_percent_dic,
                 current_packet_size,
-                # common_option,
-                # is_learning,
             )
         else:
             await _setup_source_port_rate_modifier_mode(
@@ -47,7 +38,6 @@ async def setup_source_port_rates(
                 src_port_speed,
                 rate_percent_dic,
                 current_packet_size,
-                # common_option,
             )
 
 
@@ -58,8 +48,6 @@ async def _setup_source_port_rate_stream_mode(
     src_port_speed: Decimal,
     rate_percent_dic: Dict[str, IterationEntry],
     current_packet_size: NonNegativeDecimal,
-    # common_options: "CommonOptions",
-    # is_learning: bool,
 ) -> None:  # SetupSourcePortRateStreamMode
     tokens = []
     inter_frame_gap = port_struct.port_conf.inter_frame_gap

@@ -88,7 +88,6 @@ async def collect_frame_loss_final_statistics(
 
 async def collect_frame_loss_statistics(
     stream_lists: List["StreamInfo"],
-    control_ports: List["Structure"],
     test_conf: "TestConfiguration",
     frame_loss_conf: "FrameLossRateTest",
     current_packet_size: NonNegativeDecimal,
@@ -96,7 +95,7 @@ async def collect_frame_loss_statistics(
     rate_percent_dic: Dict[str, BoutEntry],
     result_handler: ResultHandler,
     state_checker: "StateChecker",
-):
+) -> None:
     average_packet_size = (
         sum(test_conf.frame_sizes.packet_size_list)
         / len(test_conf.frame_sizes.packet_size_list)
@@ -132,7 +131,7 @@ async def set_gap_monitor(
     use_gap_monitor: bool,
     gap_monitor_start_microsec: NonNegativeInt,
     gap_monitor_stop_frames: NonNegativeInt,
-):
+) -> None:
     if use_gap_monitor:
         tokens = []
         for port_struct in source_port_structs:
@@ -153,7 +152,7 @@ async def run_frame_loss_test(
     current_packet_size: NonNegativeDecimal,
     iteration: int,
     result_handler: ResultHandler,
-):
+) -> None:
     if not frame_loss_conf.enabled:
         return
     state_checker = await StateChecker(control_ports, test_conf.should_stop_on_los)
@@ -167,7 +166,6 @@ async def run_frame_loss_test(
             for port_struct in control_ports
         }
         await set_traffic_status(
-            # source_port_structs, test_conf, frame_loss_conf.common_options, False, False
             source_port_structs,
             test_conf,
             False,
@@ -177,7 +175,6 @@ async def run_frame_loss_test(
             stream_lists,
             has_l3,
             test_conf,
-            # frame_loss_conf.common_options,
             current_packet_size,
             state_checker,
         )
@@ -190,17 +187,14 @@ async def run_frame_loss_test(
             stream_lists,
             source_port_structs,
             test_conf,
-            frame_loss_conf.common_options,
             current_packet_size,
         )
         await setup_source_port_rates(
             source_port_structs,
             stream_lists,
             test_conf.flow_creation_type,
-            # frame_loss_conf.common_options,
             rate_percent_dic,
             current_packet_size,
-            # False,
         )
         await set_tx_time_limit(
             source_port_structs,
@@ -208,7 +202,6 @@ async def run_frame_loss_test(
         )
         await clear_port_stats(control_ports)
         await set_traffic_status(
-            # source_port_structs, test_conf, frame_loss_conf.common_options, True, False
             source_port_structs,
             test_conf,
             True,
@@ -216,7 +209,6 @@ async def run_frame_loss_test(
         await schedule_arp_refresh(state_checker, address_refresh_handler)
         await collect_frame_loss_statistics(
             stream_lists,
-            control_ports,
             test_conf,
             frame_loss_conf,
             current_packet_size,

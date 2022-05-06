@@ -1,13 +1,11 @@
 
 import asyncio
 from typing import List, TYPE_CHECKING
-
-
 from ...utils.errors import ConfigError
 from xoa_driver import testers
 
 if TYPE_CHECKING:
-    from valhalla_core.test_suit_plugin.plugins.plugin2544.model import TestConfiguration
+    from ...model import TestConfiguration
 
 async def check_tester_sync_start(
     tester: "testers.L23Tester", use_sync_start: bool
@@ -21,7 +19,7 @@ async def check_tester_sync_start(
 
 async def check_testers(
     testers: List["testers.L23Tester"], test_conf: "TestConfiguration"
-):
+) -> None:
     await asyncio.gather(
         *[
             check_tester_sync_start(tester, test_conf.use_port_sync_start)

@@ -67,9 +67,7 @@ async def get_initial_boundaries(
     for port_struct in source_port_structs:
         rate = get_port_rate(port_struct, rate_percent_dic)
         port_speed = await get_use_port_speed(port_struct)
-        # if back_to_back_conf.common_options.duration_type.is_time_duration:
         max_value = (
-            # Decimal(str(back_to_back_conf.common_options.get_set_actual_duration()))
             Decimal(str(back_to_back_conf.common_options.actual_duration))
             * Decimal(rate)
             / Decimal("100")
@@ -117,7 +115,6 @@ async def run_back_to_back_test(
         stream_lists,
         has_l3,
         test_conf,
-        # back_to_back_conf.common_options,
         current_packet_size,
         state_checker,
     )
@@ -130,7 +127,6 @@ async def run_back_to_back_test(
         stream_lists,
         source_port_structs,
         test_conf,
-        back_to_back_conf.common_options,
         current_packet_size,
     )
 
@@ -270,8 +266,6 @@ async def back_to_back_binary_search(
         await set_traffic_status(
             source_port_structs,
             test_conf,
-            # back_to_back_conf.common_options,
-            # False,
             False,
         )
         should_continue, test_passed = check_boundaries(
@@ -300,9 +294,7 @@ async def back_to_back_binary_search(
         await set_traffic_status(
             source_port_structs,
             test_conf,
-            # back_to_back_conf.common_options,
             True,
-            # False,
         )
         await schedule_arp_refresh(state_checker, address_refresh_handler)
         result_group = await collect_back_to_back_statistics(
