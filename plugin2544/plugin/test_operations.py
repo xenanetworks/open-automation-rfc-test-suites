@@ -85,9 +85,7 @@ class StateChecker:
         logger.warning(f"Change traffic status for {before} to {after}")
 
     def test_running(self) -> bool:
-        running = any(self.started_dic.values())
-
-        return running
+        return any(self.started_dic.values())
 
     def los(self) -> bool:
         if self.should_stop_on_los:

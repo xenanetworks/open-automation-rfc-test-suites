@@ -11,7 +11,12 @@ from ..utils.constants import TestResultState, TestType
 from .common import get_source_port_structs
 from .mac_learning import add_L2_trial_learning_steps
 from .flow_based_learning import add_flow_based_learning_preamble_steps
-from .statistics import clear_port_stats, set_tx_time_limit, set_traffic_status
+from .statistics import (
+    clear_port_stats,
+    set_tx_time_limit,
+    set_traffic_status,
+    stop_traffic,
+)
 from .l3_learning import (
     AddressRefreshHandler,
     schedule_arp_refresh,
@@ -128,6 +133,7 @@ async def run_back_to_back_test(
         source_port_structs,
         test_conf,
         current_packet_size,
+        state_checker,
     )
 
     await back_to_back_sweep(
@@ -263,11 +269,7 @@ async def back_to_back_binary_search(
     is_stream_based = test_conf.flow_creation_type.is_stream_based
 
     while True:
-        await set_traffic_status(
-            source_port_structs,
-            test_conf,
-            False,
-        )
+        await stop_traffic(source_port_structs)
         should_continue, test_passed = check_boundaries(
             result_group, boundaries, back_to_back_conf
         )

@@ -144,4 +144,5 @@ class TestSuit2544(PluginAbstract):
             await self.__post_test()
         except Exception as e:
             logger.exception(e)
+        finally:
             await self.testers_saver.free()

@@ -3,7 +3,7 @@ import time
 from decimal import Decimal
 from typing import TYPE_CHECKING, List, Dict, Optional, Tuple
 from ..utils.field import NonNegativeDecimal
-
+from ..utils.logger import logger
 from ..model import rate_sweep_range
 from typing import TYPE_CHECKING, List, Dict
 
@@ -13,7 +13,12 @@ from .common import get_source_port_structs
 from .mac_learning import add_L2_trial_learning_steps
 from .flow_based_learning import add_flow_based_learning_preamble_steps
 from .setup_source_port_rates import setup_source_port_rates
-from .statistics import clear_port_stats, set_tx_time_limit, set_traffic_status
+from .statistics import (
+    clear_port_stats,
+    set_tx_time_limit,
+    set_traffic_status,
+    stop_traffic,
+)
 from .l3_learning import (
     add_L3_learning_preamble_steps,
     schedule_arp_refresh,
@@ -157,11 +162,7 @@ async def run_latency_test(
             for port_struct in control_ports
         }
 
-        await set_traffic_status(
-            source_port_structs,
-            test_conf,
-            False,
-        )
+        await stop_traffic(source_port_structs)
         address_refresh_handler = await add_L3_learning_preamble_steps(
             control_ports,
             stream_lists,
@@ -180,6 +181,7 @@ async def run_latency_test(
             source_port_structs,
             test_conf,
             current_packet_size,
+            state_checker,
         )
         await setup_source_port_rates(
             source_port_structs,
@@ -197,6 +199,12 @@ async def run_latency_test(
             test_conf,
             True,
         )
+        # logger.error(state_checker.started_dic.values())
+        # await asyncio.gather(*[query_tester_time(port_struct) for port_struct in control_ports])
+        # while not state_checker.test_running(): # TODO: Any or All tester
+        #     await asyncio.gather(*[query_tester_time(port_struct) for port_struct in control_ports])
+        #     await asyncio.sleep(0.1)
+        #     logger.error(state_checker.started_dic.values())
         await schedule_arp_refresh(state_checker, address_refresh_handler)
         await collect_latency_statistics(
             stream_lists,
@@ -208,3 +216,9 @@ async def run_latency_test(
             result_handler,
             state_checker,
         )
+
+
+async def query_tester_time(port_struct: "Structure"):
+    tester = port_struct.tester
+    local_time = (await tester.time.get()).local_time
+    logger.error(f"{port_struct.properties.identity} -> {local_time}")

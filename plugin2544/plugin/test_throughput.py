@@ -272,6 +272,7 @@ async def run_throughput_test(
         source_port_structs,
         test_conf,
         current_packet_size,
+        state_checker,
     )
     await throughput_binary_search(
         stream_lists,

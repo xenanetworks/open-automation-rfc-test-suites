@@ -10,6 +10,7 @@ from .statistics import (
     clear_port_stats,
     set_tx_time_limit,
     set_traffic_status,
+    stop_traffic,
 )
 from ..utils.constants import TestResultState, TestType
 from .common import get_source_port_structs
@@ -165,11 +166,7 @@ async def run_frame_loss_test(
             )
             for port_struct in control_ports
         }
-        await set_traffic_status(
-            source_port_structs,
-            test_conf,
-            False,
-        )
+        await stop_traffic(source_port_structs)
         address_refresh_handler = await add_L3_learning_preamble_steps(
             control_ports,
             stream_lists,
@@ -188,6 +185,7 @@ async def run_frame_loss_test(
             source_port_structs,
             test_conf,
             current_packet_size,
+            state_checker,
         )
         await setup_source_port_rates(
             source_port_structs,

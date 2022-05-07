@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Iterator, List, Tuple
 from ..utils.field import NonNegativeDecimal
-from .statistics import set_traffic_status
+from .statistics import stop_traffic
 from .stream_base_settings import setup_packet_size
 from .structure import StreamInfo, TypeConf
 from .test_throughput import run_throughput_test
@@ -29,11 +29,7 @@ async def test_run(
     test_case_result: "TestCaseResult",
 ) -> None:
     result_handler = test_case_result.get_result_handler(type_conf.test_type)
-    await set_traffic_status(
-        control_ports,
-        test_conf,
-        False,
-    )
+    await stop_traffic(control_ports)
     await setup_packet_size(control_ports, test_conf.frame_sizes, current_packet_size)
 
     if type_conf.test_type == TestType.THROUGHPUT:

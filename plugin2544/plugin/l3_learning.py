@@ -21,7 +21,7 @@ from ..utils.constants import (
 
 from .common import get_dest_port_structs, get_source_port_structs
 from .setup_source_port_rates import setup_source_port_rates
-from .statistics import set_traffic_status, set_tx_time_limit
+from .statistics import set_traffic_status, set_tx_time_limit, start_traffic
 from ..utils.field import IPv4Address, IPv6Address
 from ..utils.packet import ARPPacket, MacAddress, NDPPacket
 from .common import get_dest_port_structs, get_source_port_structs
@@ -400,11 +400,7 @@ async def add_L3_learning_preamble_steps(
         source_port_structs,
         Decimal(test_conf.learning_duration_second * 1000),
     )
-    await set_traffic_status(
-        source_port_structs,
-        test_conf,
-        True,
-    )
+    await start_traffic(source_port_structs)
     await asyncio.gather(*address_refresh_handler.tokens)
     await schedule_arp_refresh(
         state_checker, address_refresh_handler, TestState.L3_LEARNING

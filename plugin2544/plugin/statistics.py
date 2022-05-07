@@ -3,12 +3,12 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Dict, List
 from xoa_driver.utils import apply
 from xoa_driver.enums import OnOff
+from ..utils.logger import logger
 
 if TYPE_CHECKING:
     from .structure import Structure
     from ..model import TestConfiguration
     from xoa_driver.testers import L23Tester
-
 
 
 async def clear_port_stats(control_ports: List["Structure"]) -> None:
@@ -34,6 +34,9 @@ async def set_tx_time_limit(
 async def start_traffic_sync(tester: "L23Tester", module_port_list: List[int]) -> None:
     local_time = (await tester.time.get()).local_time
     delay_seconds = 2
+    # logger.error(
+    #     f"SYNC {tester.management_interface.ip_address} -> {local_time + delay_seconds}"
+    # )
     await apply(
         tester.traffic_sync.set_on(local_time + delay_seconds, module_port_list)
     )
@@ -97,6 +100,16 @@ async def set_traffic_status(
             source_ports,
             traffic_status,
         )
+
+
+async def start_traffic(control_ports: List["Structure"]) -> None:
+    await asyncio.gather(
+        *[
+            port_struct.port.traffic.state.set_start()
+            for port_struct in control_ports
+            if port_struct.port_conf.is_tx_port
+        ]
+    )
 
 
 async def stop_traffic(control_ports: List["Structure"]) -> None:
