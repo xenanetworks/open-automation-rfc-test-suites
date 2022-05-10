@@ -8,7 +8,7 @@ from ..utils.field import NonNegativeDecimal
 
 from .statistics import (
     clear_port_stats,
-    set_tx_time_limit,
+    set_port_txtime_limit,
     set_traffic_status,
     stop_traffic,
 )
@@ -194,7 +194,7 @@ async def run_frame_loss_test(
             rate_percent_dic,
             current_packet_size,
         )
-        await set_tx_time_limit(
+        await set_port_txtime_limit(
             source_port_structs,
             frame_loss_conf.common_options.actual_duration * 1_000_000,
         )
@@ -214,4 +214,8 @@ async def run_frame_loss_test(
             rate_percent_dic,
             result_handler,
             state_checker,
+        )
+        await set_port_txtime_limit(
+            source_port_structs,
+            Decimal(0),
         )

@@ -20,15 +20,18 @@ async def clear_port_stats(control_ports: List["Structure"]) -> None:
     await asyncio.sleep(1)
 
 
-async def set_tx_time_limit(
+async def set_port_txtime_limit(
     control_ports: List["Structure"], tx_timelimit: Decimal
 ) -> None:
-    await apply(
+    await asyncio.gather(
         *[
             port_struct.port.tx_config.time_limit.set(int(tx_timelimit))
             for port_struct in control_ports
         ]
     )
+
+async def set_stream_packet_limit(source_port_structs: List["Structure"], frame_count: int) -> None:
+    await asyncio.gather(*[stream.packet.limit.set(frame_count) for port_struct in source_port_structs for stream in port_struct.port.streams])
 
 
 async def start_traffic_sync(tester: "L23Tester", module_port_list: List[int]) -> None:

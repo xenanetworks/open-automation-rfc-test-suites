@@ -4,6 +4,7 @@ from ..utils.field import NonNegativeDecimal
 from .test_result_structure import BoutEntry
 from .setup_source_port_rates import setup_source_port_rates
 from .statistics import (
+    set_stream_packet_limit,
     start_traffic,
 )
 from typing import TYPE_CHECKING, List
@@ -13,17 +14,6 @@ if TYPE_CHECKING:
     from .test_operations import StateChecker
     from ..model import TestConfiguration
     from .structure import Structure, StreamInfo
-
-
-async def _setup_flow_based_learning_frame_count(
-    source_port_structs: List["Structure"],
-    flow_based_learning_frame_count: int,
-) -> None:  # SetupFlowBasedLearningFrameCount
-    tokens = []
-    for port_struct in source_port_structs:
-        for stream in port_struct.port.streams:
-            tokens.append(stream.packet.limit.set(flow_based_learning_frame_count))
-    await apply(*tokens)
 
 
 async def add_flow_based_learning_preamble_steps(
@@ -49,12 +39,24 @@ async def add_flow_based_learning_preamble_steps(
         rate_percent_dic,
         current_packet_size,
     )
-    await _setup_flow_based_learning_frame_count(
+    await set_stream_packet_limit(
         source_ports, test_conf.flow_based_learning_frame_count
     )
 
     await start_traffic(source_ports)
-    # TODO: Wait for traffic stop
     while state_checker.test_running():
-        await asyncio.sleep(1)
+        await check_status(source_ports)
+        await asyncio.sleep(0.1)
     await asyncio.sleep(test_conf.delay_after_flow_based_learning_ms / 1000)
+    await set_stream_packet_limit(source_ports, 0)  # clear packet limit
+
+
+from xoa_driver.internals.ports.port_l23.chimera.port_chimera import PortChimera
+
+
+async def check_status(source_ports: List["Structure"]) -> None:
+    for port_struct in source_ports:
+        port = port_struct.port
+        if isinstance(port, PortChimera):
+            return
+        print((await port_struct.port.traffic.state.get()).on_off)

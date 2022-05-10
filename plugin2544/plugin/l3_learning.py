@@ -21,7 +21,7 @@ from ..utils.constants import (
 
 from .common import get_dest_port_structs, get_source_port_structs
 from .setup_source_port_rates import setup_source_port_rates
-from .statistics import set_traffic_status, set_tx_time_limit, start_traffic
+from .statistics import set_port_txtime_limit, start_traffic
 from ..utils.field import IPv4Address, IPv6Address
 from ..utils.packet import ARPPacket, MacAddress, NDPPacket
 from .common import get_dest_port_structs, get_source_port_structs
@@ -396,7 +396,7 @@ async def add_L3_learning_preamble_steps(
         rate_percent_dic,
         current_packet_size,
     )
-    await set_tx_time_limit(
+    await set_port_txtime_limit(
         source_port_structs,
         Decimal(test_conf.learning_duration_second * 1000),
     )
@@ -407,5 +407,5 @@ async def add_L3_learning_preamble_steps(
     )
     while state_checker.test_running():
         await asyncio.sleep(1)
-
+    await set_port_txtime_limit(source_port_structs, Decimal(0))
     return address_refresh_handler

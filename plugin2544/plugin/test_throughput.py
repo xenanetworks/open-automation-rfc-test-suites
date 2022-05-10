@@ -19,7 +19,7 @@ from .l3_learning import (
 
 from .mac_learning import add_L2_trial_learning_steps
 from .setup_source_port_rates import setup_source_port_rates
-from .statistics import clear_port_stats, set_tx_time_limit, set_traffic_status
+from .statistics import clear_port_stats, set_port_txtime_limit, set_traffic_status
 from .test_result_structure import (
     AllResult,
     BoutEntry,
@@ -319,7 +319,7 @@ async def throughput_binary_search(
             rate_percent_dic,
             current_packet_size,
         )
-        await set_tx_time_limit(
+        await set_port_txtime_limit(
             source_port_structs,
             throughput_conf.common_options.actual_duration * 1_000_000,
         )
@@ -338,6 +338,10 @@ async def throughput_binary_search(
             iteration,
             rate_percent_dic,
             state_checker,
+        )
+        await set_port_txtime_limit(
+            source_port_structs,
+            Decimal(0),
         )
     return use_best_result(boundaries, throughput_conf, test_passed, result_handler)
 

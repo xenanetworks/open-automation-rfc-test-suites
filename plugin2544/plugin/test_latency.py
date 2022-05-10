@@ -15,7 +15,7 @@ from .flow_based_learning import add_flow_based_learning_preamble_steps
 from .setup_source_port_rates import setup_source_port_rates
 from .statistics import (
     clear_port_stats,
-    set_tx_time_limit,
+    set_port_txtime_limit,
     set_traffic_status,
     stop_traffic,
 )
@@ -190,7 +190,7 @@ async def run_latency_test(
             rate_percent_dic,
             current_packet_size,
         )
-        await set_tx_time_limit(
+        await set_port_txtime_limit(
             source_port_structs, latency_conf.common_options.actual_duration * 1_000_000
         )
         await clear_port_stats(control_ports)
@@ -199,12 +199,6 @@ async def run_latency_test(
             test_conf,
             True,
         )
-        # logger.error(state_checker.started_dic.values())
-        # await asyncio.gather(*[query_tester_time(port_struct) for port_struct in control_ports])
-        # while not state_checker.test_running(): # TODO: Any or All tester
-        #     await asyncio.gather(*[query_tester_time(port_struct) for port_struct in control_ports])
-        #     await asyncio.sleep(0.1)
-        #     logger.error(state_checker.started_dic.values())
         await schedule_arp_refresh(state_checker, address_refresh_handler)
         await collect_latency_statistics(
             stream_lists,
@@ -216,7 +210,10 @@ async def run_latency_test(
             result_handler,
             state_checker,
         )
-
+        await set_port_txtime_limit(
+            source_port_structs,
+            Decimal(0),
+        )
 
 async def query_tester_time(port_struct: "Structure"):
     tester = port_struct.tester

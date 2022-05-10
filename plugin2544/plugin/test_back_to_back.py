@@ -13,7 +13,7 @@ from .mac_learning import add_L2_trial_learning_steps
 from .flow_based_learning import add_flow_based_learning_preamble_steps
 from .statistics import (
     clear_port_stats,
-    set_tx_time_limit,
+    set_port_txtime_limit,
     set_traffic_status,
     stop_traffic,
 )
@@ -288,7 +288,7 @@ async def back_to_back_binary_search(
             boundaries,
             is_stream_based,
         )
-        await set_tx_time_limit(
+        await set_port_txtime_limit(
             source_port_structs,
             back_to_back_conf.common_options.actual_duration * 1_000_000,
         )
@@ -309,6 +309,10 @@ async def back_to_back_binary_search(
             result_handler,
             burst_frame_dic,
             state_checker,
+        )
+        await set_port_txtime_limit(
+            source_port_structs,
+            Decimal(0),
         )
 
 
