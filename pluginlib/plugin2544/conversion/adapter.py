@@ -6,12 +6,12 @@ from typing import Dict, List, Tuple, Union
 from .enums import (
     OSegmentType,
 )
+from valhalla_core.core.test_suites.datasets import TestParameters, PortIdentity
+from ..dataset import PluginModel2544
 from ..model import (
-    Model2544 as new_model,
     IPV4AddressProperties,
     IPV6AddressProperties,
     PortConfiguration,
-    PortIdentity,
     FieldValueRange,
     HeaderSegment,
     HwModifier,
@@ -262,13 +262,13 @@ class Converter:
             port = p_info.port_ref
             port.chassis_id = chassis_id_map[port.chassis_id]
             identity = PortIdentity(
-                chassis_id=port.chassis_id,
-                chassis_index=chassis_id_list.index(port.chassis_id),
+                tester_id=port.chassis_id,
+                tester_index=chassis_id_list.index(port.chassis_id),
                 module_index=port.module_index,
                 port_index=port.port_index,
             )
 
-            self.id_map[p_info.item_id] = (f"c-{identity.identity}", f"p{count}")
+            self.id_map[p_info.item_id] = (f"c-{identity.name}", f"p{count}")
             port_identity[f"p{count}"] = identity
             count += 1
         return port_identity
@@ -393,13 +393,12 @@ class Converter:
             port_conf[self.id_map[entity.item_id][0]] = self.__gen_port_conf(entity)
         return port_conf
 
-    def gen(self) -> "new_model":
-        return new_model(
-            title="my_test",
-            test_suite_type="valkyrie_2544",
-            port_identities=self.__gen_port_identity(),
+    def gen(self) -> "TestParameters":
+        port_identities=self.__gen_port_identity()
+        config = PluginModel2544(
             protocol_segments=self.__gen_profile(),
             test_configuration=self.__gen_test_config(),
             test_types_configuration=self.__gen_test_type_config(),
             ports_configuration=self.__generate_port_config(),
         )
+        return TestParameters(username="hello", config=config, port_identities=port_identities)

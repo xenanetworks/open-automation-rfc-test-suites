@@ -1,5 +1,4 @@
 from .m_port_config import *
-from .m_port_identity import *
 from .m_protocol_segment import *
 from .m_report import *
 from .m_test_config import *

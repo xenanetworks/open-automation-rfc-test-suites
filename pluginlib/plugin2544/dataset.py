@@ -5,29 +5,26 @@ from pydantic import (
     validator,
 )
 
-from .m_test_config import TestConfiguration
-from .m_port_config import  PortConfiguration
-from .m_protocol_segment import ProtocolSegmentProfileConfig
-from .m_test_type_config import TestTypesConfiguration
-from .m_port_identity import PortIdentity
-from ..utils.constants import (
-    TestSuiteType,
+
+from .model.m_test_config import TestConfiguration
+from .model.m_port_config import  PortConfiguration
+from .model.m_protocol_segment import ProtocolSegmentProfileConfig
+from .model.m_test_type_config import TestTypesConfiguration
+from .utils.constants import (
     RateResultScopeType,
     PortGroup,
     TrafficDirection,
 )
-from ..utils.errors import ConfigError
+from .utils.errors import ConfigError
 
 getcontext().prec = 6
 
-class Model2544(BaseModel):  # Main Model
-    title: str
-    test_suite_type: TestSuiteType
+
+class PluginModel2544(BaseModel):  # Main Model
     test_configuration: TestConfiguration
     protocol_segments: Dict[str, ProtocolSegmentProfileConfig]
     ports_configuration: Dict[str, PortConfiguration]
     test_types_configuration: TestTypesConfiguration
-    port_identities: Dict[str, PortIdentity]
 
     # Computed Properties
     in_same_ipnetwork: bool = False
@@ -150,21 +147,6 @@ class Model2544(BaseModel):  # Main Model
 
 
 
-    @validator("port_identities", always=True)
-    def check_port_identities(cls, v):
-        if not len(v):
-            raise ConfigError("You need to connect to at least one chassis")
-        return v
-
-    @validator("port_identities", always=True)
-    def set_chassis_index(cls, v):
-        chassis_ids = []
-        for port_identity in v.values():
-            chassis_id = port_identity.chassis_id
-            if chassis_id not in chassis_ids:
-                chassis_ids.append(chassis_id)
-            port_identity.change_chassis_index(chassis_ids.index(chassis_id))
-        return v
 
     @staticmethod
     def count_port_group(

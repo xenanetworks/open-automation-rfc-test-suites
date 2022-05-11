@@ -3,7 +3,6 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Dict, List
 from xoa_driver.utils import apply
 from xoa_driver.enums import OnOff
-from ..utils.logger import logger
 
 if TYPE_CHECKING:
     from .structure import Structure

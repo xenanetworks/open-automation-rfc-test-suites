@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from ..utils.constants import FlowCreationType
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
 from ..model import HwModifier
-
+from valhalla_core.core.test_suites.datasets import PortIdentity
 if TYPE_CHECKING:
     from ..model import (
         PortConfiguration,
@@ -12,9 +12,8 @@ if TYPE_CHECKING:
         LatencyTest,
         FrameLossRateTest,
         BackToBackTest,
-        PortIdentity,
     )
-    from xoa_driver.testers import L23Tester, GenericAnyTester
+    from xoa_driver.testers import L23Tester
     from xoa_driver.ports import GenericL23Port
 
 

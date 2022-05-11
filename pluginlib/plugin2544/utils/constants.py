@@ -75,7 +75,7 @@ MAX_MASK_BIT_LENGTH = 16
 UNREACH_BYTE_VALUE = 256
 DEFAULT_SEGMENT_PATH = os.path.abspath(
     os.path.join(
-        (os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
         "reference/segment_refs",
     )
 )

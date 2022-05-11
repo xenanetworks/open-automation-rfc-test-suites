@@ -1,61 +1,60 @@
+from valhalla_core.types import PluginAbstract
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .dataset import PluginModel2544
+
+
 import asyncio
 from typing import Any, Dict, List
 
 from plugin2544.model.m_test_type_config import LatencyTest
-from .statistics import (
-    stop_traffic,
-)
-from .test_result_structure import (
-    TestCaseResult,
-)
-from ..utils.logger import logger
-from .structure import (
+from .plugin.statistics import stop_traffic
+from .plugin.test_result_structure import TestCaseResult
+from .utils.logger import logger
+from .plugin.structure import (
     StreamInfo,
     Structure,
 )
-from .toggle_port_sync_state import add_toggle_port_sync_state_steps
-from ..utils.constants import MACLearningMode
-from ..model import Model2544
-from .connect_chasses import connect_chasses_main
-from .control_ports import collect_control_ports, setup_port_identity
-from .reserve_ports import reserve_reset_ports
-from .delay_after_reset import delay_after_reset_main
-from .resolve_port_relations import resolve_port_relations_main
-from .common import setup_macaddress, TPLDControl
-from .arp_request import set_arp_request
-from .port_base_settings import (
+from .plugin.toggle_port_sync_state import add_toggle_port_sync_state_steps
+from .utils.constants import MACLearningMode
+from .plugin.control_ports import collect_control_ports
+from .plugin.reserve_ports import reserve_reset_ports
+from .plugin.delay_after_reset import delay_after_reset_main
+from .plugin.resolve_port_relations import resolve_port_relations_main
+from .plugin.common import setup_macaddress, TPLDControl
+from .plugin.arp_request import set_arp_request
+from .plugin.port_base_settings import (
     base_setting,
     set_reduction_sweep,
     setup_latency_mode,
 )
-from .resolve_stream_relations import (
+from .plugin.resolve_stream_relations import (
     setup_packet_header,
     configure_source_streams,
     create_source_stream,
 )
-from .checker.config_checkers import check_config
-from .mac_learning import add_mac_learning_steps
-from .outer_loop import setup_for_outer_loop
+from .plugin.checker.config_checkers import check_config
+from .plugin.mac_learning import add_mac_learning_steps
+from .plugin.outer_loop import setup_for_outer_loop
 from decimal import getcontext
-from ..plugin_abstract import PluginAbstract
+from valhalla_core.types import PluginAbstract
 
 getcontext().prec = 12
 
 
-class TestSuit2544(PluginAbstract):
-    def __init__(self, ff: Any, params: "Model2544") -> None:
-        super(TestSuit2544, self).__init__(ff)
-        self.data = params
-        self.testers_saver = ff.TesterSaver(self.data, self.loop)
+class TestSuit2544(PluginAbstract["PluginModel2544"]):
+    def prepare(self) -> None:
         self.tpld_id = 0
         self.mac_learned = False
         self.iteration: int = 1
-        self.test_conf = self.data.test_configuration
+        self.test_conf = self.cfg.test_configuration
         self.control_ports: List["Structure"] = []
-        self.test_conf = self.data.test_configuration
+        self.test_conf = self.cfg.test_configuration
         self.tpld_controller = TPLDControl(self.test_conf.tid_allocation_scope)
         self.stream_lists: List["StreamInfo"] = []
         self.test_case_result = TestCaseResult()
+        return super().prepare()
 
     async def __setup_macaddress(self) -> None:
         await asyncio.gather(
@@ -96,19 +95,16 @@ class TestSuit2544(PluginAbstract):
         await create_source_stream(self.stream_lists, self.test_conf)
 
     async def __init_resource(self) -> None:
-        await connect_chasses_main(self.testers_saver, True)
+        # await connect_chasses_main(self.testers, True)
         self.control_ports = collect_control_ports(
-            self.testers_saver, self.data.ports_configuration
+            self.testers, self.cfg.ports_configuration, self.port_identities
         )
-        setup_port_identity(self.control_ports, self.data.port_identities)
         resolve_port_relations_main(
             self.test_conf.topology, self.control_ports
         )  # setup test_port_index
 
     async def __prepare_data(self) -> None:
-        await check_config(
-            self.data, self.testers_saver.get_all_testers(), self.control_ports
-        )
+        # await check_config(self.cfg, self.testers.get_all_testers(), self.control_ports)
         await self.__setup_macaddress()
         self.stream_lists = configure_source_streams(
             self.control_ports, self.tpld_controller, self.test_conf
@@ -117,20 +113,20 @@ class TestSuit2544(PluginAbstract):
     async def __pre_test(self) -> None:
         await self.__init_resource()
         await self.__prepare_data()
-        await reserve_reset_ports(self.testers_saver)
+        await reserve_reset_ports(self.testers)
         await delay_after_reset_main(self.test_conf.delay_after_port_reset_second)
         await self.__configure_resource()
 
     async def __do_test(self) -> None:
-        for type_conf in self.data.test_types_configuration.available_test:
+        for type_conf in self.cfg.test_types_configuration.available_test:
             if isinstance(type_conf, LatencyTest):
                 await setup_latency_mode(self.control_ports, type_conf.latency_mode)
             await setup_for_outer_loop(
                 self.stream_lists,
                 self.control_ports,
                 type_conf,
-                self.data.test_configuration,
-                self.data.has_l3,
+                self.cfg.test_configuration,
+                self.cfg.has_l3,
                 self.test_case_result,
             )
 
@@ -144,5 +140,5 @@ class TestSuit2544(PluginAbstract):
             await self.__post_test()
         except Exception as e:
             logger.exception(e)
-        finally:
-            await self.testers_saver.free()
+        # finally:
+        #     await self.testers.free()
