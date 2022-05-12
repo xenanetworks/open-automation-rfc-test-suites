@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 import asyncio
 from typing import Any, Dict, List
 
-from plugin2544.model.m_test_type_config import LatencyTest
+from .model.m_test_type_config import LatencyTest
 from .plugin.statistics import stop_traffic
 from .plugin.test_result_structure import TestCaseResult
 from .utils.logger import logger
@@ -19,7 +19,6 @@ from .plugin.structure import (
 from .plugin.toggle_port_sync_state import add_toggle_port_sync_state_steps
 from .utils.constants import MACLearningMode
 from .plugin.control_ports import collect_control_ports
-from .plugin.reserve_ports import reserve_reset_ports
 from .plugin.delay_after_reset import delay_after_reset_main
 from .plugin.resolve_port_relations import resolve_port_relations_main
 from .plugin.common import setup_macaddress, TPLDControl
@@ -95,8 +94,7 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
         await create_source_stream(self.stream_lists, self.test_conf)
 
     async def __init_resource(self) -> None:
-        # await connect_chasses_main(self.testers, True)
-        self.control_ports = collect_control_ports(
+        self.control_ports = await collect_control_ports(
             self.testers, self.cfg.ports_configuration, self.port_identities
         )
         resolve_port_relations_main(
@@ -104,7 +102,7 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
         )  # setup test_port_index
 
     async def __prepare_data(self) -> None:
-        # await check_config(self.cfg, self.testers.get_all_testers(), self.control_ports)
+        await check_config(self.cfg, self.testers.values(), self.control_ports)
         await self.__setup_macaddress()
         self.stream_lists = configure_source_streams(
             self.control_ports, self.tpld_controller, self.test_conf
@@ -113,7 +111,7 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
     async def __pre_test(self) -> None:
         await self.__init_resource()
         await self.__prepare_data()
-        await reserve_reset_ports(self.testers)
+        # await reserve_reset_ports(self.testers)
         await delay_after_reset_main(self.test_conf.delay_after_port_reset_second)
         await self.__configure_resource()
 

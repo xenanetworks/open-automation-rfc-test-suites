@@ -3,7 +3,7 @@ from typing import List, TYPE_CHECKING
 
 
 from ..utils.constants import MACLearningMode
-from ..utils.errors import ConfigError
+from ..utils.exceptions import ConfigError
 from ..utils.field import MacAddress
 from xoa_driver.utils import apply
 

@@ -20,7 +20,7 @@ from ..utils.constants import (
     MIXED_DEFAULT_WEIGHTS,
     MIXED_PACKET_SIZE,
 )
-from ..utils.errors import ConfigError
+from ..utils.exceptions import ConfigError
 
 
 class FrameSizesOptions(BaseModel):

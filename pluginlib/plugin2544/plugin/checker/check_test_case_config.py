@@ -1,6 +1,6 @@
 import asyncio
 from typing import TYPE_CHECKING, List
-from ...utils.errors import ConfigError
+from ...utils.exceptions import ConfigError
 
 if TYPE_CHECKING:
     from xoa_driver.ports import GenericL23Port

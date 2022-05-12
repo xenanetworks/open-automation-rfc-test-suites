@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List
 
-from ..utils.errors import ConfigError
+from ..utils.exceptions import ConfigError
 from ..model import (
     HwModifier,
     TestConfiguration,

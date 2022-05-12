@@ -15,7 +15,7 @@ from .utils.constants import (
     PortGroup,
     TrafficDirection,
 )
-from .utils.errors import ConfigError
+from .utils.exceptions import ConfigError
 
 getcontext().prec = 6
 

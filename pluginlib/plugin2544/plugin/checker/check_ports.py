@@ -1,7 +1,7 @@
 import asyncio
 from typing import TYPE_CHECKING, List
 from ...utils.constants import FECModeStr
-from ...utils.errors import ConfigError
+from ...utils.exceptions import ConfigError
 from xoa_driver.enums import ProtocolOption
 
 if TYPE_CHECKING:

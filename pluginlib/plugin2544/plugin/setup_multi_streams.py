@@ -1,6 +1,6 @@
 from typing import List, Dict, Tuple
 
-from ..utils.errors import ConfigError
+from ..utils.exceptions import ConfigError
 from .structure import Structure, AddressCollection, StreamInfo
 from ..model import TestConfiguration, MultiStreamConfig
 from .common import get_mac_address_by_index, get_source_port_structs, TPLDControl

@@ -13,3 +13,9 @@ class BXMPWarning:
 
 class ConfigError(Exception):
     pass
+
+
+class NotSupportL47Tester(Exception):
+    def __init__(self) -> None:
+        self.msg = "Not Support L47Tester"
+        super().__init__(self.msg)

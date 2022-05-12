@@ -76,8 +76,8 @@ class Properties:
     ] = field(default_factory=set)
 
     def set_identity(self, port_identity: "PortIdentity") -> None:
-        self.identity = f"{port_identity.chassis_index}-{port_identity.module_index}-{port_identity.port_index}"
-        self.chassis_id = port_identity.chassis_id
+        self.identity = f"{port_identity.tester_index}-{port_identity.module_index}-{port_identity.port_index}"
+        self.chassis_id = port_identity.tester_index
 
 
     def register_peer(self, peer: "Structure") -> None:

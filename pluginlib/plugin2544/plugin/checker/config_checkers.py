@@ -10,13 +10,12 @@ if TYPE_CHECKING:
     from ..structure import (
         Structure,
     )
-    from ...model import (
-        Model2544,
-    )
+    from pluginlib.plugin2544.dataset import PluginModel2544
+
 
 
 async def check_config(
-    data: "Model2544",
+    data: "PluginModel2544",
     testers: List["testers.L23Tester"],
     control_ports: List["Structure"],
 ) -> None:

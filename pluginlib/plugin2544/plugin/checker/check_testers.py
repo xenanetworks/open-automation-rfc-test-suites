@@ -1,7 +1,7 @@
 
 import asyncio
 from typing import List, TYPE_CHECKING
-from ...utils.errors import ConfigError
+from ...utils.exceptions import ConfigError
 from xoa_driver import testers
 
 if TYPE_CHECKING:

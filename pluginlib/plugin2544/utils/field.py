@@ -1,7 +1,7 @@
 from decimal import Decimal
 import re
 from typing import Any, List
-from .errors import ConfigError
+from .exceptions import ConfigError
 from ipaddress import (
     IPv4Address as OldIPv4Address,
     IPv6Address as OldIPv6Address,

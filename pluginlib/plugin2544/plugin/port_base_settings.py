@@ -20,7 +20,7 @@ from xoa_driver.enums import (
     TimeoutMode,
     TPLDMode,
 )
-from ..utils.errors import BXMPWarning
+from ..utils.exceptions import BXMPWarning
 from ..utils.constants import (
     STANDARD_SEGMENT_VALUE,
     AutoNegPorts,

@@ -19,7 +19,7 @@ from ..utils.constants import (
     LatencyModeStr,
     AcceptableLossType,
 )
-from ..utils.errors import ConfigError
+from ..utils.exceptions import ConfigError
 
 
 class CommonOptions(BaseModel):

@@ -1,7 +1,7 @@
 import asyncio
 from typing import TYPE_CHECKING, List, Union
 from ...utils.field import NonNegativeDecimal
-from ...utils.errors import ConfigError
+from ...utils.exceptions import ConfigError
 from ..common import (
     get_dest_port_structs,
     get_tpld_total_length,
