@@ -19,7 +19,7 @@ from ..utils.constants import (
     LatencyModeStr,
     AcceptableLossType,
 )
-from ..utils.exceptions import ConfigError
+from ..utils import exceptions
 
 
 class CommonOptions(BaseModel):
@@ -46,7 +46,7 @@ class CommonOptions(BaseModel):
     #     return self.actual_duration
 
     @validator("actual_duration", pre=True, always=True)
-    def set_actual_duration(cls, v, values):
+    def set_actual_duration(cls, v: Decimal, values) -> Decimal:
         return values["duration"] * values["duration_time_unit"].scale
 
     # @validator("actual_frames", pre=True, always=True)
@@ -63,10 +63,10 @@ class RateIterationOptions(BaseModel):
     value_resolution_pct: float = Field(ge=0.0, le=100.0)
 
     @validator("initial_value_pct", "minimum_value_pct")
-    def check_if_larger_than_maximun(cls, v, values):
+    def check_if_larger_than_maximun(cls, v: float, values) -> float:
         if "maximum_value_pct" in values:
             if v > values["maximum_value_pct"]:
-                raise ConfigError(f"{v} cannot be larger than the maximum rate")
+                raise exceptions.RateRestriction(v, values["maximum_value_pct"])
         return v
 
 
@@ -88,9 +88,9 @@ def rate_sweep_range(rate_sweep_options: "RateSweepOptions") -> List:
     end_value_pct = rate_sweep_options.end_value_pct
     step_value_pct = rate_sweep_options.step_value_pct
     if start_value_pct > end_value_pct:
-        raise ConfigError("Start rate cannot be larger than the End rate.")
+        raise exceptions.RangeRestriction()
     if step_value_pct <= Decimal("0"):
-        raise ConfigError("Step value percent must be larger than 0!")
+        raise exceptions.StepValueRestriction()
     pct = start_value_pct
     while pct <= end_value_pct:
         result.append(pct)
@@ -101,7 +101,6 @@ def rate_sweep_range(rate_sweep_options: "RateSweepOptions") -> List:
 
 
 def set_rate_sweep_list(v, values) -> List[Decimal]:
-
     if any(
         [
             not "enabled" in values,
@@ -127,10 +126,10 @@ class RateSweepOptions(BaseModel):
         pre=True,
         always=True,
     )
-    def set_pcts(cls, v):
+    def set_pcts(cls, v: Decimal) -> Decimal:
         return Decimal(str(v))
 
-    def set_throughput_relative(self, throughput_rate: Decimal):
+    def set_throughput_relative(self, throughput_rate: Decimal) -> None:
         self.start_value_pct = self.start_value_pct * throughput_rate / 100
         self.end_value_pct = self.end_value_pct * throughput_rate / 100
         self.step_value_pct = self.step_value_pct * throughput_rate / 100
@@ -190,6 +189,9 @@ class BackToBackTest(BaseModel):
     )(set_rate_sweep_list)
 
 
+AllTestType = Union[ThroughputTest, LatencyTest, FrameLossRateTest, BackToBackTest]
+
+
 class TestTypesConfiguration(BaseModel):
     throughput_test: ThroughputTest
     latency_test: LatencyTest
@@ -197,14 +199,10 @@ class TestTypesConfiguration(BaseModel):
     back_to_back_test: BackToBackTest
 
     # Computed Properties
-    available_test: List[
-        Union[ThroughputTest, LatencyTest, FrameLossRateTest, BackToBackTest]
-    ] = []
+    available_test: List[AllTestType] = []
 
     @validator("available_test", pre=True, always=True)
-    def set_available_test(
-        cls, v, values
-    ) -> List[Union[ThroughputTest, LatencyTest, FrameLossRateTest, BackToBackTest]]:
+    def set_available_test(cls, v: List[AllTestType], values) -> List[AllTestType]:
         v = []
         for test_type_config in values.values():
             if test_type_config.enabled:

@@ -1,13 +1,13 @@
 from decimal import Decimal
 import re
 from typing import Any, List
-from .exceptions import ConfigError
 from ipaddress import (
     IPv4Address as OldIPv4Address,
     IPv6Address as OldIPv6Address,
     IPv4Network,
     IPv6Network,
 )
+from . import exceptions
 
 
 class HexString(str):
@@ -28,10 +28,10 @@ class MacAddress(str):
             .replace("-", "")
         )
         if len(validate_value) != 12:
-            raise ConfigError(f"{value} is not a valid mac address!")
+            raise exceptions.MacAddressNotValid(value)
         for i in validate_value:
             if i not in "0123456789ABCDEF":
-                raise ConfigError(f"{value} is not a valid mac address!")
+                raise exceptions.MacAddressNotValid(value)
 
         return str.__new__(cls, ":".join(re.findall(".{2}", validate_value)))
 

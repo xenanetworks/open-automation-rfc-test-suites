@@ -45,18 +45,7 @@ async def add_flow_based_learning_preamble_steps(
 
     await start_traffic(source_ports)
     while state_checker.test_running():
-        await check_status(source_ports)
+        await asyncio.gather(*[port_struct.port.traffic.state.get() for port_struct in source_ports])
         await asyncio.sleep(0.1)
     await asyncio.sleep(test_conf.delay_after_flow_based_learning_ms / 1000)
     await set_stream_packet_limit(source_ports, 0)  # clear packet limit
-
-
-from xoa_driver.internals.ports.port_l23.chimera.port_chimera import PortChimera
-
-
-async def check_status(source_ports: List["Structure"]) -> None:
-    for port_struct in source_ports:
-        port = port_struct.port
-        if isinstance(port, PortChimera):
-            return
-        print((await port_struct.port.traffic.state.get()).on_off)

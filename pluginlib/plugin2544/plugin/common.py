@@ -229,7 +229,6 @@ def may_change_segment_id_list(
 ) -> List[ProtocolOption]:
     id_list_copy = segment_id_list[:]
     for i, segment_id in enumerate(segment_id_list):
-
         if segment_id == ProtocolOption.TCP and port.info.capabilities.can_tcp_checksum:
             id_list_copy[i] = ProtocolOption.TCPCHECK
     return id_list_copy

@@ -1,6 +1,6 @@
 from typing import List, Dict, Tuple
 
-from ..utils.exceptions import ConfigError
+from ..utils import exceptions
 from .structure import Structure, AddressCollection, StreamInfo
 from ..model import TestConfiguration, MultiStreamConfig
 from .common import get_mac_address_by_index, get_source_port_structs, TPLDControl
@@ -49,7 +49,7 @@ def create_stream_for_multi_stream(
         port_struct.properties.test_port_index, peer_struct.properties.test_port_index
     )
     if tpldid > port_struct.port.info.capabilities.max_tpid:
-        raise ConfigError(f"current tpldid ({tpldid}) is larger than port capability ({port_struct.port.info.capabilities.max_tpid})")
+        raise exceptions.TPLDIDExceed(tpldid, port_struct.port.info.capabilities.max_tpid)
     addr_coll = get_address_collection(
         port_struct,
         peer_struct,
@@ -91,7 +91,7 @@ def setup_multi_source_streams(
                 offset_table, port_struct.properties.identity, peer_index
             )
             if not offsets_list:
-                raise ValueError("Offsets table calculate error")
+                raise exceptions.OffsetNotExsits()
 
             for offsets in offsets_list:
                 stream_info = create_stream_for_multi_stream(

@@ -10,22 +10,7 @@ __all__ = ("logger",)
 
 logger.remove()
 
-logger.add(
-    sink="log/valhalla_core.log",
-    format=FORMAT,
-    level="DEBUG",
-    encoding="utf-8",
-    mode="w",
-    filter=lambda x: "valhalla_core" in x["name"],
-)
-logger.add(
-    sink="log/valhalla_bifrost.log",
-    format=FORMAT,
-    level="DEBUG",
-    encoding="utf-8",
-    mode="w",
-    filter=lambda x: "transporter" in x["name"],
-)
+
 logger.add(
     sink="log/valhalla_core_request.log",
     format=FORMAT,

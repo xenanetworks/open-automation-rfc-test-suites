@@ -1,7 +1,6 @@
 import asyncio
 from typing import TYPE_CHECKING, List, Union
-from ...utils.field import NonNegativeDecimal
-from ...utils.exceptions import ConfigError
+from pluginlib.plugin2544.utils import field, exceptions, constants as const
 from ..common import (
     get_dest_port_structs,
     get_tpld_total_length,
@@ -16,10 +15,7 @@ if TYPE_CHECKING:
         PortConfiguration,
         TestConfiguration,
     )
-    from ...utils.constants import (
-        TidAllocationScope,
-        PacketSizeType,
-    )
+
 
 
 async def check_port_modifiers(
@@ -38,9 +34,7 @@ async def check_port_modifiers(
             )
     else:
         if modifier_count > 0:
-            raise ConfigError(
-                "Not possible to define modifiers when using modifier-based flows"
-            )
+            raise exceptions.ModifierBasedNotSupportDefineModifier()
 
 
 async def check_stream_limitations(
@@ -68,7 +62,7 @@ def count_source_port(
 
 
 def check_tid_limitations(
-    control_ports: List["Structure"], scope: "TidAllocationScope", is_stream_based: bool
+    control_ports: List["Structure"], scope: "const.TidAllocationScope", is_stream_based: bool
 ) -> None:
     if not is_stream_based:
         return
@@ -89,8 +83,8 @@ def check_tid_limitations(
 
 async def check_port_min_packet_length(
     port: "GenericL23Port",
-    min_packet_size: Union[NonNegativeDecimal, int],
-    packet_size_type: "PacketSizeType",
+    min_packet_size: Union[field.NonNegativeDecimal, int],
+    packet_size_type: "const.PacketSizeType",
 ) -> None:
     if port.info.capabilities.min_packet_length > min_packet_size:
         raise ConfigError(
@@ -101,7 +95,7 @@ async def check_port_min_packet_length(
 async def check_port_max_packet_length(
     port: "GenericL23Port",
     max_packet_size: Union[NonNegativeDecimal, int],
-    packet_size_type: "PacketSizeType",
+    packet_size_type: "const.PacketSizeType",
 ) -> None:
     if port.info.capabilities.max_packet_length < max_packet_size:
         raise ConfigError(

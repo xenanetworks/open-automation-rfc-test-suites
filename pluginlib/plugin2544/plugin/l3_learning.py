@@ -406,6 +406,7 @@ async def add_L3_learning_preamble_steps(
         state_checker, address_refresh_handler, TestState.L3_LEARNING
     )
     while state_checker.test_running():
+        await asyncio.gather(*[port_struct.port.traffic.state.get() for port_struct in source_port_structs])
         await asyncio.sleep(1)
     await set_port_txtime_limit(source_port_structs, Decimal(0))
     return address_refresh_handler

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List
 
-from ..utils.exceptions import ConfigError
+from ..utils import exceptions
 from ..model import (
     HwModifier,
     TestConfiguration,
@@ -95,7 +95,9 @@ def create_stream_for_stream_base(
         port_struct.properties.test_port_index, peer_struct.properties.test_port_index
     )
     if tpldid > port_struct.port.info.capabilities.max_tpid:
-        raise ConfigError(f"current tpldid ({tpldid}) is larger than port capability ({port_struct.port.info.capabilities.max_tpid})")
+        raise exceptions.TPLDIDExceed(
+            tpldid, port_struct.port.info.capabilities.max_tpid
+        )
     addr_coll = AddressCollection(
         smac_address=port_struct.properties.mac_address,
         dmac_address=peer_struct.properties.mac_address,

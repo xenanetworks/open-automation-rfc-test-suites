@@ -1,5 +1,5 @@
 from decimal import getcontext
-from typing import Dict,  Tuple
+from typing import Dict, Tuple
 from pydantic import (
     BaseModel,
     validator,
@@ -7,23 +7,27 @@ from pydantic import (
 
 
 from .model.m_test_config import TestConfiguration
-from .model.m_port_config import  PortConfiguration
+from .model.m_port_config import PortConfiguration
 from .model.m_protocol_segment import ProtocolSegmentProfileConfig
 from .model.m_test_type_config import TestTypesConfiguration
 from .utils.constants import (
     RateResultScopeType,
     PortGroup,
+    TestTopology,
     TrafficDirection,
 )
-from .utils.exceptions import ConfigError
+from .utils import exceptions
 
 getcontext().prec = 6
+
+ProtoSegType = Dict[str, "ProtocolSegmentProfileConfig"]
+PortConfType = Dict[str, "PortConfiguration"]
 
 
 class PluginModel2544(BaseModel):  # Main Model
     test_configuration: TestConfiguration
-    protocol_segments: Dict[str, ProtocolSegmentProfileConfig]
-    ports_configuration: Dict[str, PortConfiguration]
+    protocol_segments: ProtoSegType
+    ports_configuration: PortConfType
     test_types_configuration: TestTypesConfiguration
 
     # Computed Properties
@@ -32,10 +36,12 @@ class PluginModel2544(BaseModel):  # Main Model
     has_l3: bool = False
 
     @validator("ports_configuration", always=True)
-    def set_ports_rx_tx_type(cls, v, values):
+    def set_ports_rx_tx_type(
+        cls, port_configs: "PortConfType", values
+    ) -> "PortConfType":
         if "test_configuration" in values:
             direction = values["test_configuration"].direction
-            for config_index, port in v.items():
+            for config_index, port in port_configs.items():
                 if not port.port_config_slot:
                     port.port_config_slot = config_index
                 if port.port_config_slot == port.peer_config_slot:
@@ -50,10 +56,10 @@ class PluginModel2544(BaseModel):  # Main Model
                         port.is_tx_port = False
                     elif port.port_group.is_west:
                         port.is_rx_port = False
-        return v
+        return port_configs
 
     @validator("ports_configuration", always=True)
-    def set_ip_properties(cls, v, values):
+    def set_ip_properties(cls, v: "PortConfType", values) -> "PortConfType":
         if "protocol_segments" in values:
             for _, port_config in v.items():
                 profile_id = port_config.profile_id
@@ -66,26 +72,24 @@ class PluginModel2544(BaseModel):  # Main Model
                     port_config.profile.protocol_version.is_l3
                     and port_config.ip_properties.address.is_empty
                 ):
-                    raise ConfigError("You must assign an IP address to the port!")
+                    raise exceptions.IPAddressMissing()
         return v
 
     @validator("ports_configuration", always=True)
-    def check_port_count(cls, v, values):
+    def check_port_count(cls, v: "PortConfType", values) -> "PortConfType":
         require_ports = 2
         if "test_configuration" in values:
-            topology = values["test_configuration"].topology
+            topology: TestTopology = values["test_configuration"].topology
             if topology.is_pair_topology:
                 require_ports = 1
             if len(v) < require_ports:
-                raise ConfigError(
-                    f"The configuration must have at least {require_ports} testport{'s'  if require_ports > 1 else ''}!"
-                )
+                raise exceptions.PortConfigNotEnough(require_ports)
         return v
 
     @validator("ports_configuration", always=True)
-    def check_port_groups_and_peers(cls, v, values):
+    def check_port_groups_and_peers(cls, v: "PortConfType", values) -> "PortConfType":
         if "test_configuration" in values:
-            topology = values["test_configuration"].topology
+            topology: TestTopology = values["test_configuration"].topology
             ports_in_east = 0
             ports_in_west = 0
             uses_port_peer = topology.is_pair_topology
@@ -97,28 +101,28 @@ class PluginModel2544(BaseModel):  # Main Model
                 if uses_port_peer:
                     cls.check_port_peer(port_config, v)
             if not topology.is_mesh_topology:
-                for i, s in (ports_in_east, "East"), (ports_in_west, "West"):
+                for i, group in (ports_in_east, "East"), (ports_in_west, "West"):
                     if not i:
-                        raise ConfigError(
-                            f"At least one port must be assigned to the {s} port group!"
-                        )
+                        raise exceptions.PortGroupError(group)
         return v
 
     @validator("ports_configuration", always=True)
-    def check_modifier_mode_and_segments(cls, v, values):
+    def check_modifier_mode_and_segments(
+        cls, v: "PortConfType", values
+    ) -> "PortConfType":
         if "test_configuration" in values:
             flow_creation_type = values["test_configuration"].flow_creation_type
             for _, port_config in v.items():
                 if (
                     not flow_creation_type.is_stream_based
                 ) and port_config.profile.protocol_version.is_l3:
-                    raise ConfigError(
-                        f"Cannot use modifier-based flow creation for layer-3 tests!"
-                    )
+                    raise exceptions.ModifierBasedNotSupportL3()
         return v
 
     @validator("test_types_configuration", always=True)
-    def check_test_type_enable(cls, v, values):
+    def check_test_type_enable(
+        cls, v: "TestTypesConfiguration"
+    ) -> "TestTypesConfiguration":
         if not any(
             {
                 v.throughput_test.enabled,
@@ -127,11 +131,11 @@ class PluginModel2544(BaseModel):  # Main Model
                 v.back_to_back_test.enabled,
             }
         ):
-            raise ConfigError("You have not enabled any test types.")
+            raise exceptions.TestTypesError()
         return v
 
     @validator("test_types_configuration", always=True)
-    def check_result_scope(cls, v, values):
+    def check_result_scope(cls, v: "TestTypesConfiguration", values):
         if not "test_configuration" in values:
             return v
         if (
@@ -140,13 +144,8 @@ class PluginModel2544(BaseModel):  # Main Model
             == RateResultScopeType.PER_SOURCE_PORT
             and not values["test_configuration"].flow_creation_type.is_stream_based
         ):
-            raise ConfigError(
-                "Cannot use per-port result for modifier-based flows."
-            )
+            raise exceptions.ModifierBasedNotSupportPerPortResult()
         return v
-
-
-
 
     @staticmethod
     def count_port_group(
@@ -175,13 +174,13 @@ class PluginModel2544(BaseModel):  # Main Model
     ):
         peer_config_slot = port_config.peer_config_slot
         if not peer_config_slot:
-            raise ConfigError("You must assign a peer to the port!")
+            raise exceptions.PortPeerNeeded()
         if (
             peer_config_slot not in ports_configuration
             or ports_configuration[peer_config_slot].peer_config_slot
             != port_config.port_config_slot
         ):
-            raise ConfigError("Inconsistent port peer definition!")
+            raise exceptions.PortPeerInconsistent()
 
     @validator("in_same_ipnetwork", always=True)
     def set_in_same_ipnetwork(cls, v, values):
@@ -198,7 +197,7 @@ class PluginModel2544(BaseModel):  # Main Model
         return v
 
     @validator("with_same_gateway", always=True)
-    def set_with_same_gateway(cls, v, values):
+    def set_with_same_gateway(cls, v: bool, values) -> bool:
         if "ports_configuration" in values:
             confs = values["ports_configuration"]
             gateways = set([p.ip_properties.gateway for p in confs.values()])
@@ -206,7 +205,7 @@ class PluginModel2544(BaseModel):  # Main Model
         return v
 
     @validator("has_l3", always=True)
-    def set_has_l3(cls, v, values):
+    def set_has_l3(cls, v: bool, values) -> bool:
         if "ports_configuration" in values:
             confs = values["ports_configuration"]
             return any([conf.profile.protocol_version.is_l3 for conf in confs.values()])
@@ -220,5 +219,5 @@ class PluginModel2544(BaseModel):  # Main Model
                     p.port_group == PortGroup.UNDEFINED
                     and not values["test_configuration"].topology.is_mesh_topology
                 ):
-                    raise ConfigError("You must assign the port to a port group!")
+                    raise exceptions.PortGroupNeeded()
         return v

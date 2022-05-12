@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, List
 
 from .check_ports import check_ports
-from .check_test_case_config import check_test_case_config
 from .check_testers import check_testers
 from .check_test_config import check_test_config
 
@@ -23,4 +22,3 @@ async def check_config(
     await check_testers(testers, test_conf)
     await check_ports(control_ports)
     await check_test_config(control_ports, test_conf)
-    await check_test_case_config(control_ports, data.test_types_configuration)

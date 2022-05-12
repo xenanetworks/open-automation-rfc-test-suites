@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import List, Optional
+from typing import List
 from pydantic import (
     BaseModel,
     Field,
@@ -20,7 +20,7 @@ from ..utils.constants import (
     MIXED_DEFAULT_WEIGHTS,
     MIXED_PACKET_SIZE,
 )
-from ..utils.exceptions import ConfigError
+from ..utils import exceptions
 
 
 class FrameSizesOptions(BaseModel):
@@ -50,21 +50,20 @@ class FrameSizeConfiguration(BaseModel):
     packet_size_list: List[NonNegativeDecimal] = []
 
     @validator("mixed_sizes_weights", pre=True, always=True)
-    def is_mixed_weights_valid(cls, v, values):
+    def is_mixed_weights_valid(
+        cls, v: List[NonNegativeInt], values
+    ) -> List[NonNegativeInt]:
         if "packet_size_type" in values:
             if values["packet_size_type"] == PacketSizeType.MIX:
                 if not v or len(v) != len(MIXED_DEFAULT_WEIGHTS):
-                    raise ConfigError(
-                        f"Not enough mixed weights; there should be {len(MIXED_DEFAULT_WEIGHTS)} number of mixed weights!"
-                    )
-                if not sum(v) == 100:
-                    raise ConfigError(
-                        f"The sum of packet weights must be 100% (is currently {sum(v)}%.)"
-                    )
+                    raise exceptions.MixWeightsNotEnough()
+                sum_of_weights = sum(v)
+                if not sum_of_weights == 100:
+                    raise exceptions.MixWeightsSumError(sum_of_weights)
         return v
 
     @validator("mixed_packet_length", pre=True, always=True)
-    def set_mix_packet_length(cls, v, values):
+    def set_mix_packet_length(cls, v: List[int], values) -> List[int]:
         mix_size_length_dic = values.get(
             "mixed_length_config", FrameSizesOptions()
         ).dict()
@@ -76,7 +75,7 @@ class FrameSizeConfiguration(BaseModel):
         ]
 
     @validator("mixed_average_packet_size", pre=True, always=True)
-    def set_mixed_average_packet_size(cls, v, values):
+    def set_mixed_average_packet_size(cls, v: Decimal, values) -> Decimal:
         if all(
             [
                 i in values
@@ -93,11 +92,13 @@ class FrameSizeConfiguration(BaseModel):
                 for index, size in enumerate(values["mixed_packet_length"]):
                     weight = values["mixed_sizes_weights"][index]
                     weighted_size += size * weight
-                v = round(weighted_size / 100.0)
+                v = Decimal(round(weighted_size / 100.0))
         return v
 
     @validator("packet_size_list", pre=True, always=True)
-    def get_packet_sizes(cls, v, values):
+    def get_packet_sizes(
+        cls, v: List[NonNegativeDecimal], values
+    ) -> List[NonNegativeDecimal]:
         checked = all(
             {
                 t in values
@@ -145,24 +146,7 @@ class FrameSizeConfiguration(BaseModel):
                 // 2
             ]
         else:
-            raise ConfigError(f"Frame size type {packet_size_type} not implemented!")
-
-    # @staticmethod
-    # def get_frame_length(
-    #     mix_size_length: Optional[FrameSizesOptions], index: int
-    # ) -> int:
-    #     # if index > len(MIXED_PACKET_SIZE):
-    #     # raise ConfigError(f"Index {index} is not valid for P_MIXWEIGHTS command!")
-    #     if not mix_size_length:
-    #         mix_size_length_dic = {}
-    #     else:
-    #         mix_size_length_dic = mix_size_length.dict()
-    #     length_value = (
-    #         MIXED_PACKET_SIZE[index]
-    #         if not (mix_size_length_dic.get(f"field_{index}", 0))
-    #         else mix_size_length_dic.get(f"field_{index}", 0)
-    #     )
-    #     return length_value
+            raise exceptions.FrameSizeTypeError(packet_size_type)
 
 
 class MultiStreamConfig(BaseModel):
@@ -224,7 +208,7 @@ class TestConfiguration(BaseModel):
     multi_stream_config: MultiStreamConfig
 
     @validator("payload_pattern", always=True, pre=True)
-    def payload_type_str_list(cls, v: str):
+    def payload_type_str_list(cls, v: str) -> str:
         if v.startswith("0x") or v.startswith("0X"):
             return v
         else:
@@ -233,9 +217,9 @@ class TestConfiguration(BaseModel):
             )
 
     @validator("multi_stream_config")
-    def validate_multi_stream(cls, v, values):
+    def validate_multi_stream(cls, v: MultiStreamConfig, values) -> MultiStreamConfig:
         if "flow_creation_type" not in values:
             return v
         if not values["flow_creation_type"].is_stream_based and v.enable_multi_stream:
-            raise ConfigError("Modifier-based mode doesn't support multi-stream!")
+            raise exceptions.ModifierBasedNotSupportMultiStream()
         return v

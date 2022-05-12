@@ -1,11 +1,11 @@
-
 import asyncio
 from typing import List, TYPE_CHECKING
-from ...utils.exceptions import ConfigError
+from pluginlib.plugin2544.utils import exceptions
 from xoa_driver import testers
 
 if TYPE_CHECKING:
-    from ...model import TestConfiguration
+    from pluginlib.plugin2544.model import TestConfiguration
+
 
 async def check_tester_sync_start(
     tester: "testers.L23Tester", use_sync_start: bool
@@ -14,7 +14,7 @@ async def check_tester_sync_start(
         return
     cap = await tester.capabilities.get()
     if not bool(cap.can_sync_traffic_start):
-        raise ConfigError(f"Tester does not support port staggering")
+        raise exceptions.PortStaggeringNotSupport()
 
 
 async def check_testers(

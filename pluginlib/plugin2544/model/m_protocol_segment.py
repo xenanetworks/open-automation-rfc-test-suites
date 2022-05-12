@@ -1,12 +1,11 @@
 from typing import List
 from pydantic import (
     BaseModel,
-    ConfigError,
     validator,
     NonNegativeInt,
 )
 from xoa_driver.enums import ProtocolOption
-
+from pluginlib.plugin2544.utils import exceptions
 from ..utils.constants import (
     ModifierActionOption,
     SegmentType,
@@ -92,7 +91,7 @@ class HeaderSegment(BaseModel):
                     max_v = max(fvr.start_value, fvr.stop_value)
                     can_max = pow(2, fvr.bit_length)
                     if max_v >= can_max:
-                        raise ConfigError(f'Field Value Range {fvr.field_name} boundary can not larger than {can_max}')
+                        raise exceptions.FieldValueRangeExceed(fvr.field_name, can_max)
 
         return field_value_ranges
 

@@ -1,10 +1,7 @@
 import os, re
-from pydantic import BaseModel, ConfigError, Field, validator
-from ..utils.constants import (
-    DEFAULT_SEGMENT_PATH,
-    MAX_MASK_BIT_LENGTH,
-    SegmentType,
-)
+from pydantic import BaseModel,Field, validator
+
+from pluginlib.plugin2544.utils import exceptions, constants as const
 from typing import List, Dict, Optional
 
 
@@ -76,15 +73,15 @@ class SegmentDefinition(BaseModel):
 
 
 def load_segment_map(
-    path: str = DEFAULT_SEGMENT_PATH,
-) -> Dict["SegmentType", "SegmentDefinition"]:
+    path: str = const.DEFAULT_SEGMENT_PATH,
+) -> Dict["const.SegmentType", "SegmentDefinition"]:
     dic = {}
     for i in os.listdir(path):
-        filepath = os.path.join(DEFAULT_SEGMENT_PATH, i)
+        filepath = os.path.join(const.DEFAULT_SEGMENT_PATH, i)
         if os.path.isfile(filepath) and filepath.endswith(".json"):
             value = SegmentDefinition.parse_file(filepath, encoding="utf-8")
             try:
-                key = SegmentType(value.name.lower())
+                key = const.SegmentType(value.name.lower())
             except ValueError:
                 continue
 
@@ -96,20 +93,20 @@ DEFAULT_SEGMENT_DIC = load_segment_map()
 
 
 def get_field_bit_length(
-    segment_type: "SegmentType", field_def: "FieldDefinition"
+    segment_type: "const.SegmentType", field_def: "FieldDefinition"
 ) -> int:
     return 8 * segment_type.raw_length if segment_type.is_raw else field_def.bit_length
 
 
 def get_field_byte_length(
-    segment_type: "SegmentType", field_def: "FieldDefinition"
+    segment_type: "const.SegmentType", field_def: "FieldDefinition"
 ) -> int:
     return segment_type.raw_length if segment_type.is_raw else field_def.byte_length
 
 
-def get_segment_definition(protocol: "SegmentType") -> SegmentDefinition:
+def get_segment_definition(protocol: "const.SegmentType") -> SegmentDefinition:
     if not protocol in DEFAULT_SEGMENT_DIC:
-        raise ConfigError(f"Not Support {protocol}")
+        raise exceptions.ProtocolNotSupport(protocol.value)
     else:
         return DEFAULT_SEGMENT_DIC[protocol]
 
