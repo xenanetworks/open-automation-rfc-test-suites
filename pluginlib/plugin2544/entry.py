@@ -19,7 +19,6 @@ from .plugin.structure import (
 from .plugin.toggle_port_sync_state import add_toggle_port_sync_state_steps
 from .utils.constants import MACLearningMode
 from .plugin.control_ports import collect_control_ports
-from .plugin.delay_after_reset import delay_after_reset_main
 from .plugin.resolve_port_relations import resolve_port_relations_main
 from .plugin.common import setup_macaddress, TPLDControl
 from .plugin.arp_request import set_arp_request
@@ -111,8 +110,7 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
     async def __pre_test(self) -> None:
         await self.__init_resource()
         await self.__prepare_data()
-        # await reserve_reset_ports(self.testers)
-        await delay_after_reset_main(self.test_conf.delay_after_port_reset_second)
+        await asyncio.sleep(self.test_conf.delay_after_port_reset_second)
         await self.__configure_resource()
 
     async def __do_test(self) -> None:

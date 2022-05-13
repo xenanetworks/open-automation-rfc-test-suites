@@ -8,7 +8,6 @@ from .statistics import (
     start_traffic,
 )
 from typing import TYPE_CHECKING, List
-from xoa_driver.utils import apply
 
 if TYPE_CHECKING:
     from .test_operations import StateChecker

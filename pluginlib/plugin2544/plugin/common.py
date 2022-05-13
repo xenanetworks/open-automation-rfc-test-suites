@@ -1,4 +1,3 @@
-from ipaddress import IPv4Network, IPv6Network
 import re
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
@@ -149,10 +148,6 @@ def is_port_pair(
     )
 
 
-def is_dest_port(peer_config: "PortConfiguration") -> bool:
-    return peer_config.is_rx_port
-
-
 def is_peer_port(
     topology: "TestTopology",
     port_config: "PortConfiguration",
@@ -168,14 +163,6 @@ def is_peer_port(
         raise Exception(f"illegal topology! {topology}")
 
 
-def is_dest_port_for_source_port(
-    topology: "TestTopology",
-    port_config: "PortConfiguration",
-    peer_config: "PortConfiguration",
-) -> bool:
-    return is_peer_port(topology, port_config, peer_config)
-
-
 def get_peers_for_source(
     topology: "TestTopology",
     port_config: "PortConfiguration",
@@ -184,9 +171,9 @@ def get_peers_for_source(
     dest_ports = []
     for peer_struct in control_ports:
         peer_config = peer_struct.port_conf
-        if not is_dest_port(peer_config):
+        if not peer_config.is_rx_port:
             continue
-        if is_dest_port_for_source_port(topology, port_config, peer_config):
+        if is_peer_port(topology, port_config, peer_config):
             dest_ports.append(peer_struct)
     return dest_ports
 

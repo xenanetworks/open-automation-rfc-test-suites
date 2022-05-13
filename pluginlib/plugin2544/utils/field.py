@@ -1,6 +1,6 @@
 from decimal import Decimal
 import re
-from typing import Any, List
+from typing import Any, List, Union
 from ipaddress import (
     IPv4Address as OldIPv4Address,
     IPv6Address as OldIPv6Address,
@@ -109,3 +109,6 @@ class NonNegativeDecimal(Decimal):
         Decimal.__init__(v)
         if self < 0:
             raise ValueError("Please pass in positive Value.")
+
+
+IPAddress = Union[IPv4Address, IPv6Address]
