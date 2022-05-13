@@ -1,21 +1,20 @@
 import asyncio
 from typing import TYPE_CHECKING, List, Union
 from pluginlib.plugin2544.utils import field, exceptions, constants as const
-from ..common import (
+from pluginlib.plugin2544.plugin.common import (
     get_dest_port_structs,
     get_tpld_total_length,
 )
 
 if TYPE_CHECKING:
     from xoa_driver.ports import GenericL23Port
-    from ..structure import (
+    from pluginlib.plugin2544.plugin.structure import (
         Structure,
     )
-    from ...model import (
+    from pluginlib.plugin2544.model import (
         PortConfiguration,
         TestConfiguration,
     )
-
 
 
 async def check_port_modifiers(
@@ -29,8 +28,8 @@ async def check_port_modifiers(
     modifier_count = port_conf.profile.modifier_count
     if is_stream_based:
         if modifier_count > port.info.capabilities.max_modifiers:
-            raise ConfigError(
-                f"Port can only have {port.info.capabilities.max_modifiers} modifiers per stream (has {modifier_count})"
+            raise exceptions.ModifierExceed(
+                modifier_count, port.info.capabilities.max_modifiers
             )
     else:
         if modifier_count > 0:
@@ -46,8 +45,8 @@ async def check_stream_limitations(
         return
     stream_count = len(port_struct.properties.peers) * per_port_stream_count
     if stream_count > port_struct.port.info.capabilities.max_streams_per_port:
-        raise ConfigError(
-            f"Port only support {port_struct.port.info.capabilities.max_streams_per_port} streams (needs {stream_count})"
+        raise exceptions.StreamExceed(
+            stream_count, port_struct.port.info.capabilities.max_streams_per_port
         )
 
 
@@ -62,7 +61,9 @@ def count_source_port(
 
 
 def check_tid_limitations(
-    control_ports: List["Structure"], scope: "const.TidAllocationScope", is_stream_based: bool
+    control_ports: List["Structure"],
+    scope: "const.TidAllocationScope",
+    is_stream_based: bool,
 ) -> None:
     if not is_stream_based:
         return
@@ -76,9 +77,7 @@ def check_tid_limitations(
         tid_value += src_port_count
         max_tpld_stats = peer_struct.port.info.capabilities.max_tpld_stats
         if tid_value > max_tpld_stats:
-            raise ConfigError(
-                f"Needed TID count {tid_value} exceeds max TID limitation {max_tpld_stats}"
-            )
+            raise exceptions.TPLDIDExceed(tid_value, max_tpld_stats)
 
 
 async def check_port_min_packet_length(
@@ -87,19 +86,23 @@ async def check_port_min_packet_length(
     packet_size_type: "const.PacketSizeType",
 ) -> None:
     if port.info.capabilities.min_packet_length > min_packet_size:
-        raise ConfigError(
-            f"{packet_size_type.value} {min_packet_size} too small for port, must at least be {port.info.capabilities.min_packet_length} bytes"
+        raise exceptions.MinPacketLengthExceed(
+            packet_size_type.value,
+            int(min_packet_size),
+            port.info.capabilities.min_packet_length,
         )
 
 
 async def check_port_max_packet_length(
     port: "GenericL23Port",
-    max_packet_size: Union[NonNegativeDecimal, int],
+    max_packet_size: Union[field.NonNegativeDecimal, int],
     packet_size_type: "const.PacketSizeType",
 ) -> None:
     if port.info.capabilities.max_packet_length < max_packet_size:
-        raise ConfigError(
-            f"{packet_size_type.value} {max_packet_size} too large for port, can at most be {port.info.capabilities.max_packet_length} bytes"
+        raise exceptions.MaxPacketLengthExceed(
+            packet_size_type.value,
+            int(max_packet_size),
+            port.info.capabilities.max_packet_length,
         )
 
 
@@ -114,20 +117,19 @@ def get_needed_packet_length(
 
 async def check_needed_packet_length(
     port_struct: "Structure",
-    min_packet_size: Union[NonNegativeDecimal, int],
-    use_micro_tpld_on_demand,
+    min_packet_size: Union[field.NonNegativeDecimal, int],
+    use_micro_tpld_on_demand: bool,
 ) -> None:
     need_packet_length = get_needed_packet_length(port_struct, use_micro_tpld_on_demand)
     if min_packet_size < need_packet_length:
-        raise ConfigError(
-            f"Packet size {min_packet_size} too small for protocol segment, need {need_packet_length} bytes!"
-        )
+        raise exceptions.PacketSizeTooSmall(int(min_packet_size), need_packet_length)
 
 
 async def check_payload_pattern(port: "GenericL23Port", payload_pattern: str) -> None:
-    if port.info.capabilities.max_pattern_length < len(payload_pattern) // 2:
-        raise ConfigError(
-            f"Custom payload pattern length({len(payload_pattern)}) should smaller than {port.info.capabilities.max_pattern_length}"
+    cur = len(payload_pattern) // 2
+    if port.info.capabilities.max_pattern_length < cur:
+        raise exceptions.PayloadPatternExceed(
+            cur, port.info.capabilities.max_pattern_length
         )
 
 
@@ -135,7 +137,7 @@ async def check_micro_tpld(port: "GenericL23Port", use_mocro_tpld: bool) -> None
     if not use_mocro_tpld:
         return
     if not bool(port.info.capabilities.can_micro_tpld):
-        raise ConfigError(f"Port doesn't support micro tpld")
+        raise exceptions.MicroTPLDNotSupport()
 
 
 async def check_port_test_config(

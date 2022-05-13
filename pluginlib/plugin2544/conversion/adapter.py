@@ -6,7 +6,7 @@ from typing import Dict, List, Tuple, Union
 from .enums import (
     OSegmentType,
 )
-from valhalla_core.core.test_suites.datasets import TestParameters, PortIdentity
+from xoa_core.core.test_suites.datasets import TestParameters, PortIdentity
 from ..dataset import PluginModel2544
 from ..model import (
     IPV4AddressProperties,

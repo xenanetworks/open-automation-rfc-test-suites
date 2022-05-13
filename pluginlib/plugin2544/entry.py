@@ -1,4 +1,4 @@
-from valhalla_core.types import PluginAbstract
+from xoa_core.types import PluginAbstract
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -37,7 +37,7 @@ from .plugin.checker.config_checkers import check_config
 from .plugin.mac_learning import add_mac_learning_steps
 from .plugin.outer_loop import setup_for_outer_loop
 from decimal import getcontext
-from valhalla_core.types import PluginAbstract
+from xoa_core.types import PluginAbstract
 
 getcontext().prec = 12
 

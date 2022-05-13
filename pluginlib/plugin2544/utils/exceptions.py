@@ -64,10 +64,24 @@ class ModifierBasedNotSupportMultiStream(Exception):
         self.msg = "Modifier-based mode doesn't support multi-stream!"
         super().__init__(self.msg)
 
+
 class ModifierBasedNotSupportDefineModifier(Exception):
     def __init__(self) -> None:
         self.msg = "Not possible to define modifiers when using modifier-based flows"
         super().__init__(self.msg)
+
+
+class ModifierExceed(Exception):
+    def __init__(self, cur: int, max: int) -> None:
+        self.msg = f"Port can only have {max} modifiers per stream (has {cur})"
+        super().__init__(self.msg)
+
+
+class StreamExceed(Exception):
+    def __init__(self, cur: int, max: int) -> None:
+        self.msg = f"Port only support {max} streams (needs {cur})"
+        super().__init__(self.msg)
+
 class PortPeerNeeded(Exception):
     def __init__(self) -> None:
         self.msg = "You must assign a peer to the port!"
@@ -207,7 +221,36 @@ class FieldValueRangeExceed(Exception):
         self.msg = f"Field Value Range {field_name} boundary can not larger than {max}"
         super().__init__(self.msg)
 
+
 class PortStaggeringNotSupport(Exception):
     def __init__(self) -> None:
         self.msg = "Tester does not support port staggering"
+        super().__init__(self.msg)
+
+
+class MinPacketLengthExceed(Exception):
+    def __init__(self, type: str, cur: int, min: int) -> None:
+        self.msg = f"{type} {cur} too small for port, must at least be {min} bytes"
+        super().__init__(self.msg)
+
+
+class MaxPacketLengthExceed(Exception):
+    def __init__(self, type: str, cur: int, max: int) -> None:
+        self.msg = f"{type} {cur} too large for port, can at most be {max} bytes"
+        super().__init__(self.msg)
+
+class MicroTPLDNotSupport(Exception):
+    def __init__(self) -> None:
+        self.msg = "Port doesn't support micro tpld"
+        super().__init__(self.msg)
+
+
+class PacketSizeTooSmall(Exception):
+    def __init__(self, cur:int, need:int) -> None:
+        self.msg = f"Packet size {cur} too small for protocol segment, need {need} bytes!"
+        super().__init__(self.msg)
+
+class PayloadPatternExceed(Exception):
+    def __init__(self, cur:int, max:int) -> None:
+        self.msg =  f"Custom payload pattern length({cur}) should smaller than {max}"
         super().__init__(self.msg)

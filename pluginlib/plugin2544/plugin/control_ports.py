@@ -1,6 +1,6 @@
 import asyncio
 from typing import Dict, TYPE_CHECKING, List
-from valhalla_core.core.test_suites.datasets import PortIdentity
+from xoa_core.core.test_suites.datasets import PortIdentity
 from xoa_driver import utils, ports, enums, testers
 from .structure import Structure
 
