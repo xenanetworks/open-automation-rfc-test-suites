@@ -1,10 +1,12 @@
 import copy
+import collections
 from typing import List, TYPE_CHECKING, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
 from ..utils.constants import FlowCreationType
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
 from ..model import HwModifier
 from xoa_core.core.test_suites.datasets import PortIdentity
+
 if TYPE_CHECKING:
     from ..model import (
         PortConfiguration,
@@ -15,6 +17,23 @@ if TYPE_CHECKING:
     )
     from xoa_driver.testers import L23Tester
     from xoa_driver.ports import GenericL23Port
+
+# ArpRefreshSet = collections.namedtuple(
+#     "ArpRefreshSet", ["is_ipv4", "source_ip", "source_mac", "addr_range"]
+# )
+# RXTableSet = collections.namedtuple("RXTableSet", ["destination_ip", "dmac"])
+
+@dataclass(frozen=True)
+class ArpRefreshData:
+    is_ipv4: bool
+    source_ip: Union[IPv4Address, IPv6Address, None]
+    source_mac: Optional[MacAddress]
+    addr_range: Optional[range]
+
+@dataclass(frozen=True)
+class RXTableData:
+    destination_ip: Union[IPv4Address, IPv6Address]
+    dmac: MacAddress
 
 
 class Structure:
@@ -51,8 +70,8 @@ TypeConf = Union["ThroughputTest", "LatencyTest", "FrameLossRateTest", "BackToBa
 
 @dataclass
 class Properties:
-    identity: str = ''
-    chassis_id: str = ''
+    identity: str = ""
+    chassis_id: str = ""
     test_port_index: int = 0
     num_modifiersL2: int = 1
     dest_port_count: int = 0
@@ -63,22 +82,12 @@ class Properties:
     mac_address: MacAddress = MacAddress()
     is_max_frames_limit_set = False
     peers: List["Structure"] = field(default_factory=list)
-    address_refresh_data_set: Set[
-        Tuple[
-            bool,
-            Union[IPv4Address, IPv6Address, None],
-            Optional[MacAddress],
-            Optional[Tuple[int, int, int]],
-        ]
-    ] = field(default_factory=set)
-    rx_table_set: Set[
-        Tuple[Union[IPv4Address, IPv6Address, None], Union[MacAddress, None]]
-    ] = field(default_factory=set)
+    address_refresh_data_set: Set[ArpRefreshData] = field(default_factory=set)
+    rx_table_set: Set[RXTableData] = field(default_factory=set)
 
     def set_identity(self, port_identity: "PortIdentity") -> None:
         self.identity = f"{port_identity.tester_index}-{port_identity.module_index}-{port_identity.port_index}"
         self.chassis_id = port_identity.tester_index
-
 
     def register_peer(self, peer: "Structure") -> None:
         if peer not in self.peers:

@@ -1,6 +1,6 @@
 import asyncio
-import collections
-from typing import List, Dict, Tuple
+from dataclasses import dataclass
+from typing import List, Dict, Union
 from ..utils.logger import logger
 from ..utils.constants import ARPSenarioType
 from ..utils.field import IPv4Address, IPv6Address, MacAddress, IPAddress
@@ -10,7 +10,11 @@ from .structure import StreamInfo, Structure
 from .common import get_pair_address, is_same_ipnetwork
 from xoa_driver import utils, enums
 
-Pair = collections.namedtuple("Pair", ["source_ip", "destination_ip"])
+
+@dataclass
+class Pair:
+    source_ip: Union[IPv4Address, IPv6Address]
+    destination_ip: Union[IPv4Address, IPv6Address]
 
 
 async def set_arp_request(

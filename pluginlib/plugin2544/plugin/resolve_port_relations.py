@@ -1,6 +1,6 @@
 from ..utils.constants import PortGroup
 from typing import List, TYPE_CHECKING
-from .common import get_source_port_structs, get_peers_for_source
+from .common import filter_port_structs, get_peers_for_source
 
 if TYPE_CHECKING:
     from .structure import Structure
@@ -34,7 +34,7 @@ def resolve_port_relations_main(
             port_struct.properties.change_test_port_index(test_port_index)
             test_port_index += 1
 
-    source_port_structs = get_source_port_structs(control_ports)
+    source_port_structs = filter_port_structs(control_ports)
     for port_struct in source_port_structs:
         port_config = port_struct.port_conf
         dest_ports = get_peers_for_source(topology, port_config, control_ports)

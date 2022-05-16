@@ -1,15 +1,13 @@
 import asyncio
 from decimal import Decimal
 import math
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Iterator, List, Optional, Tuple, Union
+from xoa_driver import misc, enums, utils
+from pluginlib.plugin2544.plugin.structure import ArpRefreshData, RXTableData
 from .test_operations import StateChecker
 from ..utils.field import NonNegativeDecimal
 
 from ..utils.scheduler import schedule
-from xoa_driver.misc import ArpChunk, NdpChunk
-from xoa_driver.enums import OnOff
-from xoa_driver.misc import Token
-from xoa_driver.utils import apply
 from .test_result_structure import BoutEntry
 from ..utils.constants import (
     MIN_REFRESH_TIMER_INTERNAL,
@@ -19,26 +17,20 @@ from ..utils.constants import (
     TestState,
 )
 
-from .common import get_dest_port_structs, get_source_port_structs
+from .common import filter_port_structs
 from .setup_source_port_rates import setup_source_port_rates
 from .statistics import set_port_txtime_limit, start_traffic
 from ..utils.field import IPv4Address, IPv6Address
 from ..utils.packet import ARPPacket, MacAddress, NDPPacket
-from .common import get_dest_port_structs, get_source_port_structs
-from .setup_source_port_rates import setup_source_port_rates
 
 if TYPE_CHECKING:
     from ..model import TestConfiguration
     from .structure import StreamInfo, Structure
 
-START = 0
-STEP = 1
-STOP = 2
-
 
 def get_dest_ip_modifier_addr_range(
     port_struct: "Structure",
-) -> Optional[Tuple[int, int, int]]:
+) -> Optional[range]:
     header_segments = port_struct.port_conf.profile.header_segments
     flag = False
     addr_range = None
@@ -47,10 +39,10 @@ def get_dest_ip_modifier_addr_range(
             flag = True
         for modifier in header_segment.hw_modifiers:
             if modifier.field_name in ["Dest IP Addr", "Dest IPv6 Addr"]:
-                addr_range = (
+                addr_range = range(
                     modifier.start_value,
+                    modifier.stop_value + 1,
                     modifier.step_value,
-                    modifier.stop_value,
                 )
         if flag:
             break
@@ -66,7 +58,7 @@ def add_address_refresh_entry(
     is_ipv4 = port_struct.port_conf.profile.protocol_version.is_ipv4
     addr_range = get_dest_ip_modifier_addr_range(port_struct)
     port_struct.properties.address_refresh_data_set.add(
-        (is_ipv4, source_ip, source_mac, addr_range)
+        ArpRefreshData(is_ipv4, source_ip, source_mac, addr_range)
     )
 
 
@@ -78,42 +70,58 @@ async def setup_arp_rx_tables(
     # An NDP entry is: <IPv6 address> <prefix=128> <patch off> <MAC address>
     tokens = []
     for port_struct in control_ports:
-        arp_chunk: List[ArpChunk] = []
-        ndp_chunk: List[NdpChunk] = []
+        arp_chunk: List[misc.ArpChunk] = []
+        ndp_chunk: List[misc.NdpChunk] = []
         port = port_struct.port
         for rx_data in port_struct.properties.rx_table_set:
-            if isinstance(rx_data[0], IPv4Address):
+            if isinstance(rx_data.destination_ip, IPv4Address):
                 arp_chunk.append(
-                    ArpChunk(
-                        *[rx_data[0], IPPrefixLength.IPv4.value, OnOff.OFF, rx_data[1]]
+                    misc.ArpChunk(
+                        *[
+                            rx_data.destination_ip,
+                            IPPrefixLength.IPv4.value,
+                            enums.OnOff.OFF,
+                            rx_data.dmac,
+                        ]
                     )
                 )
-            elif isinstance(rx_data[0], IPv6Address):
+            elif isinstance(rx_data.destination_ip, IPv6Address):
                 ndp_chunk.append(
-                    NdpChunk(
-                        *[rx_data[0], IPPrefixLength.IPv6.value, OnOff.OFF, rx_data[1]]
+                    misc.NdpChunk(
+                        *[
+                            rx_data.destination_ip,
+                            IPPrefixLength.IPv6.value,
+                            enums.OnOff.OFF,
+                            rx_data.dmac,
+                        ]
                     )
                 )
         if arp_chunk:
             tokens.append(port.arp_rx_table.set(arp_chunk))
         if ndp_chunk:
             tokens.append(port.ndp_rx_table.set(ndp_chunk))
-    await apply(*tokens)
+    await utils.apply(*tokens)
+
+
+def get_bytes_from_macaddress(dmac: "MacAddress") -> Iterator[str]:
+    for i in range(0, len(dmac), 3):
+        yield dmac[i : i + 2]
 
 
 def get_link_local_uci_ipv6address(dmac: "MacAddress") -> str:
-    return f"FE80000000000000{int(dmac[0:2]) | 2 }{dmac[3:5]}{dmac[6:8]}FFFE{dmac[9:11]}{dmac[12:14]}{dmac[15:17]}"
+    b = get_bytes_from_macaddress(dmac)
+    return f"FE80000000000000{int(next(b)) | 2 }{next(b)}{next(b)}FFFE{next(b)}{next(b)}{next(b)}"
 
 
 def get_address_list(
     source_ip: Union["IPv4Address", "IPv6Address"],
-    addr_range: Optional[Tuple[int, int, int]],
+    addr_range: Optional[range],
 ) -> List[Union["IPv4Address", "IPv6Address"]]:
     source_ip_list = []
     if addr_range:
         is_ipv4 = True if isinstance(source_ip, IPv4Address) else False
         addr = str(source_ip).split(".") if is_ipv4 else str(source_ip).split(":")
-        for i in range(addr_range[START], addr_range[STOP] + 1, addr_range[STEP]):
+        for i in addr_range:
             if i >= UNREACH_BYTE_VALUE:
                 i = i % UNREACH_BYTE_VALUE
             addr[-1] = str(i)
@@ -129,10 +137,7 @@ def get_address_list(
 
 def get_address_learning_packet(
     port_struct: "Structure",
-    is_ipv4: bool,
-    source_ip: Optional[Union["IPv4Address", "IPv6Address"]],
-    source_mac: Optional["MacAddress"],
-    addr_range: Optional[Tuple[int, int, int]],  # [start, step, stop]
+    arp_refresh_data: ArpRefreshData,
     use_gateway=False,
 ) -> List[str]:  # GetAddressLearningPacket
     """ARP REFRESH STEP 2: generate learning packet according to address_refresh_data_set"""
@@ -145,14 +150,18 @@ def get_address_learning_packet(
             dmac = gwmac
     smac = (
         port_struct.properties.mac_address
-        if not source_mac or source_mac.is_empty
-        else source_mac
+        if not arp_refresh_data.source_mac or arp_refresh_data.source_mac.is_empty
+        else arp_refresh_data.source_mac
     )
-    source_ip = sender_ip if not source_ip or source_ip.is_empty else source_ip
-    source_ip_list = get_address_list(source_ip, addr_range)
+    source_ip = (
+        sender_ip
+        if not arp_refresh_data.source_ip or arp_refresh_data.source_ip.is_empty
+        else arp_refresh_data.source_ip
+    )
+    source_ip_list = get_address_list(source_ip, arp_refresh_data.addr_range)
     packet_list = []
     for source_ip in source_ip_list:
-        if is_ipv4:
+        if arp_refresh_data.is_ipv4:
             destination_ip = sender_ip if gateway.is_empty else gateway
             packet = ARPPacket(
                 smac=smac,
@@ -176,17 +185,14 @@ def get_address_learning_packet(
 def setup_address_refresh(
     control_ports: List["Structure"],
     use_gateway: bool,
-) -> List[Tuple["Token", bool]]:  # SetupAddressRefresh
-    address_refresh_tokens: List[Tuple["Token", bool]] = []
+) -> List[Tuple["misc.Token", bool]]:  # SetupAddressRefresh
+    address_refresh_tokens: List[Tuple["misc.Token", bool]] = []
     for port_struct in control_ports:
         arp_data_set = port_struct.properties.address_refresh_data_set
         for arp_data in arp_data_set:
             packet_list = get_address_learning_packet(
                 port_struct,
-                arp_data[0],
-                arp_data[1],
-                arp_data[2],
-                arp_data[3],
+                arp_data,
                 use_gateway,
             )
             is_rx_only = (
@@ -204,7 +210,7 @@ async def setup_multi_stream_address_arp_refresh(
     control_ports: List["Structure"],
     stream_lists: List["StreamInfo"],
 ) -> None:  # SetupMultiStreamAddressArpRefresh
-    dest_structs = get_dest_port_structs(control_ports)
+    dest_structs = filter_port_structs(control_ports, is_source_port=False)
     for dest_struct in dest_structs:
         if not dest_struct.port_conf.profile.protocol_version.is_l3:
             continue
@@ -225,7 +231,7 @@ async def setup_multi_stream_address_arp_refresh(
                     addr_coll.dmac_address,
                 )
                 dest_struct.properties.rx_table_set.add(
-                    (dest_ip_address, addr_coll.dmac_address)
+                    RXTableData(dest_ip_address, addr_coll.dmac_address)
                 )
     await setup_arp_rx_tables(control_ports)
 
@@ -233,7 +239,7 @@ async def setup_multi_stream_address_arp_refresh(
 def setup_normal_address_arp_refresh(
     control_ports: List["Structure"],
 ) -> None:  # SetupNormalAddressArpRefresh
-    dest_structs = get_dest_port_structs(control_ports)
+    dest_structs = filter_port_structs(control_ports, is_source_port=False)
     for dest_struct in dest_structs:
         if not dest_struct.port_conf.profile.protocol_version.is_l3:
             continue
@@ -245,7 +251,7 @@ def gateway_arp_refresh(
     test_conf: "TestConfiguration",
 ) -> None:
     # Add Gateway ARP Refresh
-    source_port_structs = get_source_port_structs(control_ports)
+    source_port_structs = filter_port_structs(control_ports)
     for port_struct in source_port_structs:
         protocol_version = port_struct.port_conf.profile.protocol_version
         if test_conf.use_gateway_mac_as_dmac and protocol_version.is_l3:
@@ -279,18 +285,18 @@ class AddressRefreshHandler:
 
     def __init__(
         self,
-        address_refresh_tokens: List[Tuple["Token", bool]],
+        address_refresh_tokens: List[Tuple["misc.Token", bool]],
         refresh_period: "NonNegativeDecimal",
     ) -> None:
         self.index = 0
         self.refresh_burst_size = 1
-        self.tokens: List["Token"] = []
+        self.tokens: List["misc.Token"] = []
         self.address_refresh_tokens = address_refresh_tokens
         self.interval = 0.0  # unit: second
         self.refresh_period = refresh_period
         self.state = TestState.L3_LEARNING
 
-    def get_batch(self) -> List["Token"]:
+    def get_batch(self) -> List["misc.Token"]:
         packet_list = []
         if self.index >= len(self.tokens):
             self.index = 0
@@ -301,7 +307,7 @@ class AddressRefreshHandler:
         return packet_list
 
     def _calc_refresh_time_interval(
-        self, refresh_tokens: List["Token"]
+        self, refresh_tokens: List["misc.Token"]
     ) -> None:  # CalcRefreshTimerInternal
         total_refresh_count = len(refresh_tokens)
         if total_refresh_count > 0:
@@ -336,7 +342,7 @@ async def generate_l3_learning_packets(
     address_refresh_handler: "AddressRefreshHandler",
 ) -> bool:
     tokens = address_refresh_handler.get_batch()
-    await apply(*tokens)
+    await utils.apply(*tokens)
 
     return not state_checker.test_running()
 
@@ -378,7 +384,7 @@ async def add_L3_learning_preamble_steps(
         return None
     if not has_l3:
         return None
-    source_port_structs = get_source_port_structs(control_ports)
+    source_port_structs = filter_port_structs(control_ports)
     address_refresh_handler = await setup_address_arp_refresh(
         control_ports, stream_lists, test_conf
     )
@@ -406,7 +412,12 @@ async def add_L3_learning_preamble_steps(
         state_checker, address_refresh_handler, TestState.L3_LEARNING
     )
     while state_checker.test_running():
-        await asyncio.gather(*[port_struct.port.traffic.state.get() for port_struct in source_port_structs])
+        await asyncio.gather(
+            *[
+                port_struct.port.traffic.state.get()
+                for port_struct in source_port_structs
+            ]
+        )
         await asyncio.sleep(1)
     await set_port_txtime_limit(source_port_structs, Decimal(0))
     return address_refresh_handler

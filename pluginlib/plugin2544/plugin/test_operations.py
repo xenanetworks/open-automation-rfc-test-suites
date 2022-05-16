@@ -3,7 +3,7 @@ from time import time
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from loguru import logger
-from .common import get_source_port_structs
+from .common import filter_port_structs
 from ..utils.field import NonNegativeDecimal
 from xoa_driver.utils import apply
 from xoa_driver.ports import GenericL23Port
@@ -58,7 +58,7 @@ class StateChecker:
                 self.sync_dic[port] = bool((await port.sync_status.get()).sync_status)
                 port.on_receive_sync_change(self._change_sync_status)
 
-        for src_port_struct in get_source_port_structs(self.control_ports):
+        for src_port_struct in filter_port_structs(self.control_ports):
             src_port = src_port_struct.port
             self.started_dic[src_port] = bool(
                 (await src_port.traffic.state.get()).on_off

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, List, Dict
 
 
 from ..utils.constants import TestResultState, TestType
-from .common import get_source_port_structs
+from .common import filter_port_structs
 from .mac_learning import add_L2_trial_learning_steps
 from .flow_based_learning import add_flow_based_learning_preamble_steps
 from .setup_source_port_rates import setup_source_port_rates
@@ -151,7 +151,7 @@ async def run_latency_test(
     if not latency_conf.enabled:
         return
     state_checker = await StateChecker(control_ports, test_conf.should_stop_on_los)
-    source_port_structs = get_source_port_structs(control_ports)
+    source_port_structs = filter_port_structs(control_ports)
     rate_sweep_list = get_rate_sweep_list(latency_conf, throuput_result)
 
     for k, rate_percent in enumerate(rate_sweep_list):

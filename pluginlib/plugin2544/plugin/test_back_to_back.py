@@ -8,7 +8,7 @@ from ..utils.field import NonNegativeDecimal
 from ..utils.constants import TestResultState, TestType
 
 # from ..utils.scheduler import schedule
-from .common import get_source_port_structs
+from .common import filter_port_structs
 from .mac_learning import add_L2_trial_learning_steps
 from .flow_based_learning import add_flow_based_learning_preamble_steps
 from .statistics import (
@@ -114,7 +114,7 @@ async def run_back_to_back_test(
     if not back_to_back_conf.enabled:
         return
     state_checker = await StateChecker(control_ports, test_conf.should_stop_on_los)
-    source_port_structs = get_source_port_structs(control_ports)
+    source_port_structs = filter_port_structs(control_ports)
     address_refresh_handler = await add_L3_learning_preamble_steps(
         control_ports,
         stream_lists,

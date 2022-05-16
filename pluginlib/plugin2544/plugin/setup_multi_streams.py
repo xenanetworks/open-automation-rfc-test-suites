@@ -3,7 +3,7 @@ from typing import List, Dict, Tuple
 from ..utils import exceptions
 from .structure import Structure, AddressCollection, StreamInfo
 from ..model import TestConfiguration, MultiStreamConfig
-from .common import get_mac_address_by_index, get_source_port_structs, TPLDControl
+from .common import get_mac_address_by_index, filter_port_structs, TPLDControl
 from ..utils.field import IPv4Address, IPv6Address
 
 
@@ -82,7 +82,7 @@ def setup_multi_source_streams(
     offset_table: Dict[Tuple[str, str], List[List[int]]],
 ) -> List["StreamInfo"]:
     stream_lists: List["StreamInfo"] = []
-    source_port_structs = get_source_port_structs(control_ports)
+    source_port_structs = filter_port_structs(control_ports)
     for port_struct in source_port_structs:
         stream_id_counter = 0
         for peer_struct in port_struct.properties.peers:
@@ -128,7 +128,7 @@ def setup_offset_table(
     offset_table = {}
     offset = multi_stream_config.multi_stream_address_offset
     inc = multi_stream_config.multi_stream_address_increment
-    source_port_structs = get_source_port_structs(control_ports)
+    source_port_structs = filter_port_structs(control_ports)
     for port_struct in source_port_structs:
         port_index = port_struct.properties.identity
         for peer_struct in port_struct.properties.peers:

@@ -9,7 +9,6 @@ from ..utils.constants import (
     STANDARD_TPLD_TOTAL_LENGTH,
 )
 
-from xoa_driver.utils import apply
 from xoa_driver.enums import ProtocolOption
 
 if TYPE_CHECKING:
@@ -43,12 +42,6 @@ async def setup_macaddress(
                 mac_base_address, port_struct.properties.test_port_index
             )
         )
-
-
-def is_ip_zero(address: Union["IPv4Address", "IPv6Address"]) -> bool:
-    if isinstance(address, IPv4Address):
-        return address != IPv4Address("0.0.0.0")
-    return address != IPv6Address("::")
 
 
 def is_same_ipnetwork(port_struct: "Structure", peer_struct: "Structure") -> bool:
@@ -178,19 +171,14 @@ def get_peers_for_source(
     return dest_ports
 
 
-def get_source_port_structs(control_ports: List["Structure"]) -> List["Structure"]:
+def filter_port_structs(
+    control_ports: List["Structure"], is_source_port: bool = True
+) -> List["Structure"]:
     return [
         port_struct
         for port_struct in control_ports
-        if port_struct.port_conf.is_tx_port == True
-    ]
-
-
-def get_dest_port_structs(control_ports: List["Structure"]) -> List["Structure"]:
-    return [
-        port_struct
-        for port_struct in control_ports
-        if port_struct.port_conf.is_rx_port == True
+        if (is_source_port and port_struct.port_conf.is_tx_port)
+        or (not is_source_port and port_struct.port_conf.is_rx_port)
     ]
 
 

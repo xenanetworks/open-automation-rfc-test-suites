@@ -6,7 +6,7 @@ from ..model import (
     TestConfiguration,
 )
 from .structure import AddressCollection, StreamInfo
-from .common import get_source_port_structs, get_usable_dest_ip_address
+from .common import filter_port_structs, get_usable_dest_ip_address
 from .stream_base_settings import (
     get_modifier_range_by_test_port_index,
     get_rx_ports_by_range,
@@ -25,7 +25,7 @@ def setup_standard_streams(
     test_conf: "TestConfiguration",
 ) -> List["StreamInfo"]:
     stream_lists: List["StreamInfo"] = []
-    source_port_structs = get_source_port_structs(control_ports)
+    source_port_structs = filter_port_structs(control_ports)
     for port_struct in source_port_structs:
 
         stream_id_counter = 0
