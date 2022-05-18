@@ -2,7 +2,7 @@ import asyncio
 from typing import TYPE_CHECKING, List, Union
 from pluginlib.plugin2544.utils import field, exceptions, constants as const
 from pluginlib.plugin2544.plugin.common import (
-    get_dest_port_structs,
+    filter_port_structs,
     get_tpld_total_length,
 )
 
@@ -71,7 +71,7 @@ def check_tid_limitations(
         return
 
     tid_value = 0
-    dest_port_structs = get_dest_port_structs(control_ports)
+    dest_port_structs = filter_port_structs(control_ports, is_source_port=False)
     for peer_struct in dest_port_structs:
         src_port_count = count_source_port(control_ports, peer_struct)
         tid_value += src_port_count

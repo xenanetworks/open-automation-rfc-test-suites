@@ -3,6 +3,7 @@ import hashlib
 from decimal import Decimal
 from typing import Dict, List, Tuple, Union
 
+
 from .enums import (
     OSegmentType,
 )
@@ -17,7 +18,6 @@ from ..model import (
     HwModifier,
     ProtocolSegmentProfileConfig,
     FrameSizeConfiguration,
-    FrameSizesOptions,
     MultiStreamConfig,
     TestConfiguration,
     TogglePortSyncConfig,
@@ -39,6 +39,7 @@ from .model2544 import (
     Latency,
     Loss,
     Model2544 as old_model,
+    OFrameSizesOptions,
     ORateIterationOptions,
     ORateSweepOptions,
     PortEntity,
@@ -90,7 +91,7 @@ class Converter:
             varying_packet_min_size=packet_size.hw_packet_min_size,
             varying_packet_max_size=packet_size.hw_packet_max_size,
             mixed_sizes_weights=packet_size.mixed_sizes_weights,
-            mixed_length_config=fz if fz else FrameSizesOptions(),
+            mixed_length_config=OFrameSizesOptions(**fz),
         )
 
     def __gen_multi_stream_config(self) -> "MultiStreamConfig":

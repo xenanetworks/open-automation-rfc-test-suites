@@ -2,7 +2,7 @@ import asyncio
 from decimal import Decimal
 from typing import TYPE_CHECKING, Dict, List
 from xoa_driver.utils import apply
-from xoa_driver.enums import OnOff
+from xoa_driver import enums
 
 if TYPE_CHECKING:
     from .structure import Structure
@@ -40,7 +40,7 @@ async def start_traffic_sync(tester: "L23Tester", module_port_list: List[int]) -
     #     f"SYNC {tester.management_interface.ip_address} -> {local_time + delay_seconds}"
     # )
     await apply(
-        tester.traffic_sync.set_on(local_time + delay_seconds, module_port_list)
+        tester.traffic_sync.set(enums.OnOff.ON, local_time + delay_seconds, module_port_list)
     )
 
 
@@ -64,7 +64,7 @@ async def handle_port_traffic_sync_start(
         # same tester
         chassis_id = list(mapping.keys())[0]
         tester = testers_dict[chassis_id]
-        await apply(tester.traffic.set(OnOff(traffic_status), mapping[chassis_id]))
+        await apply(tester.traffic.set(enums.OnOff(traffic_status), mapping[chassis_id]))
     else:
         # multi tester need to use c_trafficsync cmd
         await asyncio.gather(
@@ -84,9 +84,9 @@ async def handle_port_traffic_individually(
         port = port_struct.port
         if port_struct.port_conf.is_tx_port:
             if traffic_status:
-                tokens.append(port.traffic.state.set_start())
+                tokens.append(port.traffic.state.set(enums.StartOrStop.START))
             else:
-                tokens.append(port.traffic.state.set_stop())
+                tokens.append(port.traffic.state.set(enums.StartOrStop.STOP))
     await apply(*tokens)
 
 
@@ -107,7 +107,7 @@ async def set_traffic_status(
 async def start_traffic(control_ports: List["Structure"]) -> None:
     await asyncio.gather(
         *[
-            port_struct.port.traffic.state.set_start()
+            port_struct.port.traffic.state.set(enums.StartOrStop.START)
             for port_struct in control_ports
             if port_struct.port_conf.is_tx_port
         ]
@@ -116,6 +116,6 @@ async def start_traffic(control_ports: List["Structure"]) -> None:
 
 async def stop_traffic(control_ports: List["Structure"]) -> None:
     await asyncio.gather(
-        *[port_struct.port.traffic.state.set_stop() for port_struct in control_ports]
+        *[port_struct.port.traffic.state.set(enums.StartOrStop.STOP) for port_struct in control_ports]
     )
     await asyncio.sleep(1)

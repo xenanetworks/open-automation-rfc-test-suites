@@ -117,21 +117,22 @@ def get_address_list(
     source_ip: Union["IPv4Address", "IPv6Address"],
     addr_range: Optional[range],
 ) -> List[Union["IPv4Address", "IPv6Address"]]:
+    if not addr_range:
+        return [source_ip]
     source_ip_list = []
-    if addr_range:
-        is_ipv4 = True if isinstance(source_ip, IPv4Address) else False
-        addr = str(source_ip).split(".") if is_ipv4 else str(source_ip).split(":")
-        for i in addr_range:
-            if i >= UNREACH_BYTE_VALUE:
-                i = i % UNREACH_BYTE_VALUE
-            addr[-1] = str(i)
-            addr_str = ".".join(addr)
-            if is_ipv4:
-                source_ip_list.append(IPv4Address(addr_str))
-            else:
-                source_ip_list.append(IPv6Address(addr_str))
-    else:
-        source_ip_list = [source_ip]
+    for i in addr_range:
+        if isinstance(source_ip, IPv4Address):
+            splitter = "."
+            typing = IPv4Address
+        else:
+            splitter = ":"
+            typing = IPv6Address
+
+        addr = str(source_ip).split(splitter)
+        addr[-1] = str(i)
+        addr_str = splitter.join(addr)
+        source_ip_list.append(typing(addr_str))
+         
     return source_ip_list
 
 

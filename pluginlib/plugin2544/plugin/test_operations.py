@@ -1,7 +1,7 @@
 from decimal import Decimal
 from time import time
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
-
+from dataclasses import asdict
 from loguru import logger
 from .common import filter_port_structs
 from ..utils.field import NonNegativeDecimal
@@ -38,6 +38,7 @@ if TYPE_CHECKING:
         ResultHandler,
         TestCommonParam,
     )
+    from pluginlib.plugin2544.utils.logger import TestSuitPipe
 
 
 class StateChecker:
@@ -186,6 +187,7 @@ def avg_result(
     result_handler: "ResultHandler",
     max_iterations: int,
     type_conf: "TypeConf",
+    xoa_out: "TestSuitPipe",
     current_packet_size: Optional[NonNegativeDecimal] = None,
 ) -> None:
     if max_iterations > 1:
@@ -224,22 +226,26 @@ def avg_result(
         if isinstance(type_conf, FrameLossRateTest):
             for final_result in result_group.all.values():
                 check_if_frame_loss_success(type_conf, final_result)
-        show_result(result_group, type_conf.test_type)
+        show_result(result_group, type_conf.test_type, xoa_out)
 
 
-def show_result(result: "ResultGroup", test_type: "TestType") -> None:
-    if test_type == TestType.THROUGHPUT:
-        show_all_throughput_result(result.all)
-        show_port_throughput_result(result.port)
-    elif test_type == TestType.LATENCY_JITTER:
-        show_all_latency_result(result.all)
-        show_port_latency_result(result.port)
-    elif test_type == TestType.FRAME_LOSS_RATE:
-        show_all_frame_loss_result(result.all)
-        show_port_frame_loss_result(result.port)
-    elif test_type == TestType.BACK_TO_BACK:
-        show_all_back_to_back_result(result.all)
-        show_port_back_to_back_result(result.port)
+def show_result(
+    result: "ResultGroup", test_type: "TestType", xoa_out: "TestSuitPipe"
+) -> None:
+    # logger.error(result)
+    xoa_out.send_statistics(asdict(result))
+    # if test_type == TestType.THROUGHPUT:
+    #     show_all_throughput_result(result.all)
+    #     show_port_throughput_result(result.port)
+    # elif test_type == TestType.LATENCY_JITTER:
+    #     show_all_latency_result(result.all)
+    #     show_port_latency_result(result.port)
+    # elif test_type == TestType.FRAME_LOSS_RATE:
+    #     show_all_frame_loss_result(result.all)
+    #     show_port_frame_loss_result(result.port)
+    # elif test_type == TestType.BACK_TO_BACK:
+    #     show_all_back_to_back_result(result.all)
+    #     show_port_back_to_back_result(result.port)
 
 
 async def aggregate_test_results(
@@ -348,7 +354,6 @@ async def aggregate_test_results(
             current_port_result.add_rr(pr_tpldtraffic_index)
             current_port_result.add_rr(len(tokens))
             tokens.append(pr_error)
-
 
     replies = await apply(*tokens)
     for sr in stream_result.values():

@@ -1,12 +1,28 @@
 import sys
 from loguru import logger
-
+import typing
 
 FORMAT = "{time:YYYY-MM-DD HH:mm:ss.SSS} {message}"
 
 FILE_PATH_FORMAT = "{time:HH:mm:ss.SSS} | <level>{level: <8}</level> | <cyan>{file.path}:{line:}</cyan> <green>{function}</green> | {message}"
 
 __all__ = ("logger",)
+
+
+class TestSuitPipe(typing.Protocol):
+    # def send_data(self, data: typing.Union[typing.Dict, "BaseModel"]) -> None: ...
+    def send_statistics(self, data) -> None:
+        ...
+
+    def send_progress(self, progress: int) -> None:
+        ...
+
+    def send_warning(self, worning: Exception) -> None:
+        ...
+
+    def send_error(self, error: Exception) -> None:
+        ...
+
 
 logger.remove()
 

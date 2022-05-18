@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from ..model import CommonOptions, TestConfiguration
     from .structure import StreamInfo, Structure
     from ..model import ThroughputTest
-
+    from pluginlib.plugin2544.utils.logger import TestSuitPipe
 
 @dataclass
 class ThroughputBoutEntry(BoutEntry):
@@ -57,9 +57,10 @@ class ThroughputBoutEntry(BoutEntry):
 async def show_throughput_result(
     common_params: "TestCommonParam",
     stream_lists: List["StreamInfo"],
+    xoa_out: "TestSuitPipe",
 ) -> "ResultGroup":
     result_group = await aggregate_test_results(common_params, stream_lists)
-    show_result(result_group, TestType.THROUGHPUT)
+    show_result(result_group, TestType.THROUGHPUT, xoa_out)
     return result_group
 
 
@@ -197,10 +198,11 @@ async def collect_throughput_live_statistics(
     state_checker: "StateChecker",
     stream_lists: List["StreamInfo"],
     common_params: "TestCommonParam",
+    xoa_out: "TestSuitPipe",
 ) -> None:
     start_time = time()
     while True:
-        await show_throughput_result(common_params, stream_lists)
+        await show_throughput_result(common_params, stream_lists, xoa_out)
         if should_quit(state_checker, start_time, common_params.actual_duration):
             break
         await asyncio.sleep(1)
@@ -214,6 +216,7 @@ async def throughput_statistic_collect(
     iteration: int,
     rate_percent_dic: Dict[str, "ThroughputBoutEntry"],
     state_checker: "StateChecker",
+    xoa_out: "TestSuitPipe",
 ) -> ResultGroup:
     average_packet_size = (
         sum(test_conf.frame_sizes.packet_size_list)
@@ -234,10 +237,10 @@ async def throughput_statistic_collect(
         port_params=port_params,
         stream_params=stream_params,
     )
-    await collect_throughput_live_statistics(state_checker, stream_lists, common_params)
+    await collect_throughput_live_statistics(state_checker, stream_lists, common_params, xoa_out)
     common_params.is_live = False
     await asyncio.sleep(1)
-    return await show_throughput_result(common_params, stream_lists)
+    return await show_throughput_result(common_params, stream_lists, xoa_out)
 
 
 async def run_throughput_test(
@@ -249,6 +252,7 @@ async def run_throughput_test(
     current_packet_size: NonNegativeDecimal,
     iteration: int,
     result_handler: "ResultHandler",
+    xoa_out: "TestSuitPipe",
 ) -> None:
     if not throughput_conf.enabled:
         return
@@ -285,6 +289,7 @@ async def run_throughput_test(
         source_port_structs,
         address_refresh_handler,
         state_checker,
+        xoa_out,
     )
 
 
@@ -299,6 +304,7 @@ async def throughput_binary_search(
     source_port_structs: List["Structure"],
     address_refresh_handler: Optional["AddressRefreshHandler"],
     state_checker: "StateChecker",
+    xoa_out: "TestSuitPipe",
 ) -> Optional["ResultGroup"]:
 
     boundaries = get_initial_boundaries(throughput_conf, source_port_structs)
@@ -308,7 +314,7 @@ async def throughput_binary_search(
             result_group, boundaries, throughput_conf
         )
         if result_group:
-            show_result(result_group, TestType.THROUGHPUT)
+            show_result(result_group, TestType.THROUGHPUT, xoa_out)
         if not should_continue:
             break
         rate_percent_dic = goto_next_percent(boundaries)
@@ -338,12 +344,13 @@ async def throughput_binary_search(
             iteration,
             rate_percent_dic,
             state_checker,
+            xoa_out,
         )
         await set_port_txtime_limit(
             source_port_structs,
             Decimal(0),
         )
-    return use_best_result(boundaries, throughput_conf, test_passed, result_handler)
+    return use_best_result(boundaries, throughput_conf, test_passed, result_handler, xoa_out)
 
 
 def use_best_src_port_result(
@@ -387,6 +394,7 @@ def use_best_result(
     throughput_conf: "ThroughputTest",
     test_passed: bool,
     result_handler: "ResultHandler",
+    xoa_out: "TestSuitPipe",
 ) -> Optional["ResultGroup"]:
     final_result = None
     if throughput_conf.rate_iteration_options.result_scope.is_per_source_port:
@@ -397,5 +405,5 @@ def use_best_result(
         result_handler.all_result.extend(list(final_result.all.values()))
         result_handler.port_result.extend(list(final_result.port.values()))
         result_handler.stream_result.extend(list(final_result.stream.values()))
-        show_result(final_result, TestType.THROUGHPUT)
+        show_result(final_result, TestType.THROUGHPUT, xoa_out)
     return final_result

@@ -45,7 +45,7 @@ class PluginModel2544(BaseModel):  # Main Model
                 if not port.port_config_slot:
                     port.port_config_slot = config_index
                 if port.port_config_slot == port.peer_config_slot:
-                    pass
+                    continue
                 elif direction == TrafficDirection.EAST_TO_WEST:
                     if port.port_group.is_east:
                         port.is_rx_port = False

@@ -48,11 +48,13 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
         self.iteration: int = 1
         self.test_conf = self.cfg.test_configuration
         self.control_ports: List["Structure"] = []
-        self.test_conf = self.cfg.test_configuration
         self.tpld_controller = TPLDControl(self.test_conf.tid_allocation_scope)
         self.stream_lists: List["StreamInfo"] = []
         self.test_case_result = TestCaseResult()
         return super().prepare()
+
+    
+
 
     async def __setup_macaddress(self) -> None:
         await asyncio.gather(
@@ -70,7 +72,7 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
         await stop_traffic(self.control_ports)
         await asyncio.gather(
             *[
-                base_setting(self.test_conf, port_struct)
+                base_setting(self.test_conf, port_struct, self.xoa_out)
                 for port_struct in self.control_ports
             ]
         )  # AddPortConfigSteps
@@ -124,6 +126,7 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
                 self.cfg.test_configuration,
                 self.cfg.has_l3,
                 self.test_case_result,
+                self.xoa_out,
             )
 
     async def __post_test(self) -> None:
@@ -136,5 +139,5 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
             await self.__post_test()
         except Exception as e:
             logger.exception(e)
-        # finally:
+            raise e
         #     await self.testers.free()

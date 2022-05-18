@@ -6,7 +6,7 @@ from pydantic import NonNegativeInt
 from pluginlib.plugin2544.utils.constants import MIXED_DEFAULT_WEIGHTS
 
 
-class BXMPWarning:
+class BXMPWarning(Warning):
     def __init__(self, para: str, value: Any, port: Any, feature: str) -> None:
         self.str = f"<{para}> can only be set to {value} since port {port} does not support '{feature}' feature!"
 
@@ -15,6 +15,12 @@ class BXMPWarning:
 
     def __str__(self) -> str:
         return self.str
+
+
+class PortSpeedWarning(Warning):
+    def __init__(self, port_speed_mode) -> None:
+        self.msg = f"port doesn't support speed mode selection ({port_speed_mode})"
+        super().__init__(self.msg)
 
 
 class NotSupportL47Tester(Exception):
@@ -81,6 +87,7 @@ class StreamExceed(Exception):
     def __init__(self, cur: int, max: int) -> None:
         self.msg = f"Port only support {max} streams (needs {cur})"
         super().__init__(self.msg)
+
 
 class PortPeerNeeded(Exception):
     def __init__(self) -> None:
@@ -239,6 +246,7 @@ class MaxPacketLengthExceed(Exception):
         self.msg = f"{type} {cur} too large for port, can at most be {max} bytes"
         super().__init__(self.msg)
 
+
 class MicroTPLDNotSupport(Exception):
     def __init__(self) -> None:
         self.msg = "Port doesn't support micro tpld"
@@ -246,11 +254,14 @@ class MicroTPLDNotSupport(Exception):
 
 
 class PacketSizeTooSmall(Exception):
-    def __init__(self, cur:int, need:int) -> None:
-        self.msg = f"Packet size {cur} too small for protocol segment, need {need} bytes!"
+    def __init__(self, cur: int, need: int) -> None:
+        self.msg = (
+            f"Packet size {cur} too small for protocol segment, need {need} bytes!"
+        )
         super().__init__(self.msg)
 
+
 class PayloadPatternExceed(Exception):
-    def __init__(self, cur:int, max:int) -> None:
-        self.msg =  f"Custom payload pattern length({cur}) should smaller than {max}"
+    def __init__(self, cur: int, max: int) -> None:
+        self.msg = f"Custom payload pattern length({cur}) should smaller than {max}"
         super().__init__(self.msg)

@@ -24,10 +24,10 @@ from ..utils import exceptions
 
 
 class FrameSizesOptions(BaseModel):
-    field_0: NonNegativeInt = Field(56, alias="0")
-    field_1: NonNegativeInt = Field(60, alias="1")
-    field_14: NonNegativeInt = Field(9216, alias="14")
-    field_15: NonNegativeInt = Field(16360, alias="15")
+    field_0: NonNegativeInt = Field(56)
+    field_1: NonNegativeInt = Field(60)
+    field_14: NonNegativeInt = Field(9216)
+    field_15: NonNegativeInt = Field(16360)
 
 
 class FrameSizeConfiguration(BaseModel):
@@ -42,7 +42,7 @@ class FrameSizeConfiguration(BaseModel):
     varying_packet_min_size: NonNegativeInt
     varying_packet_max_size: NonNegativeInt
     mixed_sizes_weights: List[NonNegativeInt] = MIXED_DEFAULT_WEIGHTS
-    mixed_length_config: FrameSizesOptions = FrameSizesOptions()
+    mixed_length_config: FrameSizesOptions
 
     # computed properties
     mixed_packet_length: List[int] = MIXED_PACKET_SIZE

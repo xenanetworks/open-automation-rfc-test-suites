@@ -1,56 +1,42 @@
 from typing import List, Dict, Tuple
-from ..utils.field import NonNegativeDecimal
+from xoa_driver import enums, misc, utils
 
 from ..utils.protocol_segments import DEFAULT_SEGMENT_DIC, SegmentDefinition
-from .structure import Structure, AddressCollection
+from .structure import Structure, AddressCollection, StreamInfo
 from ..model import (
     HeaderSegment,
     TestConfiguration,
     HwModifier,
     FrameSizeConfiguration,
 )
-from ..utils.field import MacAddress
-from ..utils.constants import (
-    PacketSizeType,
-    SegmentType,
-)
+from utils import field, constants
 from .setup_field_value_ranges import setup_field_value_ranges
-
-from xoa_driver.utils import apply
-from xoa_driver.misc import GenuineStream
-from xoa_driver.misc import Token
-
-from xoa_driver.enums import (
-    ProtocolOption,
-    LengthType,
-)
 from ..utils.logger import logger
 from .common import copy_to, is_byte_values_zero
-from .structure import StreamInfo
 
 
 async def stream_base_setting(
-    stream: "GenuineStream",
+    stream: "misc.GenuineStream",
     stream_info: "StreamInfo",
     test_conf: "TestConfiguration",
-    segment_id_list: List[ProtocolOption],
+    segment_id_list: List[enums.ProtocolOption],
 ) -> None:
 
     tokens = [
-        stream.enable.set_on(),
+        stream.enable.set(enums.OnOffWithSuppress.ON),
         stream.packet.header.protocol.set(segment_id_list),
         stream.packet.header.data.set(f"0x{bytes(stream_info.packet_header).hex()}"),
         stream.payload.content.set(
             test_conf.payload_type.to_xmp(), f"0x{test_conf.payload_pattern}"
         ),
         stream.tpld_id.set(test_payload_identifier=stream_info.tpldid),
-        stream.insert_packets_checksum.set_on(),
+        stream.insert_packets_checksum.set(enums.OnOff.ON),
     ]
-    await apply(*tokens)
+    await utils.apply(*tokens)
 
 
 async def setup_modifier(
-    stream: "GenuineStream", hw_modifiers: List[HwModifier]
+    stream: "misc.GenuineStream", hw_modifiers: List[HwModifier]
 ) -> None:
     tokens = []
     modifiers = stream.packet.header.modifiers
@@ -73,7 +59,7 @@ async def setup_modifier(
                 max_val=hw_modifier.stop_value,
             )
         )
-    await apply(*tokens)
+    await utils.apply(*tokens)
 
 
 def get_modifier_range_by_test_port_index(
@@ -134,7 +120,7 @@ def wrap_add_16(data: bytearray, offset_num: int) -> bytearray:
 
 def calculate_checksum(
     segment: "HeaderSegment",
-    segment_dic: Dict["SegmentType", "SegmentDefinition"],
+    segment_dic: Dict["constants.SegmentType", "SegmentDefinition"],
     patched_value: bytearray,
 ) -> bytearray:
 
@@ -152,7 +138,7 @@ def get_packet_header_inner(
     address_collection: "AddressCollection",
     header_segments: List["HeaderSegment"],
     can_tcp_checksum: bool,
-    arp_mac: "MacAddress",
+    arp_mac: "field.MacAddress",
 ) -> bytearray:
     packet_header_list = bytearray()
 
@@ -160,8 +146,8 @@ def get_packet_header_inner(
     segment_index = 0
     for segment in header_segments:
         segment_type = segment.segment_type
-        if segment_type == SegmentType.TCP and can_tcp_checksum:
-            segment_type = SegmentType.TCPCHECK
+        if segment_type == constants.SegmentType.TCP and can_tcp_checksum:
+            segment_type = constants.SegmentType.TCPCHECK
         addr_coll = address_collection.copy()
         if not arp_mac.is_empty:
             addr_coll.change_dmac_address(arp_mac)
@@ -181,17 +167,17 @@ def get_segment_value(
 ) -> bytearray:
     segment_value_bytearray = bytearray(bytes.fromhex(segment.segment_value))
     patched_value = bytearray()
-    if (segment.segment_type) == SegmentType.ETHERNET:
+    if (segment.segment_type) == constants.SegmentType.ETHERNET:
         # patch first Ethernet segment with the port S/D MAC addresses
         if segment_index == 0:
             patched_value = setup_ethernet_segment(
                 segment_value_bytearray, address_collection
             )
 
-    elif (segment.segment_type) == SegmentType.IP:
+    elif (segment.segment_type) == constants.SegmentType.IP:
         patched_value = setup_ipv4_segment(segment_value_bytearray, address_collection)
 
-    elif (segment.segment_type) == SegmentType.IPV6:
+    elif (segment.segment_type) == constants.SegmentType.IPV6:
         patched_value = setup_ipv6_segment(segment_value_bytearray, address_collection)
 
     # set field value range
@@ -209,11 +195,11 @@ def setup_ethernet_segment(
 ) -> bytearray:
     template = template_segment.copy()
 
-    if address_collection.dmac_address != MacAddress(
+    if address_collection.dmac_address != field.MacAddress(
         "00-00-00-00-00-00"
     ) and is_byte_values_zero(template, 0, 6):
         copy_to(address_collection.dmac_address.to_bytearray(), template, 0)
-    if address_collection.smac_address != MacAddress(
+    if address_collection.smac_address != field.MacAddress(
         "00-00-00-00-00-00"
     ) and is_byte_values_zero(template, 6, 6):
         copy_to(address_collection.smac_address.to_bytearray(), template, 6)
@@ -253,7 +239,7 @@ def setup_ipv6_segment(
 async def setup_packet_size(
     control_ports: List["Structure"],
     frame_size_config: "FrameSizeConfiguration",
-    current_packet_size: NonNegativeDecimal,
+    current_packet_size: field.NonNegativeDecimal,
 ) -> None:
     tokens = []
     for port_struct in control_ports:
@@ -262,25 +248,25 @@ async def setup_packet_size(
             tokens.extend(
                 update_packet_size(stream, frame_size_config, current_packet_size)
             )
-    await apply(*tokens)
+    await utils.apply(*tokens)
 
 
 def update_packet_size(
-    stream: "GenuineStream",
+    stream: "misc.GenuineStream",
     frame_size_config: "FrameSizeConfiguration",
-    current_packet_size: NonNegativeDecimal,
-) -> List["Token"]:
+    current_packet_size: field.NonNegativeDecimal,
+) -> List["misc.Token"]:
     if frame_size_config.packet_size_type.is_fix:
         return [
             stream.packet.length.set(
-                LengthType.FIXED, int(current_packet_size), int(current_packet_size)
+                enums.LengthType.FIXED, int(current_packet_size), int(current_packet_size)
             )  # PS_PACKETLENGTH
         ]
     else:
         if (
-            frame_size_config.packet_size_type == PacketSizeType.INCREMENTING
-            or frame_size_config.packet_size_type == PacketSizeType.RANDOM
-            or frame_size_config.packet_size_type == PacketSizeType.BUTTERFLY
+            frame_size_config.packet_size_type == constants.PacketSizeType.INCREMENTING
+            or frame_size_config.packet_size_type == constants.PacketSizeType.RANDOM
+            or frame_size_config.packet_size_type == constants.PacketSizeType.BUTTERFLY
         ):
             min_size = frame_size_config.varying_packet_min_size
             max_size = frame_size_config.varying_packet_max_size

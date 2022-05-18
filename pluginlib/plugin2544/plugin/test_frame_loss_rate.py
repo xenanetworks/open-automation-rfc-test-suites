@@ -39,12 +39,13 @@ if TYPE_CHECKING:
     from ..model import TestConfiguration
     from .structure import StreamInfo, Structure
     from ..model import FrameLossRateTest
-
+    from pluginlib.plugin2544.utils.logger import TestSuitPipe
 
 async def get_frame_loss_result(
     common_params: TestCommonParam,
     stream_lists: List["StreamInfo"],
     result_handler: ResultHandler,
+    xoa_out: "TestSuitPipe",
     frame_loss_conf: Optional["FrameLossRateTest"] = None,
 ) -> ResultGroup:
     result_group = await aggregate_test_results(common_params, stream_lists)
@@ -56,7 +57,7 @@ async def get_frame_loss_result(
         result_handler.all_result.extend(list(result_group.all.values()))
         result_handler.port_result.extend(list(result_group.port.values()))
         result_handler.stream_result.extend(list(result_group.stream.values()))
-    show_result(result_group, TestType.FRAME_LOSS_RATE)
+    show_result(result_group, TestType.FRAME_LOSS_RATE, xoa_out)
     return result_group
 
 
@@ -65,10 +66,11 @@ async def collect_frame_loss_live_statistics(
     state_checker: "StateChecker",
     result_handler: ResultHandler,
     common_params: TestCommonParam,
+    xoa_out: "TestSuitPipe",
 ):
     start_time = time()
     while True:
-        await get_frame_loss_result(common_params, stream_lists, result_handler)
+        await get_frame_loss_result(common_params, stream_lists, result_handler, xoa_out)
         if should_quit(state_checker, start_time, common_params.actual_duration):
             break
         await asyncio.sleep(1)
@@ -79,11 +81,12 @@ async def collect_frame_loss_final_statistics(
     result_handler: "ResultHandler",
     common_params: "TestCommonParam",
     frame_loss_conf: "FrameLossRateTest",
+    xoa_out: "TestSuitPipe",
 ) -> ResultGroup:
     common_params.is_live = False
     await asyncio.sleep(1)
     return await get_frame_loss_result(
-        common_params, stream_lists, result_handler, frame_loss_conf
+        common_params, stream_lists, result_handler, xoa_out, frame_loss_conf
     )
 
 
@@ -96,6 +99,7 @@ async def collect_frame_loss_statistics(
     rate_percent_dic: Dict[str, BoutEntry],
     result_handler: ResultHandler,
     state_checker: "StateChecker",
+    xoa_out: "TestSuitPipe",
 ) -> None:
     average_packet_size = (
         sum(test_conf.frame_sizes.packet_size_list)
@@ -121,9 +125,10 @@ async def collect_frame_loss_statistics(
         state_checker,
         result_handler,
         common_params,
+        xoa_out,
     )
     await collect_frame_loss_final_statistics(
-        stream_lists, result_handler, common_params, frame_loss_conf
+        stream_lists, result_handler, common_params, frame_loss_conf, xoa_out
     )
 
 
@@ -153,6 +158,7 @@ async def run_frame_loss_test(
     current_packet_size: NonNegativeDecimal,
     iteration: int,
     result_handler: ResultHandler,
+    xoa_out: "TestSuitPipe",
 ) -> None:
     if not frame_loss_conf.enabled:
         return
@@ -214,6 +220,7 @@ async def run_frame_loss_test(
             rate_percent_dic,
             result_handler,
             state_checker,
+            xoa_out,
         )
         await set_port_txtime_limit(
             source_port_structs,

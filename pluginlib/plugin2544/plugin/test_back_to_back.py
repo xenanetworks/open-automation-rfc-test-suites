@@ -45,6 +45,7 @@ from xoa_driver.utils import apply
 if TYPE_CHECKING:
     from .structure import Structure, StreamInfo
     from ..model import BackToBackTest, TestConfiguration, CommonOptions
+    from pluginlib.plugin2544.utils.logger import TestSuitPipe
 
 
 @dataclass
@@ -110,6 +111,7 @@ async def run_back_to_back_test(
     current_packet_size: NonNegativeDecimal,
     iteration: int,
     result_handler: "ResultHandler",
+    xoa_out: "TestSuitPipe",
 ) -> None:
     if not back_to_back_conf.enabled:
         return
@@ -147,6 +149,7 @@ async def run_back_to_back_test(
         source_port_structs,
         address_refresh_handler,
         state_checker,
+        xoa_out,
     )
 
 
@@ -161,6 +164,7 @@ async def back_to_back_sweep(
     source_port_structs: List["Structure"],
     address_refresh_handler: Optional["AddressRefreshHandler"],
     state_checker: "StateChecker",
+    xoa_out: "TestSuitPipe",
 ):
     rate_sweep_list = back_to_back_conf.rate_sweep_list
     for k, rate_percent in enumerate(rate_sweep_list):
@@ -183,6 +187,7 @@ async def back_to_back_sweep(
             address_refresh_handler,
             rate_percent_dic,
             state_checker,
+            xoa_out,
         )
 
 
@@ -258,6 +263,7 @@ async def back_to_back_binary_search(
     address_refresh_handler: Optional["AddressRefreshHandler"],
     rate_percent_dic: Dict[str, BackToBackBoutEntry],
     state_checker: "StateChecker",
+    xoa_out: "TestSuitPipe",
 ):
     result_group = None
     boundaries = await get_initial_boundaries(
@@ -276,7 +282,7 @@ async def back_to_back_binary_search(
 
         if result_group:
             set_test_state(result_group, test_passed)
-            show_result(result_group, TestType.BACK_TO_BACK)
+            show_result(result_group, TestType.BACK_TO_BACK, xoa_out)
         if not should_continue:
             break
         boundaries = goto_next(boundaries)
@@ -309,6 +315,7 @@ async def back_to_back_binary_search(
             result_handler,
             burst_frame_dic,
             state_checker,
+            xoa_out,
         )
         await set_port_txtime_limit(
             source_port_structs,
@@ -326,6 +333,7 @@ async def collect_back_to_back_statistics(
     result_handler: "ResultHandler",
     burst_frame_dic: Dict[Tuple[str, str, int, int], TestStreamParam],
     state_checker: "StateChecker",
+    xoa_out: "TestSuitPipe",
 ) -> ResultGroup:
     average_packet_size = (
         sum(test_conf.frame_sizes.packet_size_list)
@@ -346,10 +354,10 @@ async def collect_back_to_back_statistics(
         stream_params=burst_frame_dic,
     )
     await collect_back_to_back_live_statistics(
-        state_checker, stream_lists, common_params, result_handler
+        state_checker, stream_lists, common_params, result_handler, xoa_out
     )
     return await collect_back_to_back_final_statistics(
-        stream_lists, common_params, result_handler
+        stream_lists, common_params, result_handler, xoa_out
     )
 
 
@@ -357,6 +365,7 @@ async def get_back_to_back_result(
     common_params: "TestCommonParam",
     stream_lists: List["StreamInfo"],
     result_handler: "ResultHandler",
+    xoa_out: "TestSuitPipe",
 ):
     result_group = await aggregate_test_results(common_params, stream_lists)
     is_live = common_params.is_live
@@ -365,7 +374,7 @@ async def get_back_to_back_result(
         result_handler.all_result.extend(list(result_group.all.values()))
         result_handler.port_result.extend(list(result_group.port.values()))
         result_handler.stream_result.extend(list(result_group.stream.values()))
-    show_result(result_group, TestType.BACK_TO_BACK)
+    show_result(result_group, TestType.BACK_TO_BACK, xoa_out)
     return result_group
 
 
@@ -374,10 +383,13 @@ async def collect_back_to_back_live_statistics(
     stream_lists: List["StreamInfo"],
     common_params: "TestCommonParam",
     result_handler: "ResultHandler",
+    xoa_out: "TestSuitPipe",
 ) -> None:
     start_time = time()
     while True:
-        await get_back_to_back_result(common_params, stream_lists, result_handler)
+        await get_back_to_back_result(
+            common_params, stream_lists, result_handler, xoa_out
+        )
         if should_quit(state_checker, start_time, common_params.actual_duration):
             break
         await asyncio.sleep(1)
@@ -387,10 +399,13 @@ async def collect_back_to_back_final_statistics(
     stream_lists: List["StreamInfo"],
     common_params: "TestCommonParam",
     result_handler: "ResultHandler",
+    xoa_out: "TestSuitPipe",
 ) -> ResultGroup:
     common_params.is_live = False
     await asyncio.sleep(1)
-    return await get_back_to_back_result(common_params, stream_lists, result_handler)
+    return await get_back_to_back_result(
+        common_params, stream_lists, result_handler, xoa_out
+    )
 
 
 def check_boundaries(

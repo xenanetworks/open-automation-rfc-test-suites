@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 from typing import List, Dict, Union
-from ..utils.logger import logger
+# from ..utils.logger import logger
 from ..utils.constants import ARPSenarioType
 from ..utils.field import IPv4Address, IPv6Address, MacAddress, IPAddress
 from ..utils.packet import Ether, IPV4Packet, IPV6Packet
@@ -42,9 +42,9 @@ async def set_arp_request(
         if pair in arp_mac_map:
             stream_info.change_arp_mac(arp_mac_map[pair])
             continue
-        logger.debug(
-            f"check packetheader for{port.kind.port_id} -> {source_ip}, {destination_ip}"
-        )
+        # logger.debug(
+        #     f"check packetheader for{port.kind.port_id} -> {source_ip}, {destination_ip}"
+        # )
         peer_mac_address = await send_arp_request(
             port_struct, source_ip, destination_ip
         )
@@ -111,6 +111,6 @@ async def send_arp_request(
     await asyncio.sleep(1)
     result, *_ = await utils.apply(stream.request.arp.get())
     peer_mac_address = MacAddress(result.mac_address)
-    logger.debug(f"[Set_arp_request] Successfully get mac address {peer_mac_address}")
+    # logger.debug(f"[Set_arp_request] Successfully get mac address {peer_mac_address}")
     await stream.delete()
     return peer_mac_address

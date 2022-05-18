@@ -1,4 +1,6 @@
 from typing import TYPE_CHECKING, Iterator, List, Tuple
+
+
 from ..utils.field import NonNegativeDecimal
 from .statistics import stop_traffic
 from .stream_base_settings import setup_packet_size
@@ -16,6 +18,7 @@ from ..utils.constants import TestType
 if TYPE_CHECKING:
     from ..model import TestConfiguration
     from .structure import Structure
+    from pluginlib.plugin2544.utils.logger import TestSuitPipe
 
 
 async def test_run(
@@ -27,6 +30,7 @@ async def test_run(
     current_packet_size: NonNegativeDecimal,
     iteration: int,
     test_case_result: "TestCaseResult",
+    xoa_out: "TestSuitPipe",
 ) -> None:
     result_handler = test_case_result.get_result_handler(type_conf.test_type)
     await stop_traffic(control_ports)
@@ -43,6 +47,7 @@ async def test_run(
             current_packet_size,
             iteration,
             result_handler,
+            xoa_out,
         )
 
     elif type_conf.test_type == TestType.LATENCY_JITTER:
@@ -57,6 +62,7 @@ async def test_run(
             current_packet_size,
             iteration,
             result_handler,
+            xoa_out,
             throughput_result,
         )
 
@@ -71,6 +77,7 @@ async def test_run(
             current_packet_size,
             iteration,
             result_handler,
+            xoa_out,
         )
     elif type_conf.test_type == TestType.BACK_TO_BACK:
         assert isinstance(type_conf, BackToBackTest), "Type not matched!"
@@ -83,6 +90,7 @@ async def test_run(
             current_packet_size,
             iteration,
             result_handler,
+            xoa_out,
         )
 
 
@@ -90,6 +98,7 @@ def gen_loop(
     type_conf: "TypeConf",
     test_conf: "TestConfiguration",
     test_case_result: "TestCaseResult",
+    xoa_out: "TestSuitPipe",
 ) -> Iterator[Tuple[int, NonNegativeDecimal]]:
     max_iteration = type_conf.common_options.iterations
     packet_size_list = test_conf.frame_sizes.packet_size_list
@@ -98,13 +107,15 @@ def gen_loop(
             for current_packet_size in packet_size_list:
                 yield iteration, current_packet_size
         result_handler = test_case_result.get_result_handler(type_conf.test_type)
-        avg_result(result_handler, max_iteration, type_conf)
+        avg_result(result_handler, max_iteration, type_conf, xoa_out)
     else:
         for current_packet_size in packet_size_list:
             for iteration in range(1, max_iteration + 1):
                 yield iteration, current_packet_size
             result_handler = test_case_result.get_result_handler(type_conf.test_type)
-            avg_result(result_handler, max_iteration, type_conf, current_packet_size)
+            avg_result(
+                result_handler, max_iteration, type_conf, xoa_out, current_packet_size
+            )
 
 
 async def setup_for_outer_loop(
@@ -114,9 +125,10 @@ async def setup_for_outer_loop(
     test_conf: "TestConfiguration",
     has_l3: bool,
     test_case_result: "TestCaseResult",
+    xoa_out: "TestSuitPipe",
 ) -> None:
     for iteration, current_packet_size in gen_loop(
-        type_conf, test_conf, test_case_result
+        type_conf, test_conf, test_case_result, xoa_out
     ):
         await test_run(
             stream_lists,
@@ -127,4 +139,5 @@ async def setup_for_outer_loop(
             current_packet_size,
             iteration,
             test_case_result,
+            xoa_out,
         )

@@ -1,5 +1,5 @@
 from typing import Dict, List
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, NonNegativeInt, validator
 from ..utils.field import MacAddress
 from ..utils.constants import (
     BRRModeStr,
@@ -34,6 +34,12 @@ class PortRef(BaseModel):
     module_index: int = Field(alias="ModuleIndex")
     port_index: int = Field(alias="PortIndex")
 
+
+class OFrameSizesOptions(BaseModel):
+    field_0: NonNegativeInt = Field(56, alias="0")
+    field_1: NonNegativeInt = Field(60, alias="1")
+    field_14: NonNegativeInt = Field(9216, alias="14")
+    field_15: NonNegativeInt = Field(16360, alias="15")
 
 class PortEntity(BaseModel):
     port_ref: PortRef = Field(alias="PortRef")
