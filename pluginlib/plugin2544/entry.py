@@ -34,7 +34,7 @@ from .plugin.resolve_stream_relations import (
 )
 from .plugin.checker.config_checkers import check_config
 from .plugin.mac_learning import add_mac_learning_steps
-from .plugin.outer_loop import setup_for_outer_loop
+from .plugin.outer_loop import gen_loop, test_run
 from decimal import getcontext
 from xoa_core.types import PluginAbstract
 
@@ -116,18 +116,31 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
         await self.__configure_resource()
 
     async def __do_test(self) -> None:
-        for type_conf in self.cfg.test_types_configuration.available_test:
-            if isinstance(type_conf, LatencyTest):
-                await setup_latency_mode(self.control_ports, type_conf.latency_mode)
-            await setup_for_outer_loop(
-                self.stream_lists,
-                self.control_ports,
-                type_conf,
-                self.cfg.test_configuration,
-                self.cfg.has_l3,
-                self.test_case_result,
-                self.xoa_out,
-            )
+        while True:
+            for type_conf in self.cfg.test_types_configuration.available_test:
+                if isinstance(type_conf, LatencyTest):
+                    await setup_latency_mode(self.control_ports, type_conf.latency_mode)
+
+                for iteration, current_packet_size in gen_loop(
+                    type_conf, self.cfg.test_configuration, self.test_case_result,self.xoa_out,
+                ):
+                    await self.state_conditions.wait_if_paused()
+                    await self.state_conditions.stop_if_stopped()
+                    await test_run(
+                        self.stream_lists,
+                        self.control_ports,
+                        type_conf,
+                        self.cfg.test_configuration,
+                        self.cfg.has_l3,
+                        current_packet_size,
+                        iteration,
+                        self.test_case_result,
+                        self.xoa_out,
+                    )
+            if not self.cfg.test_configuration.repeat_test_until_stopped:
+                break
+
+
 
     async def __post_test(self) -> None:
         logger.info("test finish")

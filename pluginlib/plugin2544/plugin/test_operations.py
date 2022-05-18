@@ -83,7 +83,7 @@ class StateChecker:
     ) -> None:
         before = self.started_dic[port]
         after = self.started_dic[port] = bool(get_attr.on_off)
-        logger.warning(f"Change traffic status for {before} to {after}")
+        # logger.warning(f"Change traffic status for {before} to {after}")
 
     def test_running(self) -> bool:
         return any(self.started_dic.values())

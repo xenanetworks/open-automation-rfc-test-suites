@@ -206,6 +206,7 @@ class TestConfiguration(BaseModel):
 
     # MultiStreamConfiguration
     multi_stream_config: MultiStreamConfig
+    repeat_test_until_stopped: bool = False
 
     @validator("payload_pattern", always=True, pre=True)
     def payload_type_str_list(cls, v: str) -> str:
