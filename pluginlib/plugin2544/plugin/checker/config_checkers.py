@@ -5,7 +5,6 @@ from .check_testers import check_testers
 from .check_test_config import check_test_config
 
 if TYPE_CHECKING:
-    from xoa_driver import testers
     from ..structure import (
         Structure,
     )
@@ -15,10 +14,9 @@ if TYPE_CHECKING:
 
 async def check_config(
     data: "PluginModel2544",
-    testers: List["testers.L23Tester"],
     control_ports: List["Structure"],
 ) -> None:
     test_conf = data.test_configuration
-    await check_testers(testers, test_conf)
+    await check_testers(control_ports, test_conf)
     await check_ports(control_ports)
     await check_test_config(control_ports, test_conf)

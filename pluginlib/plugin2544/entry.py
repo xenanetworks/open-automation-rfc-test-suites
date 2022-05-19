@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 
 import asyncio
-from typing import Any, Dict, List
+from typing import List
 
 from .model.m_test_type_config import LatencyTest
 from .plugin.statistics import stop_traffic
@@ -53,9 +53,6 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
         self.test_case_result = TestCaseResult()
         return super().prepare()
 
-    
-
-
     async def __setup_macaddress(self) -> None:
         await asyncio.gather(
             *[
@@ -95,6 +92,7 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
         await create_source_stream(self.stream_lists, self.test_conf)
 
     async def __init_resource(self) -> None:
+
         self.control_ports = await collect_control_ports(
             self.testers, self.cfg.ports_configuration, self.port_identities
         )
@@ -103,7 +101,7 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
         )  # setup test_port_index
 
     async def __prepare_data(self) -> None:
-        await check_config(self.cfg, self.testers.values(), self.control_ports)
+        await check_config(self.cfg, self.control_ports)
         await self.__setup_macaddress()
         self.stream_lists = configure_source_streams(
             self.control_ports, self.tpld_controller, self.test_conf
@@ -122,7 +120,10 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
                     await setup_latency_mode(self.control_ports, type_conf.latency_mode)
 
                 for iteration, current_packet_size in gen_loop(
-                    type_conf, self.cfg.test_configuration, self.test_case_result,self.xoa_out,
+                    type_conf,
+                    self.cfg.test_configuration,
+                    self.test_case_result,
+                    self.xoa_out,
                 ):
                     await self.state_conditions.wait_if_paused()
                     await self.state_conditions.stop_if_stopped()
@@ -140,8 +141,6 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
             if not self.cfg.test_configuration.repeat_test_until_stopped:
                 break
 
-
-
     async def __post_test(self) -> None:
         logger.info("test finish")
 
@@ -153,4 +152,5 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
         except Exception as e:
             logger.exception(e)
             raise e
-        #     await self.testers.free()
+        finally:
+            await asyncio.gather(*[port_struct.free() for port_struct in self.control_ports])

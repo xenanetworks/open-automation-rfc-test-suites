@@ -1,12 +1,11 @@
 import copy
-import collections
 from typing import List, TYPE_CHECKING, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
 from ..utils.constants import FlowCreationType
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
 from ..model import HwModifier
 from xoa_core.core.test_suites.datasets import PortIdentity
-
+from xoa_driver import enums, utils
 if TYPE_CHECKING:
     from ..model import (
         PortConfiguration,
@@ -17,11 +16,6 @@ if TYPE_CHECKING:
     )
     from xoa_driver.testers import L23Tester
     from xoa_driver.ports import GenericL23Port
-
-# ArpRefreshSet = collections.namedtuple(
-#     "ArpRefreshSet", ["is_ipv4", "source_ip", "source_mac", "addr_range"]
-# )
-# RXTableSet = collections.namedtuple("RXTableSet", ["destination_ip", "dmac"])
 
 @dataclass(frozen=True)
 class ArpRefreshData:
@@ -48,6 +42,17 @@ class Structure:
         self.port_conf = port_conf
         self.properties = Properties()
 
+    async def reserve(self) -> None:
+        if self.port.is_reserved_by_me():
+            await self.free()
+        elif self.port.is_reserved_by_others():
+            await self.port.reservation.set(enums.ReservedAction.RELINQUISH)
+        await utils.apply(
+            self.port.reservation.set(enums.ReservedAction.RESERVE), self.port.reset.set()
+        )
+    
+    async def free(self) -> None:
+        await self.port.reservation.set(enums.ReservedAction.RELEASE)
 
 @dataclass
 class AddressCollection:

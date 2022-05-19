@@ -265,3 +265,16 @@ class PayloadPatternExceed(Exception):
     def __init__(self, cur: int, max: int) -> None:
         self.msg = f"Custom payload pattern length({cur}) should smaller than {max}"
         super().__init__(self.msg)
+
+
+class WrongModuleTypeError(Exception):
+    def __init__(self, module) -> None:
+        self.module_type = type(module)
+        self.msg = f"Provided module of: {self.module_type} can't be used."
+        super().__init__(self.msg)
+
+class WrongTesterTypeError(Exception):
+    def __init__(self, tester) -> None:
+        self.tester_type = type(tester)
+        self.msg = f"Provided tester of: {self.tester_type} can't be used."
+        super().__init__(self.msg)
