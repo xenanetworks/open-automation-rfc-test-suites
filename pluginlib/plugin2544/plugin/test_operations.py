@@ -3,6 +3,8 @@ from time import time
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from dataclasses import asdict
 from loguru import logger
+
+from pluginlib.plugin2544.utils import exceptions
 from .common import filter_port_structs
 from ..utils.field import NonNegativeDecimal
 from xoa_driver.utils import apply
@@ -77,6 +79,8 @@ class StateChecker:
         before = self.sync_dic[port]
         after = self.sync_dic[port] = bool(get_attr.sync_status)
         logger.warning(f"Change sync status from {before} to {after} ")
+        if before and not after:
+            raise exceptions.LossofPortSignal(port)
 
     async def _change_traffic_status(
         self, port: "GenericL23Port", get_attr: "P_TRAFFIC.GetDataAttr"

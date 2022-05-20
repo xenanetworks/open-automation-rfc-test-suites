@@ -1,8 +1,9 @@
 from decimal import Decimal
 from typing import Any, List
+from loguru import logger
 
 from pydantic import NonNegativeInt
-
+from xoa_driver import ports as xoa_ports, testers as xoa_testers
 from pluginlib.plugin2544.utils.constants import MIXED_DEFAULT_WEIGHTS
 
 
@@ -273,8 +274,28 @@ class WrongModuleTypeError(Exception):
         self.msg = f"Provided module of: {self.module_type} can't be used."
         super().__init__(self.msg)
 
+
 class WrongTesterTypeError(Exception):
     def __init__(self, tester) -> None:
         self.tester_type = type(tester)
         self.msg = f"Provided tester of: {self.tester_type} can't be used."
+        super().__init__(self.msg)
+
+
+class LossofPortOwnership(Exception):
+    def __init__(self, port: xoa_ports.GenericL23Port) -> None:
+        self.msg = f"Test is stopped due to the loss of ownership of port <module_id: {port.kind.module_id}-port_id: {port.kind.port_id}>."
+        super().__init__(self.msg)
+
+
+class LossofTester(Exception):
+    def __init__(self, tester: xoa_testers.L23Tester, chassis_id: str) -> None:
+        self.msg = f"Test is stopped due to the loss of tester <{chassis_id}>."
+        super().__init__(self.msg)
+
+
+class LossofPortSignal(Exception):
+    def __init__(self, port: xoa_ports.GenericL23Port) -> None:
+        self.msg = f"Test is stopped due to the loss of signal of port <module_id: {port.kind.module_id}-port_id: {port.kind.port_id}>."
+        logger.error(self.msg)
         super().__init__(self.msg)

@@ -1,11 +1,13 @@
 import copy
 from typing import List, TYPE_CHECKING, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
+
+from pluginlib.plugin2544.utils import exceptions
 from ..utils.constants import FlowCreationType
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
 from ..model import HwModifier
 from xoa_core.core.test_suites.datasets import PortIdentity
-from xoa_driver import enums, utils
+from xoa_driver import enums, utils, ports as xoa_ports, testers as xoa_testers
 if TYPE_CHECKING:
     from ..model import (
         PortConfiguration,
@@ -14,8 +16,6 @@ if TYPE_CHECKING:
         FrameLossRateTest,
         BackToBackTest,
     )
-    from xoa_driver.testers import L23Tester
-    from xoa_driver.ports import GenericL23Port
 
 @dataclass(frozen=True)
 class ArpRefreshData:
@@ -33,12 +33,12 @@ class RXTableData:
 class Structure:
     def __init__(
         self,
-        tester: "L23Tester",
-        port: "GenericL23Port",
+        tester: "xoa_testers.L23Tester",
+        port: "xoa_ports.GenericL23Port",
         port_conf: "PortConfiguration",
     ) -> None:
-        self.tester: "L23Tester" = tester
-        self.port: "GenericL23Port" = port
+        self.tester: "xoa_testers.L23Tester" = tester
+        self.port: "xoa_ports.GenericL23Port" = port
         self.port_conf = port_conf
         self.properties = Properties()
 
@@ -50,9 +50,23 @@ class Structure:
         await utils.apply(
             self.port.reservation.set(enums.ReservedAction.RESERVE), self.port.reset.set()
         )
+
+        self.port.on_reservation_change(self.__on_reservation_status)
+        self.tester.on_disconnected(self.__on_disconnect_tester)
     
+    async def __on_reservation_status(self, port: "xoa_ports.GenericL23Port", v):
+        raise exceptions.LossofPortOwnership(self.port)
+
+    async def __on_disconnect_tester(self, *args):
+        chassis_id = self.properties.chassis_id
+        raise exceptions.LossofTester(self.tester, chassis_id)
+
     async def free(self) -> None:
         await self.port.reservation.set(enums.ReservedAction.RELEASE)
+    
+    async def clear(self) -> None:
+        await self.free()
+        await self.tester.session.logoff()
 
 @dataclass
 class AddressCollection:
@@ -92,7 +106,7 @@ class Properties:
 
     def set_identity(self, port_identity: "PortIdentity") -> None:
         self.identity = f"{port_identity.tester_index}-{port_identity.module_index}-{port_identity.port_index}"
-        self.chassis_id = port_identity.tester_index
+        self.chassis_id = port_identity.tester_id
 
     def register_peer(self, peer: "Structure") -> None:
         if peer not in self.peers:

@@ -1,5 +1,8 @@
+from pytest import Instance
 from xoa_core.types import PluginAbstract
 from typing import TYPE_CHECKING
+
+from pluginlib.plugin2544.utils import exceptions
 
 if TYPE_CHECKING:
     from .dataset import PluginModel2544
@@ -143,14 +146,14 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
 
     async def __post_test(self) -> None:
         logger.info("test finish")
+        # TODO: wait for callback exception catch
+        # await asyncio.gather(*[port_struct.clear() for port_struct in self.control_ports])
 
     async def start(self) -> None:
+        await self.__pre_test()
+        await self.__do_test()
         try:
-            await self.__pre_test()
-            await self.__do_test()
             await self.__post_test()
-        except Exception as e:
-            logger.exception(e)
-            raise e
-        finally:
-            await asyncio.gather(*[port_struct.free() for port_struct in self.control_ports])
+        except [exceptions.LossofPortOwnership, exceptions.LossofTester]:
+            pass
+

@@ -1,4 +1,4 @@
-from ipaddress import IPv4Network, IPv6Network, ip_network
+from ipaddress import IPv4Network, IPv6Network
 from typing import Union
 
 from pydantic import validator
