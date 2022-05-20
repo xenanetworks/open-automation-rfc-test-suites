@@ -1,10 +1,9 @@
 import asyncio
 import time
 from decimal import Decimal
-from typing import TYPE_CHECKING, List, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Iterable, List, Dict, Optional, Tuple
 from ..utils.field import NonNegativeDecimal
 from ..utils.logger import logger
-from ..model import rate_sweep_range
 from typing import TYPE_CHECKING, List, Dict
 
 
@@ -46,12 +45,10 @@ if TYPE_CHECKING:
 
 def get_rate_sweep_list(
     latency_test: "LatencyTest", throughput_result: Optional[Decimal] = None
-) -> List[Decimal]:
+) -> Iterable[Decimal]:
     if latency_test.use_relative_to_throughput and throughput_result:
         latency_test.rate_sweep_options.set_throughput_relative(throughput_result)
-        return rate_sweep_range(latency_test.rate_sweep_options)
-    else:
-        return latency_test.rate_sweep_list
+    return latency_test.rate_sweep_options.rate_sweep_list
 
 
 async def get_latency_result(

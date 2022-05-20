@@ -1,3 +1,4 @@
+from decimal import Decimal
 import os
 from enum import Enum as CaseSensitiveEnum
 from xoa_driver import ports
@@ -309,6 +310,14 @@ class PortRateCapUnit(Enum):
     KBPS = "1e3_bps"
     BPS = "bps"
 
+    def scale(self) -> int:
+        return {
+            PortRateCapUnit.GBPS: 1e9,
+            PortRateCapUnit.MBPS: 1e6,
+            PortRateCapUnit.KBPS: 1e3,
+            PortRateCapUnit.BPS: 1,
+        }[self]
+
 
 class MdiMdixMode(Enum):
     AUTO = "auto"
@@ -373,10 +382,11 @@ class PortGroup(Enum):
     @property
     def is_east(self):
         return self == PortGroup.EAST
-    
+
     @property
     def is_west(self):
         return self == PortGroup.WEST
+
 
 class ModifierActionOption(Enum):
     INC = "increment"
@@ -548,3 +558,4 @@ class IPPrefixLength(Enum):
 class TestState(Enum):
     L3_LEARNING = 3
     RUNNING_TEST = 5
+

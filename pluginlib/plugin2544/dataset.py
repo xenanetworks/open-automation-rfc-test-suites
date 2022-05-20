@@ -30,12 +30,7 @@ class PluginModel2544(BaseModel):  # Main Model
     ports_configuration: PortConfType
     test_types_configuration: TestTypesConfiguration
 
-    # Computed Properties
-    in_same_ipnetwork: bool = False
-    with_same_gateway: bool = False
-    has_l3: bool = False
-
-    @validator("ports_configuration", always=True)
+    @validator("ports_configuration", pre=True, always=True)
     def set_ports_rx_tx_type(
         cls, port_configs: "PortConfType", values
     ) -> "PortConfType":
@@ -58,24 +53,25 @@ class PluginModel2544(BaseModel):  # Main Model
                         port.is_rx_port = False
         return port_configs
 
-    @validator("ports_configuration", always=True)
-    def set_ip_properties(cls, v: "PortConfType", values) -> "PortConfType":
+    @validator("ports_configuration", pre=True, always=True)
+    def set_profile(cls, v: "PortConfType", values) -> "PortConfType":
         if "protocol_segments" in values:
             for _, port_config in v.items():
                 profile_id = port_config.profile_id
                 port_config.profile = values["protocol_segments"][profile_id]
-                if port_config.profile.protocol_version.is_ipv4:
-                    port_config.ip_properties = port_config.ipv4_properties
-                elif port_config.profile.protocol_version.is_ipv6:
-                    port_config.ip_properties = port_config.ipv6_properties
-                if (
-                    port_config.profile.protocol_version.is_l3
-                    and port_config.ip_properties.address.is_empty
-                ):
-                    raise exceptions.IPAddressMissing()
         return v
 
-    @validator("ports_configuration", always=True)
+    @validator("ports_configuration", pre=True, always=True)
+    def check_ip_properties(cls, v: "PortConfType") -> "PortConfType":
+        for _, port_config in v.items():
+            if (
+                port_config.profile.protocol_version.is_l3
+                and port_config.ip_properties.address.is_empty
+            ):
+                raise exceptions.IPAddressMissing()
+        return v
+
+    @validator("ports_configuration", pre=True, always=True)
     def check_port_count(cls, v: "PortConfType", values) -> "PortConfType":
         require_ports = 2
         if "test_configuration" in values:
@@ -86,7 +82,7 @@ class PluginModel2544(BaseModel):  # Main Model
                 raise exceptions.PortConfigNotEnough(require_ports)
         return v
 
-    @validator("ports_configuration", always=True)
+    @validator("ports_configuration", pre=True, always=True)
     def check_port_groups_and_peers(cls, v: "PortConfType", values) -> "PortConfType":
         if "test_configuration" in values:
             topology: TestTopology = values["test_configuration"].topology
@@ -106,7 +102,7 @@ class PluginModel2544(BaseModel):  # Main Model
                         raise exceptions.PortGroupError(group)
         return v
 
-    @validator("ports_configuration", always=True)
+    @validator("ports_configuration", pre=True, always=True)
     def check_modifier_mode_and_segments(
         cls, v: "PortConfType", values
     ) -> "PortConfType":
@@ -119,7 +115,18 @@ class PluginModel2544(BaseModel):  # Main Model
                     raise exceptions.ModifierBasedNotSupportL3()
         return v
 
-    @validator("test_types_configuration", always=True)
+    @validator("ports_configuration", pre=True, always=True)
+    def check_port_group(cls, v, values):
+        if "ports_configuration" in values and "test_configuration" in values:
+            for k, p in values["ports_configuration"].items():
+                if (
+                    p.port_group == PortGroup.UNDEFINED
+                    and not values["test_configuration"].topology.is_mesh_topology
+                ):
+                    raise exceptions.PortGroupNeeded()
+        return v
+
+    @validator("test_types_configuration", pre=True, always=True)
     def check_test_type_enable(
         cls, v: "TestTypesConfiguration"
     ) -> "TestTypesConfiguration":
@@ -134,8 +141,10 @@ class PluginModel2544(BaseModel):  # Main Model
             raise exceptions.TestTypesError()
         return v
 
-    @validator("test_types_configuration", always=True)
-    def check_result_scope(cls, v: "TestTypesConfiguration", values):
+    @validator("test_types_configuration", pre=True, always=True)
+    def check_result_scope(
+        cls, v: "TestTypesConfiguration", values
+    ) -> "TestTypesConfiguration":
         if not "test_configuration" in values:
             return v
         if (
@@ -182,42 +191,28 @@ class PluginModel2544(BaseModel):  # Main Model
         ):
             raise exceptions.PortPeerInconsistent()
 
-    @validator("in_same_ipnetwork", always=True)
-    def set_in_same_ipnetwork(cls, v, values):
-        if "ports_configuration" in values:
-            conf = values["ports_configuration"]
-            networks = set(
-                [
-                    p.ip_properties.address.network(p.ip_properties.routing_prefix)
-                    for p in conf.values()
-                ]
-            )
+    @property
+    def in_same_ipnetwork(self) -> bool:
+        networks = set(
+            [
+                p.ip_properties.address.network(p.ip_properties.routing_prefix)
+                for p in self.ports_configuration.values()
+            ]
+        )
+        return len(networks) == 1
 
-            v = len(networks) == 1
-        return v
+    @property
+    def with_same_gateway(self) -> bool:
+        gateways = set(
+            [p.ip_properties.gateway for p in self.ports_configuration.values()]
+        )
+        return len(gateways) == 1
 
-    @validator("with_same_gateway", always=True)
-    def set_with_same_gateway(cls, v: bool, values) -> bool:
-        if "ports_configuration" in values:
-            confs = values["ports_configuration"]
-            gateways = set([p.ip_properties.gateway for p in confs.values()])
-            v = len(gateways) == 1
-        return v
-
-    @validator("has_l3", always=True)
-    def set_has_l3(cls, v: bool, values) -> bool:
-        if "ports_configuration" in values:
-            confs = values["ports_configuration"]
-            return any([conf.profile.protocol_version.is_l3 for conf in confs.values()])
-        return False
-
-    @validator("ports_configuration", always=True)
-    def check_port_group(cls, v, values):
-        if "ports_configuration" in values and "test_configuration" in values:
-            for k, p in values["ports_configuration"].items():
-                if (
-                    p.port_group == PortGroup.UNDEFINED
-                    and not values["test_configuration"].topology.is_mesh_topology
-                ):
-                    raise exceptions.PortGroupNeeded()
-        return v
+    @property
+    def has_l3(self) -> bool:
+        return any(
+            [
+                conf.profile.protocol_version.is_l3
+                for conf in self.ports_configuration.values()
+            ]
+        )

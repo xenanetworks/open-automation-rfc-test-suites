@@ -1,16 +1,12 @@
+from random import randint
 from typing import List
 from pydantic import (
     BaseModel,
     validator,
     NonNegativeInt,
 )
-from xoa_driver.enums import ProtocolOption
 from pluginlib.plugin2544.utils import exceptions
-from ..utils.constants import (
-    ModifierActionOption,
-    SegmentType,
-    PortProtocolVersion,
-)
+from ..utils import constants as const
 from ..utils.protocol_segments import (
     get_field_definition,
     get_segment_definition,
@@ -20,7 +16,7 @@ from ..utils.protocol_segments import (
 class HwModifier(BaseModel):
     field_name: str
     mask: str
-    action: ModifierActionOption = ModifierActionOption.INC
+    action: const.ModifierActionOption = const.ModifierActionOption.INC
     start_value: int
     stop_value: int
     step_value: int = 1
@@ -28,13 +24,32 @@ class HwModifier(BaseModel):
     offset: int
 
     # Computed properties
-    byte_offset: int = 0  # byte offset from current segment start
-    position: NonNegativeInt = 0  # byte position from all segment start
+    _byte_offset: int = 0  # byte offset from current segment start
+    _position: NonNegativeInt = 0  # byte position from all segment start
+
+    class Config:
+        underscore_attrs_are_private = True
 
     @validator("mask", pre=True, always=True)
-    def set_mask(cls, v):
+    def set_mask(cls, v) -> str:
         v = v[2:6] if v.startswith("0x") else v
         return f"0x{v}0000"
+
+    @property
+    def position(self) -> NonNegativeInt:
+        return self._position
+
+    @position.setter
+    def position(self, value: NonNegativeInt) -> None:
+        self._position = value
+
+    @property
+    def byte_offset(self) -> NonNegativeInt:
+        return self.byte_offset
+
+    @byte_offset.setter
+    def byte_offset(self, value: NonNegativeInt) -> None:
+        self.byte_offset = value
 
 
 class FieldValueRange(BaseModel):
@@ -42,35 +57,80 @@ class FieldValueRange(BaseModel):
     start_value: NonNegativeInt
     stop_value: NonNegativeInt
     step_value: NonNegativeInt
-    action: ModifierActionOption
+    action: const.ModifierActionOption
     reset_for_each_port: bool
 
     # Computed Properties
-    bit_length: NonNegativeInt = 0
-    bit_offset: int = 0  # bit offset from current_segment start
-    position: NonNegativeInt = 0  # bit position from all segment start
-    current_count: NonNegativeInt = 0
+    _bit_length: NonNegativeInt = 0
+    _bit_offset: int = 0  # bit offset from current_segment start
+    _position: NonNegativeInt = 0  # bit position from all segment start
+    _current_count: NonNegativeInt = 0
 
-    def increase_current_count(self):
-        self.current_count += 1
+    class Config:
+        underscore_attrs_are_private = True
 
-    def reset_current_count(self):
-        self.current_count = 0
+    @property
+    def current_count(self):
+        return self._current_count
+
+    def reset(self) -> None:
+        self._current_count = 0
+
+    @property
+    def position(self) -> NonNegativeInt:
+        return self._position
+
+    @position.setter
+    def position(self, value: NonNegativeInt) -> None:
+        self._position = value
+
+    @property
+    def bit_length(self) -> NonNegativeInt:
+        return self._bit_length
+
+    @bit_length.setter
+    def bit_length(self, value: NonNegativeInt) -> None:
+        self._bit_length = value
+
+    @property
+    def bit_offset(self) -> NonNegativeInt:
+        return self._bit_offset
+
+    @bit_offset.setter
+    def bit_offset(self, value: NonNegativeInt) -> None:
+        self._bit_offset = value
+
+    def get_current_value(self) -> int:
+        if self.action == const.ModifierActionOption.INC:
+            current_value = self.start_value + self.current_count * self.step_value
+            if current_value > self.stop_value:
+                current_value = self.start_value
+                self._current_count = 0
+        elif self.action == const.ModifierActionOption.DEC:
+            current_value = self.start_value - self.current_count * self.step_value
+            if current_value < self.stop_value:
+                current_value = self.start_value
+                self._current_count = 0
+        else:
+            boundary = [self.start_value, self.stop_value]
+            current_value = randint(min(boundary), max(boundary))
+        self._current_count += 1
+        return current_value
 
 
 class HeaderSegment(BaseModel):
-    segment_type: SegmentType
+    segment_type: const.SegmentType
     segment_value: str
     hw_modifiers: List[HwModifier]
     field_value_ranges: List[FieldValueRange]
     segment_byte_offset: int = 0  # byte offset since
 
     @validator("hw_modifiers", pre=True, always=True)
-    def set_modifiers(cls, hw_modifiers, values):
+    def set_modifiers(cls, hw_modifiers: List[HwModifier], values) -> List[HwModifier]:
         if hw_modifiers:
             segment_type = values["segment_type"]
             if not segment_type.is_raw:
-    
+
                 segment_def = get_segment_definition(segment_type)
                 for modifier in hw_modifiers:
                     field_def = get_field_definition(segment_def, modifier.field_name)
@@ -79,7 +139,9 @@ class HeaderSegment(BaseModel):
         return hw_modifiers
 
     @validator("field_value_ranges", pre=True, always=True)
-    def set_field_value_ranges(cls, field_value_ranges, values):
+    def set_field_value_ranges(
+        cls, field_value_ranges: List[FieldValueRange], values
+    ) -> List[FieldValueRange]:
         if field_value_ranges:
             segment_type = values["segment_type"]
             if not segment_type.is_raw:
@@ -100,14 +162,8 @@ class ProtocolSegmentProfileConfig(BaseModel):
     description: str = ""
     header_segments: List[HeaderSegment] = []
 
-    # Computed Properties
-    protocol_version: PortProtocolVersion = PortProtocolVersion.ETHERNET
-    modifier_count: NonNegativeInt = 0
-    packet_header_length: NonNegativeInt = 0
-    header_segment_id_list: List[ProtocolOption] = []
-
     @validator("header_segments", always=True)
-    def set_byte_offset(cls, v):
+    def set_byte_offset(cls, v: List[HeaderSegment]) -> List[HeaderSegment]:
         if v:
             current_byte_offset = 0
             for header_segment in v:
@@ -123,47 +179,39 @@ class ProtocolSegmentProfileConfig(BaseModel):
                 current_byte_offset += len(header_segment.segment_value) // 2
         return v
 
-    @validator("modifier_count", pre=True, always=True)
-    def set_modifier_count(cls, v, values):
-        count = 0
-        if "header_segments" in values:
-            for header_segment in values["header_segments"]:
-                if header_segment.hw_modifiers:
-                    count += len(header_segment.hw_modifiers)
-        return count
+    @property
+    def modifier_count(self) -> int:
+        return sum(
+            [
+                len(header_segment.hw_modifiers)
+                for header_segment in self.header_segments
+            ]
+        )
 
-    @validator("protocol_version", pre=True, always=True)
-    def set_protocol_version(cls, v, values):
-        if "header_segments" in values:
-            v = PortProtocolVersion.ETHERNET
-            for i in values["header_segments"]:
-                if i.segment_type == SegmentType.IPV6:
-                    v = PortProtocolVersion.IPV6
-                    break
-                elif i.segment_type == SegmentType.IP:
-                    v = PortProtocolVersion.IPV4
-                    break
-        return v
-
-    @validator("packet_header_length", pre=True, always=True)
-    def set_segment_length(cls, v, values):
-        if "header_segments" in values:
-            return (
-                sum(
-                    [
-                        len(header_segment.segment_value)
-                        for header_segment in values["header_segments"]
-                    ]
-                )
-                // 2
+    @property
+    def packet_header_length(self) -> NonNegativeInt:
+        return (
+            sum(
+                [
+                    len(header_segment.segment_value)
+                    for header_segment in self.header_segments
+                ]
             )
+            // 2
+        )
+
+    @property
+    def protocol_version(self) -> const.PortProtocolVersion:
+        v = const.PortProtocolVersion.ETHERNET
+        for i in self.header_segments:
+            if i.segment_type == const.SegmentType.IPV6:
+                v = const.PortProtocolVersion.IPV6
+                break
+            elif i.segment_type == const.SegmentType.IP:
+                v = const.PortProtocolVersion.IPV4
+                break
         return v
 
-    @validator("header_segment_id_list", pre=True, always=True)
-    def set_segment_id_list(cls, v, values):
-        id_list = []
-        if "header_segments" in values:
-            for h in values["header_segments"]:
-                id_list.append(h.segment_type.to_xmp().value)
-
-        return id_list
+    @property
+    def header_segment_id_list(self) -> List[int]:
+        return [h.segment_type.to_xmp().value for h in self.header_segments]

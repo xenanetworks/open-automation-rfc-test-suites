@@ -166,7 +166,7 @@ async def back_to_back_sweep(
     state_checker: "StateChecker",
     xoa_out: "TestSuitPipe",
 ):
-    rate_sweep_list = back_to_back_conf.rate_sweep_list
+    rate_sweep_list = back_to_back_conf.rate_sweep_options.rate_sweep_list
     for k, rate_percent in enumerate(rate_sweep_list):
         rate_percent_dic = {
             port_struct.properties.identity: BackToBackBoutEntry(

@@ -132,7 +132,7 @@ def get_address_list(
         addr[-1] = str(i)
         addr_str = splitter.join(addr)
         source_ip_list.append(typing(addr_str))
-         
+
     return source_ip_list
 
 
@@ -292,7 +292,9 @@ class AddressRefreshHandler:
         self.index = 0
         self.refresh_burst_size = 1
         self.tokens: List["misc.Token"] = []
-        self.address_refresh_tokens = address_refresh_tokens
+        self.address_refresh_tokens: List[
+            Tuple["misc.Token", bool]
+        ] = address_refresh_tokens
         self.interval = 0.0  # unit: second
         self.refresh_period = refresh_period
         self.state = TestState.L3_LEARNING

@@ -164,7 +164,7 @@ async def run_frame_loss_test(
         return
     state_checker = await StateChecker(control_ports, test_conf.should_stop_on_los)
     source_port_structs = filter_port_structs(control_ports)
-    rate_sweep_list = frame_loss_conf.rate_sweep_list
+    rate_sweep_list = frame_loss_conf.rate_sweep_options.rate_sweep_list
     for rate_percent in rate_sweep_list:
         rate_percent_dic = {
             port_struct.properties.identity: BoutEntry(

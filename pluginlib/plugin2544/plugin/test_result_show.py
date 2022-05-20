@@ -1,13 +1,14 @@
 from typing import Dict, Tuple, TYPE_CHECKING
+
+
 from ..utils.logger import logger
 
 if TYPE_CHECKING:
     from .test_result_structure import PortResult, AllResult
+    # from pluginlib.plugin2544.utils.logger import TestSuitPipe
 
 
 def show_all_throughput_result(all_result: Dict[Tuple, "AllResult"]) -> None:
-    logger.error("")
-    logger.error("")
     for k, v in all_result.items():
         if not v.is_live:
             if v.test_result_state.value != "pending":
