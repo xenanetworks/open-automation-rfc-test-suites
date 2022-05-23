@@ -9,7 +9,7 @@ from xoa_driver.utils import apply
 
 if TYPE_CHECKING:
     from .structure import Structure, StreamInfo
-    from ..utils.constants import FlowCreationType
+    from pluginlib.plugin2544.utils.constants import FlowCreationType
 
 
 async def setup_source_port_rates(

@@ -1,7 +1,8 @@
 import re
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
-from ..utils.constants import (
+from ..utils import constants as const
+from pluginlib.plugin2544.utils.constants import (
     ARPSenarioType,
     TidAllocationScope,
     TestTopology,
@@ -146,14 +147,12 @@ def is_peer_port(
     port_config: "PortConfiguration",
     peer_config: "PortConfiguration",
 ) -> bool:
-    if topology == TestTopology.PAIRS:
+    if topology.is_pair_topology:
         return is_port_pair(port_config, peer_config)
-    elif topology == TestTopology.BLOCKS:
-        return port_config.port_group != peer_config.port_group
-    elif topology == TestTopology.MESH:
+    elif topology.is_mesh_topology:
         return port_config != peer_config 
     else:
-        raise Exception(f"illegal topology! {topology}")
+        return port_config.port_group != peer_config.port_group
 
 
 def get_peers_for_source(

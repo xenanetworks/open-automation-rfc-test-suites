@@ -3,7 +3,7 @@ from typing import List, TYPE_CHECKING, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
 
 from pluginlib.plugin2544.utils import exceptions
-from ..utils.constants import FlowCreationType
+from pluginlib.plugin2544.utils.constants import FlowCreationType
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
 from ..model import HwModifier
 from xoa_core.core.test_suites.datasets import PortIdentity

@@ -8,7 +8,7 @@ from pydantic import (
     PositiveInt,
 )
 
-from ..utils.constants import (
+from pluginlib.plugin2544.utils.constants import (
     DurationType,
     DurationTimeUnit,
     SearchType,

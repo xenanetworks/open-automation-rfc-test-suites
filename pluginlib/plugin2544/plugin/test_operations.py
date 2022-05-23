@@ -24,7 +24,7 @@ from .test_result_show import (
     show_port_back_to_back_result,
 )
 from .structure import TypeConf
-from ..utils.constants import AcceptableLossType, TestType
+from pluginlib.plugin2544.utils.constants import AcceptableLossType, TestType
 from ..utils.logger import logger
 from .test_result_structure import (
     AllResult,

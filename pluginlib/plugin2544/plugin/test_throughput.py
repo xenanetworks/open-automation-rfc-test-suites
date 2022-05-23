@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 
 from ..utils.field import NonNegativeDecimal
-from ..utils.constants import TestResultState, TestType
+from pluginlib.plugin2544.utils.constants import TestResultState, TestType
 
 from .common import filter_port_structs
 from .flow_based_learning import add_flow_based_learning_preamble_steps

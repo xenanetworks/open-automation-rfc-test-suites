@@ -9,9 +9,8 @@ from ..utils.field import NonNegativeDecimal
 
 from ..utils.scheduler import schedule
 from .test_result_structure import BoutEntry
-from ..utils.constants import (
+from pluginlib.plugin2544.utils.constants import (
     MIN_REFRESH_TIMER_INTERNAL,
-    UNREACH_BYTE_VALUE,
     IPPrefixLength,
     SegmentType,
     TestState,

@@ -1,21 +1,6 @@
 from enum import Enum as CaseSensitiveEnum
-from ..utils.constants import (
-    DurationType,
-    FlowCreationType,
-    MACLearningMode,
-    ModifierActionOption,
-    OuterLoopMode,
-    PacketSizeType,
-    PortRateCapProfile,
-    PortRateCapUnit,
-    RateResultScopeType,
-    SearchType,
-    DurationFrameUnit,
-    SegmentType,
-    TestType,
-    TidAllocationScope,
-    TrafficDirection,
-)
+
+from pluginlib.plugin2544.utils import constants as const
 
 
 class Enum(CaseSensitiveEnum):
@@ -33,7 +18,7 @@ class ODurationType(Enum):
 
     @property
     def core(self):
-        return DurationType[self.name]
+        return const.DurationType[self.name]
 
 
 class OSearchType(Enum):
@@ -42,7 +27,7 @@ class OSearchType(Enum):
 
     @property
     def core(self):
-        return SearchType[self.name]
+        return const.SearchType[self.name]
 
 
 class ODurationFrameUnit(Enum):
@@ -53,7 +38,7 @@ class ODurationFrameUnit(Enum):
 
     @property
     def core(self):
-        return DurationFrameUnit[self.name]
+        return const.DurationFrameUnit[self.name]
 
 
 class OTrafficDirection(Enum):
@@ -63,7 +48,7 @@ class OTrafficDirection(Enum):
 
     @property
     def core(self):
-        return TrafficDirection[self.name]
+        return const.TrafficDirection[self.name]
 
 
 class OPacketSizeType(Enum):
@@ -77,7 +62,7 @@ class OPacketSizeType(Enum):
 
     @property
     def core(self):
-        return PacketSizeType[self.name]
+        return const.PacketSizeType[self.name]
 
 
 class OModifierActionOption(Enum):
@@ -87,7 +72,7 @@ class OModifierActionOption(Enum):
 
     @property
     def core(self):
-        return ModifierActionOption[self.name]
+        return const.ModifierActionOption[self.name]
 
 
 class OPortRateCapUnit(Enum):
@@ -98,7 +83,7 @@ class OPortRateCapUnit(Enum):
 
     @property
     def core(self):
-        return PortRateCapUnit[self.name]
+        return const.PortRateCapUnit[self.name]
 
 
 class OPortRateCapProfile(Enum):
@@ -107,7 +92,7 @@ class OPortRateCapProfile(Enum):
 
     @property
     def core(self):
-        return PortRateCapProfile[self.name]
+        return const.PortRateCapProfile[self.name]
 
 
 class OOuterLoopMode(Enum):
@@ -116,7 +101,7 @@ class OOuterLoopMode(Enum):
 
     @property
     def core(self):
-        return OuterLoopMode[self.name]
+        return const.OuterLoopMode[self.name]
 
 
 class OMACLearningMode(Enum):
@@ -126,7 +111,7 @@ class OMACLearningMode(Enum):
 
     @property
     def core(self):
-        return MACLearningMode[self.name]
+        return const.MACLearningMode[self.name]
 
 
 class OFlowCreationType(Enum):
@@ -135,7 +120,7 @@ class OFlowCreationType(Enum):
 
     @property
     def core(self):
-        return FlowCreationType[self.name]
+        return const.FlowCreationType[self.name]
 
 
 class OTidAllocationScope(Enum):
@@ -145,7 +130,7 @@ class OTidAllocationScope(Enum):
 
     @property
     def core(self):
-        return TidAllocationScope[self.name]
+        return const.TidAllocationScope[self.name]
 
 
 class ORateResultScopeType(Enum):
@@ -154,7 +139,7 @@ class ORateResultScopeType(Enum):
 
     @property
     def core(self):
-        return RateResultScopeType[self.name]
+        return const.RateResultScopeType[self.name]
 
 
 # special_type_map = {
@@ -173,7 +158,7 @@ class OTestType(Enum):
 
     @property
     def core(self):
-        return TestType[self.name]
+        return const.TestType[self.name]
 
 
 class OSegmentType(Enum):
@@ -228,7 +213,7 @@ class OSegmentType(Enum):
 
     @property
     def core(self):
-        return SegmentType[self.name]
+        return const.SegmentType[self.name]
 
     @property
     def is_raw(self) -> bool:

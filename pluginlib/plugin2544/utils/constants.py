@@ -1,4 +1,3 @@
-from decimal import Decimal
 import os
 from enum import Enum as CaseSensitiveEnum
 from xoa_driver import ports
@@ -50,6 +49,7 @@ STANDARD_TPLD_TOTAL_LENGTH = (
     STANDARD_TPLD_LENGTH + MIN_PAYLOAD_LENGTH + ETHERNET_FCS_LENGTH
 )
 MIN_REFRESH_TIMER_INTERNAL = 100.0
+DEFAULT_PACKET_SIZE_LIST = [64, 128, 256, 512, 1024, 1280, 1518]
 MIXED_PACKET_SIZE = [
     56,
     60,
@@ -107,12 +107,6 @@ AutoNegPorts = (
 
 PCSPMAPorts = (ports.PThor400G7S1P_c, ports.PThor400G7S1P_b)
 
-
-class TestSuiteType(Enum):
-    VALKYRIE2544 = "valkyrie_2544"
-    VALKYRIE2889 = "valkyrie_2889"
-    VALKYRIE1564 = "valkyrie_1564"
-    VALKYRIE3918 = "valkyrie_3918"
 
 
 class TestTopology(Enum):

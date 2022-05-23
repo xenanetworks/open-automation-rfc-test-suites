@@ -7,7 +7,7 @@ from ..utils.logger import logger
 from typing import TYPE_CHECKING, List, Dict
 
 
-from ..utils.constants import TestResultState, TestType
+from pluginlib.plugin2544.utils.constants import TestResultState, TestType
 from .common import filter_port_structs
 from .mac_learning import add_L2_trial_learning_steps
 from .flow_based_learning import add_flow_based_learning_preamble_steps

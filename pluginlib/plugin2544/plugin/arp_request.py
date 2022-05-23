@@ -2,7 +2,7 @@ import asyncio
 from dataclasses import dataclass
 from typing import List, Dict, Union
 # from ..utils.logger import logger
-from ..utils.constants import ARPSenarioType
+from pluginlib.plugin2544.utils.constants import ARPSenarioType
 from ..utils.field import IPv4Address, IPv6Address, MacAddress, IPAddress
 from ..utils.packet import Ether, IPV4Packet, IPV6Packet
 from ..utils.traffic_definitions import EtherType

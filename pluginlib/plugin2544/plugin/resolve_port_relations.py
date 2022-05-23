@@ -1,14 +1,13 @@
-from ..utils.constants import PortGroup
 from typing import List, TYPE_CHECKING
-from .common import filter_port_structs, get_peers_for_source
+from pluginlib.plugin2544.plugin.common import filter_port_structs, get_peers_for_source
 
 if TYPE_CHECKING:
     from .structure import Structure
-    from ..model import TestTopology
+    from pluginlib.plugin2544.utils import constants as const
 
 
 def resolve_port_relations_main(
-    topology: "TestTopology",
+    topology: "const.TestTopology",
     control_ports: List["Structure"],
 ) -> None:
     test_port_index = 0
@@ -20,12 +19,12 @@ def resolve_port_relations_main(
         east_ports = [
             port_struct
             for port_struct in control_ports
-            if port_struct.port_conf.port_group == PortGroup.EAST
+            if port_struct.port_conf.port_group.is_east
         ]
         west_ports = [
             port_struct
             for port_struct in control_ports
-            if port_struct.port_conf.port_group == PortGroup.WEST
+            if port_struct.port_conf.port_group.is_west
         ]
         for port_struct in east_ports:
             port_struct.properties.change_test_port_index(test_port_index)

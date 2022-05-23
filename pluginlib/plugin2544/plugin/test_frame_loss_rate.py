@@ -12,7 +12,7 @@ from .statistics import (
     set_traffic_status,
     stop_traffic,
 )
-from ..utils.constants import TestResultState, TestType
+from pluginlib.plugin2544.utils.constants import TestResultState, TestType
 from .common import filter_port_structs
 from .flow_based_learning import add_flow_based_learning_preamble_steps
 from .l3_learning import schedule_arp_refresh, add_L3_learning_preamble_steps

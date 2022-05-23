@@ -1,15 +1,15 @@
-from pytest import Instance
+import asyncio
 from xoa_core.types import PluginAbstract
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
+from decimal import getcontext
 
-from pluginlib.plugin2544.utils import exceptions
+from pluginlib.plugin2544.utils import constants as const
+
 
 if TYPE_CHECKING:
     from .dataset import PluginModel2544
 
 
-import asyncio
-from typing import List
 
 from .model.m_test_type_config import LatencyTest
 from .plugin.statistics import stop_traffic
@@ -20,7 +20,6 @@ from .plugin.structure import (
     Structure,
 )
 from .plugin.toggle_port_sync_state import add_toggle_port_sync_state_steps
-from .utils.constants import MACLearningMode
 from .plugin.control_ports import collect_control_ports
 from .plugin.resolve_port_relations import resolve_port_relations_main
 from .plugin.common import setup_macaddress, TPLDControl
@@ -38,8 +37,6 @@ from .plugin.resolve_stream_relations import (
 from .plugin.checker.config_checkers import check_config
 from .plugin.mac_learning import add_mac_learning_steps
 from .plugin.outer_loop import gen_loop, test_run
-from decimal import getcontext
-from xoa_core.types import PluginAbstract
 
 getcontext().prec = 12
 
@@ -82,7 +79,7 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
         )
         await add_mac_learning_steps(
             self.control_ports,
-            MACLearningMode.ONCE,
+            const.MACLearningMode.ONCE,
             self.test_conf.mac_learning_mode,
             self.test_conf.mac_learning_frame_count,
         )  # AddMacLearningSteps(Once)

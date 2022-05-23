@@ -1,12 +1,11 @@
 import asyncio
 from typing import Dict, TYPE_CHECKING, List
-from xoa_core.core.test_suites.datasets import PortIdentity
-from pluginlib.plugin2544.utils import exceptions
 from xoa_driver import modules, testers as xoa_testers
-
-from .structure import Structure
+from pluginlib.plugin2544.utils import exceptions
+from pluginlib.plugin2544.plugin.structure import Structure
 
 if TYPE_CHECKING:
+    from xoa_core.core.test_suites.datasets import PortIdentity
     from ..model import PortConfiguration
 
 

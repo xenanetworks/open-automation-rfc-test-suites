@@ -16,7 +16,7 @@ from xoa_driver.ports import GenericL23Port
 from pydantic import NonNegativeInt
 from ..utils.field import NonNegativeDecimal
 from .structure import Structure
-from ..utils.constants import TestResultState, TestType
+from pluginlib.plugin2544.utils.constants import TestResultState, TestType
 
 if TYPE_CHECKING:
     from xoa_driver.internals.core.commands.p_commands import P_TRAFFIC

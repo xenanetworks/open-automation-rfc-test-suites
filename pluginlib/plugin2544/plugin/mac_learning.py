@@ -2,7 +2,7 @@ import asyncio
 from typing import List, TYPE_CHECKING
 
 
-from ..utils.constants import MACLearningMode
+from pluginlib.plugin2544.utils.constants import MACLearningMode
 from ..utils import exceptions
 from ..utils.field import MacAddress
 from xoa_driver.utils import apply

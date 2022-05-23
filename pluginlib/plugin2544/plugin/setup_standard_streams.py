@@ -11,7 +11,7 @@ from .stream_base_settings import (
     get_modifier_range_by_test_port_index,
     get_rx_ports_by_range,
 )
-from ..utils.constants import FlowCreationType
+from pluginlib.plugin2544.utils.constants import FlowCreationType
 from ..utils.field import IPv4Address, IPv6Address
 
 if TYPE_CHECKING:

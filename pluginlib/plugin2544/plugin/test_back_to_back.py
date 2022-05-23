@@ -5,7 +5,7 @@ import math
 from time import time
 from typing import TYPE_CHECKING, List, Dict, Optional, Tuple
 from ..utils.field import NonNegativeDecimal
-from ..utils.constants import TestResultState, TestType
+from pluginlib.plugin2544.utils.constants import TestResultState, TestType
 
 # from ..utils.scheduler import schedule
 from .common import filter_port_structs

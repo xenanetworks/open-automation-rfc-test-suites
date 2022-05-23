@@ -13,7 +13,7 @@ from .test_operations import avg_result
 from .test_frame_loss_rate import run_frame_loss_test
 from ..model import LatencyTest
 from ..model import BackToBackTest, FrameLossRateTest, LatencyTest, ThroughputTest
-from ..utils.constants import TestType
+from pluginlib.plugin2544.utils.constants import TestType
 
 if TYPE_CHECKING:
     from ..model import TestConfiguration

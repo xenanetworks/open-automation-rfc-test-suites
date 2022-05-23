@@ -1,15 +1,8 @@
 from typing import Dict, List
 from pydantic import BaseModel, Field, NonNegativeInt, validator
 from ..utils.field import MacAddress
-from ..utils.constants import (
-    BRRModeStr,
-    DurationTimeUnit,
-    LatencyModeStr,
-    MdiMdixMode,
-    PortGroup,
-    PortSpeedStr,
-    TestTopology,
-)
+from pluginlib.plugin2544.utils import constants as const
+
 from .enums import (
     ODurationFrameUnit,
     ODurationType,
@@ -43,20 +36,20 @@ class OFrameSizesOptions(BaseModel):
 
 class PortEntity(BaseModel):
     port_ref: PortRef = Field(alias="PortRef")
-    port_group: PortGroup = Field(alias="PortGroup")
+    port_group: const.PortGroup = Field(alias="PortGroup")
     pair_peer_ref: None = Field(alias="PairPeerRef")
     pair_peer_id: str = Field(alias="PairPeerId")
     multicast_role: str = Field(alias="MulticastRole")
-    port_speed: PortSpeedStr = Field(alias="PortSpeed")
+    port_speed: const.PortSpeedStr = Field(alias="PortSpeed")
     inter_frame_gap: int = Field(alias="InterFrameGap")
     pause_mode_on: int = Field(alias="PauseModeOn")
     auto_neg_enabled: int = Field(alias="AutoNegEnabled")
     anlt_enabled: int = Field(alias="AnltEnabled")
     adjust_ppm: int = Field(alias="AdjustPpm")
     latency_offset: int = Field(alias="LatencyOffset")
-    mdi_mdix_mode: MdiMdixMode = Field(alias="MdiMdixMode")
+    mdi_mdix_mode: const.MdiMdixMode = Field(alias="MdiMdixMode")
     fec_mode: str = Field(alias="FecMode")
-    brr_mode: BRRModeStr = Field(alias="BrrMode")
+    brr_mode: const.BRRModeStr = Field(alias="BrrMode")
     reply_arp_requests: int = Field(alias="ReplyArpRequests")
     reply_ping_requests: int = Field(alias="ReplyPingRequests")
     ip_v4_address: str = Field(alias="IpV4Address")
@@ -228,7 +221,7 @@ class Throughput(BaseModel):
     enabled: bool = Field(alias="Enabled")
     duration_type: ODurationType = Field(alias="DurationType")
     duration: float = Field(alias="Duration")
-    duration_time_unit: DurationTimeUnit = Field(alias="DurationTimeUnit")
+    duration_time_unit: const.DurationTimeUnit = Field(alias="DurationTimeUnit")
     duration_frames: int = Field(alias="DurationFrames")
     duration_frame_unit: ODurationFrameUnit = Field(alias="DurationFrameUnit")
     iterations: int = Field(alias="Iterations")
@@ -246,13 +239,13 @@ class ORateSweepOptions(BaseModel):
 class Latency(BaseModel):
     type: str = Field(alias="$type")
     rate_sweep_options: ORateSweepOptions = Field(alias="RateSweepOptions")
-    latency_mode: LatencyModeStr = Field(alias="LatencyMode")
+    latency_mode: const.LatencyModeStr = Field(alias="LatencyMode")
     rate_relative_tput_max_rate: bool = Field(alias="RateRelativeTputMaxRate")
     test_type: OTestType = Field(alias="TestType")
     enabled: bool = Field(alias="Enabled")
     duration_type: ODurationType = Field(alias="DurationType")
     duration: float = Field(alias="Duration")
-    duration_time_unit: DurationTimeUnit = Field(alias="DurationTimeUnit")
+    duration_time_unit: const.DurationTimeUnit = Field(alias="DurationTimeUnit")
     duration_frames: int = Field(alias="DurationFrames")
     duration_frame_unit: ODurationFrameUnit = Field(alias="DurationFrameUnit")
     iterations: int = Field(alias="Iterations")
@@ -274,7 +267,7 @@ class Loss(BaseModel):
     enabled: bool = Field(alias="Enabled")
     duration_type: ODurationType = Field(alias="DurationType")
     duration: float = Field(alias="Duration")
-    duration_time_unit: DurationTimeUnit = Field(alias="DurationTimeUnit")
+    duration_time_unit: const.DurationTimeUnit = Field(alias="DurationTimeUnit")
     duration_frames: int = Field(alias="DurationFrames")
     duration_frame_unit: ODurationFrameUnit = Field(alias="DurationFrameUnit")
     iterations: int = Field(alias="Iterations")
@@ -292,7 +285,7 @@ class Back2Back(BaseModel):
     enabled: bool = Field(alias="Enabled")
     duration_type: ODurationType = Field(alias="DurationType")
     duration: float = Field(alias="Duration")
-    duration_time_unit: DurationTimeUnit = Field(alias="DurationTimeUnit")
+    duration_time_unit: const.DurationTimeUnit = Field(alias="DurationTimeUnit")
     duration_frames: int = Field(alias="DurationFrames")
     duration_frame_unit: ODurationFrameUnit = Field(alias="DurationFrameUnit")
     iterations: int = Field(alias="Iterations")
@@ -325,7 +318,7 @@ class PacketSizes(BaseModel):
 
 
 class TopologyConfig(BaseModel):
-    topology: TestTopology = Field(alias="Topology")
+    topology: const.TestTopology = Field(alias="Topology")
     direction: OTrafficDirection = Field(alias="Direction")
 
 

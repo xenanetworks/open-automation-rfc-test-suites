@@ -5,18 +5,13 @@ from pydantic import (
     validator,
 )
 
+from pluginlib.plugin2544.utils import exceptions, constants as const
+
 
 from .model.m_test_config import TestConfiguration
 from .model.m_port_config import PortConfiguration
 from .model.m_protocol_segment import ProtocolSegmentProfileConfig
 from .model.m_test_type_config import TestTypesConfiguration
-from .utils.constants import (
-    RateResultScopeType,
-    PortGroup,
-    TestTopology,
-    TrafficDirection,
-)
-from .utils import exceptions
 
 getcontext().prec = 6
 
@@ -40,12 +35,12 @@ class PluginModel2544(BaseModel):  # Main Model
                 port_config.set_name(config_index)
                 if port_config.is_loop:
                     continue
-                elif direction == TrafficDirection.EAST_TO_WEST:
+                elif direction == const.TrafficDirection.EAST_TO_WEST:
                     if port_config.port_group.is_east:
                         port_config.set_rx_port(False)
                     elif port_config.port_group.is_west:
                         port_config.set_tx_port(False)
-                elif direction == TrafficDirection.WEST_TO_EAST:
+                elif direction == const.TrafficDirection.WEST_TO_EAST:
                     if port_config.port_group.is_east:
                         port_config.set_tx_port(False)
                     elif port_config.port_group.is_west:
@@ -74,7 +69,7 @@ class PluginModel2544(BaseModel):  # Main Model
     def check_port_count(cls, v: "PortConfType", values) -> "PortConfType":
         require_ports = 2
         if "test_configuration" in values:
-            topology: TestTopology = values["test_configuration"].topology
+            topology: const.TestTopology = values["test_configuration"].topology
             if topology.is_pair_topology:
                 require_ports = 1
             if len(v) < require_ports:
@@ -84,7 +79,7 @@ class PluginModel2544(BaseModel):  # Main Model
     @validator("ports_configuration", always=True)
     def check_port_groups_and_peers(cls, v: "PortConfType", values) -> "PortConfType":
         if "test_configuration" in values:
-            topology: TestTopology = values["test_configuration"].topology
+            topology: const.TestTopology = values["test_configuration"].topology
             ports_in_east = 0
             ports_in_west = 0
             uses_port_peer = topology.is_pair_topology
@@ -119,7 +114,7 @@ class PluginModel2544(BaseModel):  # Main Model
         if "ports_configuration" in values and "test_configuration" in values:
             for k, p in values["ports_configuration"].items():
                 if (
-                    p.port_group == PortGroup.UNDEFINED
+                    p.port_group == const.PortGroup.UNDEFINED
                     and not values["test_configuration"].topology.is_mesh_topology
                 ):
                     raise exceptions.PortGroupNeeded()
@@ -149,7 +144,7 @@ class PluginModel2544(BaseModel):  # Main Model
         if (
             v.throughput_test.enabled
             and v.throughput_test.rate_iteration_options.result_scope
-            == RateResultScopeType.PER_SOURCE_PORT
+            == const.RateResultScopeType.PER_SOURCE_PORT
             and not values["test_configuration"].flow_creation_type.is_stream_based
         ):
             raise exceptions.ModifierBasedNotSupportPerPortResult()
