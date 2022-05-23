@@ -137,7 +137,7 @@ def is_port_pair(
     port_config: "PortConfiguration", peer_config: "PortConfiguration"
 ) -> bool:
     return (
-        True if port_config.peer_config_slot == peer_config.port_config_slot else False
+        True if port_config.is_pair(peer_config) and peer_config.is_pair(port_config) else False
     )
 
 
@@ -151,7 +151,7 @@ def is_peer_port(
     elif topology == TestTopology.BLOCKS:
         return port_config.port_group != peer_config.port_group
     elif topology == TestTopology.MESH:
-        return port_config.port_config_slot != peer_config.port_config_slot
+        return port_config != peer_config 
     else:
         raise Exception(f"illegal topology! {topology}")
 

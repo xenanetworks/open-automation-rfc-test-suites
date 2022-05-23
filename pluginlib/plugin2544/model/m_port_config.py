@@ -1,7 +1,6 @@
 from ipaddress import IPv4Network, IPv6Network
 from typing import Union
 from decimal import Decimal
-from typing import Union
 from pydantic import (
     BaseModel,
     validator,
@@ -60,7 +59,6 @@ class IPV4AddressProperties(BaseModel):
 
 class PortConfiguration(BaseModel):
     port_slot: str
-    port_config_slot: str = ""
     peer_config_slot: str
     port_group: const.PortGroup
     port_speed_mode: const.PortSpeedStr
@@ -94,6 +92,7 @@ class PortConfiguration(BaseModel):
     ipv6_properties: IPV6AddressProperties
 
     _profile: ProtocolSegmentProfileConfig = ProtocolSegmentProfileConfig()
+    _port_config_slot: str = ""
     _is_tx: bool = True
     _is_rx: bool = True
 
@@ -104,17 +103,25 @@ class PortConfiguration(BaseModel):
     def is_tx_port(self) -> bool:
         return self._is_tx
 
-    @is_tx_port.setter
-    def is_tx_port(self, value: bool) -> None:
+    def set_tx_port(self, value: bool) -> None:
         self._is_tx = value
 
     @property
     def is_rx_port(self) -> bool:
         return self._is_rx
 
-    @is_rx_port.setter
-    def is_rx_port(self, value: bool) -> None:
+    def set_rx_port(self, value: bool) -> None:
         self._is_rx = value
+
+    @property
+    def is_loop(self) -> bool:
+        return self._port_config_slot == self.peer_config_slot
+
+    def is_pair(self, peer_config: "PortConfiguration") -> bool:
+        return peer_config.peer_config_slot == self._port_config_slot
+
+    def set_name(self, name: str) -> None:
+        self._port_config_slot = name
 
     @property
     def port_rate(self) -> Decimal:
@@ -124,8 +131,7 @@ class PortConfiguration(BaseModel):
     def profile(self) -> ProtocolSegmentProfileConfig:
         return self._profile
 
-    @profile.setter
-    def profile(self, value: ProtocolSegmentProfileConfig) -> None:
+    def set_profile(self, value: ProtocolSegmentProfileConfig) -> None:
         self._profile = value
 
     @property

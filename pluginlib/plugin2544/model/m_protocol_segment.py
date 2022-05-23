@@ -39,17 +39,15 @@ class HwModifier(BaseModel):
     def position(self) -> NonNegativeInt:
         return self._position
 
-    @position.setter
-    def position(self, value: NonNegativeInt) -> None:
+    def set_position(self, value: NonNegativeInt) -> None:
         self._position = value
 
     @property
     def byte_offset(self) -> NonNegativeInt:
-        return self.byte_offset
+        return self._byte_offset
 
-    @byte_offset.setter
-    def byte_offset(self, value: NonNegativeInt) -> None:
-        self.byte_offset = value
+    def set_byte_offset(self, value: NonNegativeInt) -> None:
+        self._byte_offset = value
 
 
 class FieldValueRange(BaseModel):
@@ -80,24 +78,21 @@ class FieldValueRange(BaseModel):
     def position(self) -> NonNegativeInt:
         return self._position
 
-    @position.setter
-    def position(self, value: NonNegativeInt) -> None:
+    def set_position(self, value: NonNegativeInt) -> None:
         self._position = value
 
     @property
     def bit_length(self) -> NonNegativeInt:
         return self._bit_length
 
-    @bit_length.setter
-    def bit_length(self, value: NonNegativeInt) -> None:
+    def set_bit_length(self, value: NonNegativeInt) -> None:
         self._bit_length = value
 
     @property
     def bit_offset(self) -> NonNegativeInt:
         return self._bit_offset
 
-    @bit_offset.setter
-    def bit_offset(self, value: NonNegativeInt) -> None:
+    def set_bit_offset(self, value: NonNegativeInt) -> None:
         self._bit_offset = value
 
     def get_current_value(self) -> int:
@@ -134,7 +129,7 @@ class HeaderSegment(BaseModel):
                 segment_def = get_segment_definition(segment_type)
                 for modifier in hw_modifiers:
                     field_def = get_field_definition(segment_def, modifier.field_name)
-                    modifier.byte_offset = field_def.byte_offset
+                    modifier.set_byte_offset(field_def.byte_offset)
 
         return hw_modifiers
 
@@ -148,8 +143,8 @@ class HeaderSegment(BaseModel):
                 segment_def = get_segment_definition(segment_type)
                 for fvr in field_value_ranges:
                     field_def = get_field_definition(segment_def, fvr.field_name)
-                    fvr.bit_length = field_def.bit_length
-                    fvr.bit_offset = field_def.bit_offset
+                    fvr.set_bit_length(field_def.bit_length)
+                    fvr.set_bit_offset(field_def.bit_offset)
                     max_v = max(fvr.start_value, fvr.stop_value)
                     can_max = pow(2, fvr.bit_length)
                     if max_v >= can_max:
@@ -170,12 +165,12 @@ class ProtocolSegmentProfileConfig(BaseModel):
                 header_segment.segment_byte_offset = current_byte_offset
                 if header_segment.field_value_ranges:
                     for fvr in header_segment.field_value_ranges:
-                        fvr.position = current_byte_offset * 8 + fvr.bit_offset
+                        fvr.set_position(current_byte_offset * 8 + fvr.bit_offset)
                 if header_segment.hw_modifiers:
                     for modifier in header_segment.hw_modifiers:
-                        modifier.position = current_byte_offset + modifier.byte_offset
+                        modifier.set_position(current_byte_offset + modifier.byte_offset)
                         if modifier.field_name in ("Src IP Addr", "Dest IP Addr"):
-                            modifier.position += modifier.offset
+                            modifier.set_position(modifier.offset)
                 current_byte_offset += len(header_segment.segment_value) // 2
         return v
 

@@ -30,38 +30,37 @@ class PluginModel2544(BaseModel):  # Main Model
     ports_configuration: PortConfType
     test_types_configuration: TestTypesConfiguration
 
-    @validator("ports_configuration", pre=True, always=True)
+    @validator("ports_configuration", always=True)
     def set_ports_rx_tx_type(
         cls, port_configs: "PortConfType", values
     ) -> "PortConfType":
         if "test_configuration" in values:
             direction = values["test_configuration"].direction
-            for config_index, port in port_configs.items():
-                if not port.port_config_slot:
-                    port.port_config_slot = config_index
-                if port.port_config_slot == port.peer_config_slot:
+            for config_index, port_config in port_configs.items():
+                port_config.set_name(config_index)
+                if port_config.is_loop:
                     continue
                 elif direction == TrafficDirection.EAST_TO_WEST:
-                    if port.port_group.is_east:
-                        port.is_rx_port = False
-                    elif port.port_group.is_west:
-                        port.is_tx_port = False
+                    if port_config.port_group.is_east:
+                        port_config.set_rx_port(False)
+                    elif port_config.port_group.is_west:
+                        port_config.set_tx_port(False)
                 elif direction == TrafficDirection.WEST_TO_EAST:
-                    if port.port_group.is_east:
-                        port.is_tx_port = False
-                    elif port.port_group.is_west:
-                        port.is_rx_port = False
+                    if port_config.port_group.is_east:
+                        port_config.set_tx_port(False)
+                    elif port_config.port_group.is_west:
+                        port_config.set_rx_port(False)
         return port_configs
 
-    @validator("ports_configuration", pre=True, always=True)
+    @validator("ports_configuration", always=True)
     def set_profile(cls, v: "PortConfType", values) -> "PortConfType":
         if "protocol_segments" in values:
             for _, port_config in v.items():
                 profile_id = port_config.profile_id
-                port_config.profile = values["protocol_segments"][profile_id]
+                port_config.set_profile(values["protocol_segments"][profile_id])
         return v
 
-    @validator("ports_configuration", pre=True, always=True)
+    @validator("ports_configuration", always=True)
     def check_ip_properties(cls, v: "PortConfType") -> "PortConfType":
         for _, port_config in v.items():
             if (
@@ -71,7 +70,7 @@ class PluginModel2544(BaseModel):  # Main Model
                 raise exceptions.IPAddressMissing()
         return v
 
-    @validator("ports_configuration", pre=True, always=True)
+    @validator("ports_configuration", always=True)
     def check_port_count(cls, v: "PortConfType", values) -> "PortConfType":
         require_ports = 2
         if "test_configuration" in values:
@@ -82,7 +81,7 @@ class PluginModel2544(BaseModel):  # Main Model
                 raise exceptions.PortConfigNotEnough(require_ports)
         return v
 
-    @validator("ports_configuration", pre=True, always=True)
+    @validator("ports_configuration", always=True)
     def check_port_groups_and_peers(cls, v: "PortConfType", values) -> "PortConfType":
         if "test_configuration" in values:
             topology: TestTopology = values["test_configuration"].topology
@@ -102,7 +101,7 @@ class PluginModel2544(BaseModel):  # Main Model
                         raise exceptions.PortGroupError(group)
         return v
 
-    @validator("ports_configuration", pre=True, always=True)
+    @validator("ports_configuration", always=True)
     def check_modifier_mode_and_segments(
         cls, v: "PortConfType", values
     ) -> "PortConfType":
@@ -115,7 +114,7 @@ class PluginModel2544(BaseModel):  # Main Model
                     raise exceptions.ModifierBasedNotSupportL3()
         return v
 
-    @validator("ports_configuration", pre=True, always=True)
+    @validator("ports_configuration", always=True)
     def check_port_group(cls, v, values):
         if "ports_configuration" in values and "test_configuration" in values:
             for k, p in values["ports_configuration"].items():
@@ -126,7 +125,7 @@ class PluginModel2544(BaseModel):  # Main Model
                     raise exceptions.PortGroupNeeded()
         return v
 
-    @validator("test_types_configuration", pre=True, always=True)
+    @validator("test_types_configuration", always=True)
     def check_test_type_enable(
         cls, v: "TestTypesConfiguration"
     ) -> "TestTypesConfiguration":
@@ -141,7 +140,7 @@ class PluginModel2544(BaseModel):  # Main Model
             raise exceptions.TestTypesError()
         return v
 
-    @validator("test_types_configuration", pre=True, always=True)
+    @validator("test_types_configuration", always=True)
     def check_result_scope(
         cls, v: "TestTypesConfiguration", values
     ) -> "TestTypesConfiguration":
@@ -163,15 +162,14 @@ class PluginModel2544(BaseModel):  # Main Model
         ports_in_east: int,
         ports_in_west: int,
     ) -> Tuple[int, int]:
-        is_looped = port_config.port_config_slot == port_config.peer_config_slot
         if port_config.port_group.is_east:
             ports_in_east += 1
-            if uses_port_peer and is_looped:
+            if uses_port_peer and port_config.is_loop:
                 ports_in_west += 1
 
         elif port_config.port_group.is_west:
             ports_in_west += 1
-            if uses_port_peer and is_looped:
+            if uses_port_peer and port_config.is_loop:
                 ports_in_east += 1
 
         return ports_in_east, ports_in_west
@@ -182,13 +180,10 @@ class PluginModel2544(BaseModel):  # Main Model
         ports_configuration: Dict[str, "PortConfiguration"],
     ):
         peer_config_slot = port_config.peer_config_slot
-        if not peer_config_slot:
+        if not peer_config_slot or peer_config_slot not in ports_configuration:
             raise exceptions.PortPeerNeeded()
-        if (
-            peer_config_slot not in ports_configuration
-            or ports_configuration[peer_config_slot].peer_config_slot
-            != port_config.port_config_slot
-        ):
+        peer_config = ports_configuration[peer_config_slot]
+        if not port_config.is_pair(peer_config) or not peer_config.is_pair(port_config):
             raise exceptions.PortPeerInconsistent()
 
     @property
