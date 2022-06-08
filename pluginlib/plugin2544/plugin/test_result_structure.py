@@ -15,7 +15,7 @@ from typing import (
 from xoa_driver.ports import GenericL23Port
 from pydantic import NonNegativeInt
 from ..utils.field import NonNegativeDecimal
-from .structure import Structure
+from .structure import PortStruct
 from pluginlib.plugin2544.utils.constants import TestResultState, TestType
 
 if TYPE_CHECKING:
@@ -623,120 +623,120 @@ def convert_l1_bit_rate_from_l2(
     )
 
 
-def convert_l1_bit_rate(
-    frame_rate: Decimal,
-    current_packet_size: NonNegativeDecimal,
-    inter_frame_gap: NonNegativeInt,
-):
-    return (
-        frame_rate
-        * Decimal("8")
-        * (current_packet_size + Decimal(str(inter_frame_gap)))
-    )
+# def convert_l1_bit_rate(
+#     frame_rate: Decimal,
+#     current_packet_size: NonNegativeDecimal,
+#     inter_frame_gap: NonNegativeInt,
+# ):
+#     return (
+#         frame_rate
+#         * Decimal("8")
+#         * (current_packet_size + Decimal(str(inter_frame_gap)))
+#     )
 
 
-def convert_l2_bit_rate(
-    frame_rate: Decimal, current_packet_size: NonNegativeDecimal
-) -> Decimal:
-    return frame_rate * Decimal("8") * current_packet_size
+# def convert_l2_bit_rate(
+#     frame_rate: Decimal, current_packet_size: NonNegativeDecimal
+# ) -> Decimal:
+#     return frame_rate * Decimal("8") * current_packet_size
 
 
-def _cal_port_tx_bps_l1(
-    counter_list: List[ITraffic],
-    duration: Decimal,
-    current_packet_size: NonNegativeDecimal,
-    is_live: bool,
-    inter_frame_gap: NonNegativeInt,
-) -> Decimal:
-    value = Decimal("0")
-    if is_live:
-        for counter in counter_list:
-            value += convert_l1_bit_rate_from_l2(
-                Decimal(str(counter.bit_count_last_sec)),
-                current_packet_size,
-                inter_frame_gap,
-            )
-    else:
-        for counter in counter_list:
-            frame_rate = counter.packet_count_since_cleared / duration
-            l1_bit_rate = convert_l1_bit_rate(
-                frame_rate, current_packet_size, inter_frame_gap
-            )
-            value += l1_bit_rate
-    return value
+# def _cal_port_tx_bps_l1(
+#     counter_list: List[ITraffic],
+#     duration: Decimal,
+#     current_packet_size: NonNegativeDecimal,
+#     is_live: bool,
+#     inter_frame_gap: NonNegativeInt,
+# ) -> Decimal:
+#     value = Decimal("0")
+#     if is_live:
+#         for counter in counter_list:
+#             value += convert_l1_bit_rate_from_l2(
+#                 Decimal(str(counter.bit_count_last_sec)),
+#                 current_packet_size,
+#                 inter_frame_gap,
+#             )
+#     else:
+#         for counter in counter_list:
+#             frame_rate = counter.packet_count_since_cleared / duration
+#             l1_bit_rate = convert_l1_bit_rate(
+#                 frame_rate, current_packet_size, inter_frame_gap
+#             )
+#             value += l1_bit_rate
+#     return value
 
 
-def _cal_port_rx_bps_l1(
-    counter_list: List[ITraffic],
-    duration: Decimal,
-    current_packet_size: NonNegativeDecimal,
-    is_live: bool,
-    inter_frame_gap: NonNegativeInt,
-):
-    bit_rate_l2 = _cal_port_rx_bps_l2(
-        counter_list, duration, current_packet_size, is_live
-    )
-    return convert_l1_bit_rate_from_l2(
-        bit_rate_l2, current_packet_size, inter_frame_gap
-    )
+# def _cal_port_rx_bps_l1(
+#     counter_list: List[ITraffic],
+#     duration: Decimal,
+#     current_packet_size: NonNegativeDecimal,
+#     is_live: bool,
+#     inter_frame_gap: NonNegativeInt,
+# ):
+#     bit_rate_l2 = _cal_port_rx_bps_l2(
+#         counter_list, duration, current_packet_size, is_live
+#     )
+#     return convert_l1_bit_rate_from_l2(
+#         bit_rate_l2, current_packet_size, inter_frame_gap
+#     )
 
 
-def _cal_port_tx_frames(counter_list: List[ITraffic]) -> Decimal:
-    return Decimal(sum(counter.packet_count_since_cleared for counter in counter_list))
+# def _cal_port_tx_frames(counter_list: List[ITraffic]) -> Decimal:
+#     return Decimal(sum(counter.packet_count_since_cleared for counter in counter_list))
 
 
-def _cal_port_rx_frames(counter_list: List[ITraffic]) -> Decimal:
-    return _cal_port_tx_frames(counter_list)
+# def _cal_port_rx_frames(counter_list: List[ITraffic]) -> Decimal:
+#     return _cal_port_tx_frames(counter_list)
 
 
-def _cal_port_tx_bps_l2(
-    counter_list: List[ITraffic],
-    duration: Decimal,
-    current_packet_size: NonNegativeDecimal,
-    is_live: bool,
-) -> Decimal:
+# def _cal_port_tx_bps_l2(
+#     counter_list: List[ITraffic],
+#     duration: Decimal,
+#     current_packet_size: NonNegativeDecimal,
+#     is_live: bool,
+# ) -> Decimal:
 
-    value = Decimal("0")
-    if is_live:
-        value = Decimal(
-            str(sum(counter.bit_count_last_sec for counter in counter_list))
-        )
-    else:
-        frame_rate = _cal_port_tx_frames(counter_list) / duration
-        value = convert_l2_bit_rate(frame_rate, current_packet_size)
-    return value
-
-
-def _cal_port_rx_bps_l2(
-    counter_list: List[ITraffic],
-    duration: Decimal,
-    current_packet_size: NonNegativeDecimal,
-    is_live: bool,
-) -> Decimal:
-    return _cal_port_tx_bps_l2(counter_list, duration, current_packet_size, is_live)
+#     value = Decimal("0")
+#     if is_live:
+#         value = Decimal(
+#             str(sum(counter.bit_count_last_sec for counter in counter_list))
+#         )
+#     else:
+#         frame_rate = _cal_port_tx_frames(counter_list) / duration
+#         value = convert_l2_bit_rate(frame_rate, current_packet_size)
+#     return value
 
 
-def _cal_port_tx_pps(
-    counter_list: List[ITraffic], duration: Decimal, is_live: bool
-) -> Decimal:
-
-    if is_live:
-        value = Decimal(
-            str(sum(counter.packet_count_last_sec for counter in counter_list))
-        )
-    else:
-        value = _cal_port_tx_frames(counter_list) / duration
-    return value
+# def _cal_port_rx_bps_l2(
+#     counter_list: List[ITraffic],
+#     duration: Decimal,
+#     current_packet_size: NonNegativeDecimal,
+#     is_live: bool,
+# ) -> Decimal:
+#     return _cal_port_tx_bps_l2(counter_list, duration, current_packet_size, is_live)
 
 
-def _cal_port_rx_pps(
-    counter_list: List[ITraffic], duration: Decimal, is_live: bool
-) -> Decimal:
-    return _cal_port_tx_pps(counter_list, duration, is_live)
+# def _cal_port_tx_pps(
+#     counter_list: List[ITraffic], duration: Decimal, is_live: bool
+# ) -> Decimal:
+
+#     if is_live:
+#         value = Decimal(
+#             str(sum(counter.packet_count_last_sec for counter in counter_list))
+#         )
+#     else:
+#         value = _cal_port_tx_frames(counter_list) / duration
+#     return value
 
 
-def _cal_port_rx_bytes(counter_list: List[ITraffic]) -> Decimal:
-    return Decimal(sum(counter.byte_count_since_cleared for counter in counter_list))
+# def _cal_port_rx_pps(
+#     counter_list: List[ITraffic], duration: Decimal, is_live: bool
+# ) -> Decimal:
+#     return _cal_port_tx_pps(counter_list, duration, is_live)
+
+
+# def _cal_port_rx_bytes(counter_list: List[ITraffic]) -> Decimal:
+#     return Decimal(sum(counter.byte_count_since_cleared for counter in counter_list))
 
 
 def _cal_port_tx_actual_rate(tx_rate_l1: Decimal, src_port_speed: NonNegativeDecimal):
@@ -928,11 +928,11 @@ class TestCaseResult:
 
 
 class TrafficStateListener:
-    def __init__(self, source_port_structs: List["Structure"]) -> None:
+    def __init__(self, source_port_structs: List["PortStruct"]) -> None:
         self.dic = {}
         for port_struct in source_port_structs:
-            self.dic[port_struct.port] = False
-            port_struct.port.on_traffic_change(self.onchange_traffic_status)
+            self.dic[port_struct.port_info.port] = False
+            port_struct.port_info.port.on_traffic_change(self.onchange_traffic_status)
 
     async def onchange_traffic_status(
         self, port: "GenericL23Port", traffic_value: "P_TRAFFIC.GetDataAttr"

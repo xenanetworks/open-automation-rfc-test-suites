@@ -18,6 +18,36 @@ class BXMPWarning(Warning):
         return self.str
 
 
+class BroadReachModeNotSupport(Warning):
+    def __init__(self, port_name: str) -> None:
+        self.msg = f"<broad_reach_mode> can only be set to False since port {port_name} does not support 'broad_reach_mode' feature!"
+        super().__init__(self.msg)
+
+
+class MdiMdixModeNotSupport(Warning):
+    def __init__(self, port_name: str) -> None:
+        self.msg = f"<mdi_mdix_mode> can only be set to False since port {port_name} does not support 'mdi_mdix_mode' feature!"
+        super().__init__(self.msg)
+
+
+class ANLTNotSupport(Warning):
+    def __init__(self, port_name: str) -> None:
+        self.msg = f"<ANLT> can only be set to False since port {port_name} does not support 'ANLT' feature!"
+        super().__init__(self.msg)
+
+
+class AutoNegotiationNotSupport(Warning):
+    def __init__(self, port_name: str) -> None:
+        self.msg = f"<Auto Negotiation> can only be set to False since port {port_name} does not support 'Auto Negotiation' feature!"
+        super().__init__(self.msg)
+
+
+class FecModeNotSupport(Warning):
+    def __init__(self, port_name: str) -> None:
+        self.msg = f"<FEC Mode> can only be set to False since port {port_name} does not support 'FEC Mode' feature!"
+        super().__init__(self.msg)
+
+
 class PortSpeedWarning(Warning):
     def __init__(self, port_speed_mode) -> None:
         self.msg = f"port doesn't support speed mode selection ({port_speed_mode})"
@@ -218,7 +248,7 @@ class FECModeRequired(Exception):
         super().__init__(self.msg)
 
 
-class FECModeNotSupport(Exception):
+class FECModeTypeNotSupport(Exception):
     def __init__(self, support_mode: List) -> None:
         self.msg = f"port support {support_mode} FECMode"
         super().__init__(self.msg)

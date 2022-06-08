@@ -14,38 +14,38 @@ from xoa_driver.enums import ProtocolOption
 
 if TYPE_CHECKING:
     from xoa_driver.ports import GenericL23Port
-    from .structure import Structure
+    from .structure import PortStruct
     from ..model import PortConfiguration, IPV4AddressProperties, IPV6AddressProperties
 
 
-async def get_native_mac_address(port: "GenericL23Port") -> "MacAddress":
-    mac_address = (await port.net_config.mac_address.get()).mac_address
-    return MacAddress(mac_address)
+# async def get_native_mac_address(port: "GenericL23Port") -> "MacAddress":
+#     mac_address = (await port.net_config.mac_address.get()).mac_address
+#     return MacAddress(mac_address)
 
 
-def get_mac_address_by_index(first_three_bytes: str, index: int) -> "MacAddress":
+def gen_macaddress(first_three_bytes: str, index: int) -> "MacAddress":
     hex_num = hex(index)[2:].zfill(6)
     last_three_bytes = ":".join(re.findall(r".{2}", hex_num))
     return MacAddress(f"{first_three_bytes}:{last_three_bytes}")
 
 
-async def setup_macaddress(
-    port_struct: "Structure", is_stream_based: bool, mac_base_address: str
-) -> None:
-    if is_stream_based:
-        port_struct.properties.change_mac_address(
-            await get_native_mac_address(port_struct.port)
-        )
-    else:
-        # mac address according to test_port_index
-        port_struct.properties.change_mac_address(
-            get_mac_address_by_index(
-                mac_base_address, port_struct.properties.test_port_index
-            )
-        )
+# async def setup_macaddress(
+#     port_struct: "PortStruct", is_stream_based: bool, mac_base_address: str
+# ) -> None:
+#     if is_stream_based:
+#         port_struct.properties.change_mac_address(
+#             await get_native_mac_address(port_struct.port_info.port)
+#         )
+#     else:
+#         # mac address according to test_port_index
+#         port_struct.properties.change_mac_address(
+#             gen_macaddress(
+#                 mac_base_address, port_struct.properties.test_port_index
+#             )
+#         )
 
 
-def is_same_ipnetwork(port_struct: "Structure", peer_struct: "Structure") -> bool:
+def is_same_ipnetwork(port_struct: "PortStruct", peer_struct: "PortStruct") -> bool:
     port_properties = port_struct.port_conf.ip_properties
     peer_properties = peer_struct.port_conf.ip_properties
     if not port_properties or not peer_properties:
@@ -54,7 +54,7 @@ def is_same_ipnetwork(port_struct: "Structure", peer_struct: "Structure") -> boo
 
 
 def get_pair_address(
-    port_struct: "Structure", peer_struct: "Structure", use_gateway_mac_as_dmac: bool
+    port_struct: "PortStruct", peer_struct: "PortStruct", use_gateway_mac_as_dmac: bool
 ) -> Tuple[Union["IPv4Address", "IPv6Address"], "ARPSenarioType"]:
     port_conf = port_struct.port_conf
     ip_properties = port_conf.ip_properties
@@ -158,8 +158,8 @@ def is_peer_port(
 def get_peers_for_source(
     topology: "TestTopology",
     port_config: "PortConfiguration",
-    control_ports: List["Structure"],
-) -> List["Structure"]:
+    control_ports: List["PortStruct"],
+) -> List["PortStruct"]:
     dest_ports = []
     for peer_struct in control_ports:
         peer_config = peer_struct.port_conf
@@ -171,8 +171,8 @@ def get_peers_for_source(
 
 
 def filter_port_structs(
-    control_ports: List["Structure"], is_source_port: bool = True
-) -> List["Structure"]:
+    control_ports: List["PortStruct"], is_source_port: bool = True
+) -> List["PortStruct"]:
     return [
         port_struct
         for port_struct in control_ports
@@ -181,13 +181,13 @@ def filter_port_structs(
     ]
 
 
-def get_usable_dest_ip_address(
-    ip_properties: Union["IPV4AddressProperties", "IPV6AddressProperties"]
-) -> Union["IPv4Address", "IPv6Address"]:
-    public_ip_address = ip_properties.public_address
-    public_ip_address_empty = ip_properties.public_address.is_empty
-    address = ip_properties.address
-    return public_ip_address if not public_ip_address_empty else address
+# def get_usable_dest_ip_address(
+#     ip_properties: Union["IPV4AddressProperties", "IPV6AddressProperties"]
+# ) -> Union["IPv4Address", "IPv6Address"]:
+#     public_ip_address = ip_properties.public_address
+#     public_ip_address_empty = ip_properties.public_address.is_empty
+#     address = ip_properties.address
+#     return public_ip_address if not public_ip_address_empty else address
 
 
 def get_tpld_total_length(

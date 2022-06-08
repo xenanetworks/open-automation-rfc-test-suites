@@ -1,121 +1,212 @@
-import asyncio
 from decimal import Decimal
-from typing import TYPE_CHECKING, Dict, List
-from xoa_driver.utils import apply
-from xoa_driver import enums
+from typing import List, Union
+from pydantic import BaseModel, Field, validator
 
-if TYPE_CHECKING:
-    from .structure import Structure
-    from ..model import TestConfiguration
-    from xoa_driver.testers import L23Tester
+from pluginlib.plugin2544.utils.constants import Enum
 
 
-async def clear_port_stats(control_ports: List["Structure"]) -> None:
-    tokens = []
-    for port_struct in control_ports:
-        tokens.append(port_struct.port.statistics.rx.clear.set())  # PR_CLEAR
-        tokens.append(port_struct.port.statistics.tx.clear.set())  # PT_CLEAR
-    await apply(*tokens)
-    await asyncio.sleep(1)
+class CounterType(Enum):
+    JITTER = -1
+    LATENCY = -2147483648
 
 
-async def set_port_txtime_limit(
-    control_ports: List["Structure"], tx_timelimit: Decimal
-) -> None:
-    await asyncio.gather(
-        *[
-            port_struct.port.tx_config.time_limit.set(int(tx_timelimit))
-            for port_struct in control_ports
-        ]
-    )
-
-async def set_stream_packet_limit(source_port_structs: List["Structure"], frame_count: int) -> None:
-    await asyncio.gather(*[stream.packet.limit.set(frame_count) for port_struct in source_port_structs for stream in port_struct.port.streams])
+class AvgMinMax(BaseModel):
+    total: int = 0
+    minimum: int = 0
+    maximum: int = 0
+    avg: int = 0
 
 
-async def start_traffic_sync(tester: "L23Tester", module_port_list: List[int]) -> None:
-    local_time = (await tester.time.get()).local_time
-    delay_seconds = 2
-    # logger.error(
-    #     f"SYNC {tester.management_interface.ip_address} -> {local_time + delay_seconds}"
-    # )
-    await apply(
-        tester.traffic_sync.set(enums.OnOff.ON, local_time + delay_seconds, module_port_list)
-    )
+class DelayData(BaseModel):
+    counter_type: CounterType = CounterType.LATENCY
+    total: int = 0
+    minimum: int = 0
+    maximum: int = 0
+    is_valid: bool = True
+
+    @validator("total", "minimum", "maximum", always=True)
+    def check_is_valid(cls, v, values):
+        if v == values["counter_type"].value:
+            values["is_valid"] = False
+            return 0
+        return v
 
 
-async def handle_port_traffic_sync_start(
-    source_port: List["Structure"],
-    traffic_status: bool,
-) -> None:
-    mapping: Dict[str, List[int]] = {}
-    testers_dict: Dict[str, "L23Tester"] = {}
-    for port_struct in source_port:
-        chassis_id = port_struct.properties.chassis_id
-        if chassis_id not in mapping:
-            mapping[chassis_id] = []
-            testers_dict[chassis_id] = port_struct.tester
-        mapping[chassis_id] += [
-            port_struct.port.kind.module_id,
-            port_struct.port.kind.port_id,
-        ]
+class DelayCounter(AvgMinMax):
+    count: int = 0
 
-    if len(mapping) == 1:
-        # same tester
-        chassis_id = list(mapping.keys())[0]
-        tester = testers_dict[chassis_id]
-        await apply(tester.traffic.set(enums.OnOff(traffic_status), mapping[chassis_id]))
-    else:
-        # multi tester need to use c_trafficsync cmd
-        await asyncio.gather(
-            *[
-                start_traffic_sync(testers_dict[chassis_id], module_port_list)
-                for chassis_id, module_port_list in mapping.items()
-            ]
-        )
+    def update(self, data: DelayData) -> None:
+        if not data.is_valid:
+            return
+        self.total += data.total
+        self.minimum = min(data.minimum, self.minimum)
+        self.maximum = max(data.maximum, self.maximum)
+        self.count += 1
+
+    @property
+    def average(self) -> Decimal:
+        return Decimal(self.total) / Decimal(self.count) if self.count else Decimal(0)
 
 
-async def handle_port_traffic_individually(
-    source_port: List["Structure"],
-    traffic_status: bool,
-) -> None:
-    tokens = []
-    for port_struct in source_port:
-        port = port_struct.port
-        if port_struct.port_conf.is_tx_port:
-            if traffic_status:
-                tokens.append(port.traffic.state.set(enums.StartOrStop.START))
-            else:
-                tokens.append(port.traffic.state.set(enums.StartOrStop.STOP))
-    await apply(*tokens)
+class CommonCounter(BaseModel):
+    is_final: bool = Field(False, exclude=True)
+    frame_size: Decimal = Field(Decimal(0), exclude=True)
+    duration: Decimal = Field(Decimal(0), exclude=True)
+    interframe_gap: Decimal = Field(Decimal(0), exclude=True)
+    frames: int = 0  # packet_count_since_cleared
+    bps: int = 0  # bit_count_last_sec
+    pps: int = 0  # packet_count_last_sec
+    bytes_count: int = 0  # byte_count_since_cleared
+
+    def update(self, counter: "StreamCounter"):
+        if not int(self.frame_size):
+            self.frame_size = counter.frame_size
+        if not int(self.duration):
+            self.duration = counter.duration
+        self.frames += counter.frames  # _cal_port_tx_frames  + _cal_port_rx_frames
+        self.bps += counter.bps
+        self.pps += counter.pps
+        self.bytes_count += counter.bytes_count
+
+    @validator("frame_size", "duration", "interframe_gap", always=True)
+    def set_type(cls, v) -> Decimal:
+        return Decimal(str(v))
+
+    @property
+    def frame_rate(self):
+        return self.frames / self.duration
+
+    @property
+    def l2_bit_rate(self):  # convert_l2_bit_rate
+        return self.frame_rate * Decimal("8") * self.frame_size
+
+    @property
+    def l1_bit_rate(self):  # convert_l1_bit_rate
+        return self.frame_rate * Decimal("8") * (self.frame_size + self.interframe_gap)
 
 
-async def set_traffic_status(
-    source_ports: List["Structure"],
-    test_conf: "TestConfiguration",
-    traffic_status: bool,
-) -> None:
-    if traffic_status and test_conf.use_port_sync_start:
-        await handle_port_traffic_sync_start(source_ports, traffic_status)
-    else:
-        await handle_port_traffic_individually(
-            source_ports,
-            traffic_status,
-        )
+class StreamCounter(CommonCounter):
+    pass
 
 
-async def start_traffic(control_ports: List["Structure"]) -> None:
-    await asyncio.gather(
-        *[
-            port_struct.port.traffic.state.set(enums.StartOrStop.START)
-            for port_struct in control_ports
-            if port_struct.port_conf.is_tx_port
-        ]
-    )
+class PortCounterType(Enum):
+    TX = 0
+    RX = 1
 
 
-async def stop_traffic(control_ports: List["Structure"]) -> None:
-    await asyncio.gather(
-        *[port_struct.port.traffic.state.set(enums.StartOrStop.STOP) for port_struct in control_ports]
-    )
-    await asyncio.sleep(1)
+class PortCounter(CommonCounter):
+    counter_type: PortCounterType = PortCounterType.TX
+    _tx_l1_bps: Decimal = Decimal("0")
+
+    class Config:
+        underscore_attrs_are_private = True
+
+    def update(self, counter: "StreamCounter"):
+        if not int(self.frame_size):
+            self.frame_size = counter.frame_size
+        if not int(self.duration):
+            self.duration = counter.duration
+
+        self.frames += counter.frames  # _cal_port_tx_frames  + _cal_port_rx_frames
+        self.bps += counter.bps
+        self.pps += counter.pps
+        self.bytes_count += counter.bytes_count  # _cal_port_rx_bytes
+        if self.is_final:  # _cal_port_tx_bps_l1
+            self._tx_l1_bps += counter.l1_bit_rate
+        else:
+            self._tx_l1_bps += (
+                counter.bps * (self.frame_size + self.interframe_gap) / self.frame_size
+            )
+
+    @property
+    def l2_bps(self):  # _cal_port_tx_bps_l2 + _cal_port_rx_bps_l2
+        if self.is_final:
+            return self.l2_bit_rate
+        else:
+            return self.bps
+
+    @property
+    def fps(self):  # _cal_port_tx_pps + _cal_port_rx_pps
+        if self.is_final:
+            return self.frames
+        else:
+            return self.pps
+
+    @property
+    def l1_bps(self):
+        if self.counter_type == PortCounterType.RX:
+            return (
+                self.l2_bps * (self.frame_size + self.interframe_gap) / self.frame_size
+            )
+        else:
+            return self._tx_l1_bps
+
+
+class Statistic(CommonCounter):
+    tx_counter: PortCounter = PortCounter()
+    rx_counter: PortCounter = PortCounter(counter_type=PortCounterType.RX)
+    latency: DelayCounter = DelayCounter(counter_type=CounterType.LATENCY)
+    jitter: DelayCounter = DelayCounter(counter_type=CounterType.JITTER)
+    fcs_error_frames: int = 0
+    loss_frames: int = 0
+
+    def add_tx(self, tx_counter: StreamCounter) -> None:
+        self.tx_counter.update(tx_counter)
+
+    def add_rx(self, rx_counter: StreamCounter) -> None:
+        self.rx_counter.update(rx_counter)
+
+    def add_latency(self, delay_data: DelayData) -> None:
+        self.latency.update(delay_data)
+
+    def add_jitter(self, delay_data: DelayData) -> None:
+        self.jitter.update(delay_data)
+
+    def add_extra(self, fcs: int) -> None:
+        self.fcs_error_frames += fcs
+
+    def add_loss(self, loss_frames: int) -> None:
+        self.loss_frames += loss_frames
+
+
+class LatencyTotalStatistic(BaseModel):
+    tx_frames: int
+    rx_frames: int
+    tx_rate_l1_bps: int
+    tx_rate_fps: int
+
+
+class LatencyBaseStatistic(BaseModel):
+    tx_frames: int
+    rx_frames: int
+    latency_ns_avg: float = 0
+    latency_ns_min: float = 0
+    latency_ns_max: float = 0
+    jitter_ns_avg: float = 0
+    jitter_ns_min: float = 0
+    jitter_ns_max: float = 0
+
+
+class LatencyPortStatistic(LatencyBaseStatistic):
+    port_id: str
+    tx_rate_l1_bps: Decimal = Field()
+    tx_rate_fps: Decimal = Field()
+
+
+class LatencyStreamStatistic(LatencyBaseStatistic):
+    src_port_id: str
+    dest_port_id: str
+    src_port_addr: str
+    dest_port_addr: str
+
+
+class LatencyStatistic(BaseModel):
+    test_suit_type: str = "2544"
+    result_state: str = "Done"
+    tx_rate_percent: float
+    is_final: bool
+    frame_size: int
+    repetition: Union[int, str]
+    port_data: List[LatencyPortStatistic]
+    stream_data: List[LatencyStreamStatistic]
+    total: LatencyTotalStatistic

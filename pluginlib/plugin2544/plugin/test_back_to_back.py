@@ -17,7 +17,7 @@ from .statistics import (
     set_traffic_status,
     stop_traffic,
 )
-from .l3_learning import (
+from .learning import (
     AddressRefreshHandler,
     schedule_arp_refresh,
     add_L3_learning_preamble_steps,
@@ -43,7 +43,7 @@ from .test_operations import (
 from xoa_driver.utils import apply
 
 if TYPE_CHECKING:
-    from .structure import Structure, StreamInfo
+    from .structure import PortStruct, StreamInfo
     from ..model import BackToBackTest, TestConfiguration, CommonOptions
     from pluginlib.plugin2544.utils.logger import TestSuitPipe
 
@@ -65,7 +65,7 @@ def goto_next(boundaries: Dict[str, "IterationEntry"]) -> Dict[str, "IterationEn
 
 async def get_initial_boundaries(
     back_to_back_conf: "BackToBackTest",
-    source_port_structs: List["Structure"],
+    source_port_structs: List["PortStruct"],
     rate_percent_dic: Dict[str, "BackToBackBoutEntry"],
     current_packet_size: NonNegativeDecimal,
 ) -> Dict[str, "BackToBackBoutEntry"]:
@@ -104,7 +104,7 @@ async def get_initial_boundaries(
 
 async def run_back_to_back_test(
     stream_lists: List["StreamInfo"],
-    control_ports: List["Structure"],
+    control_ports: List["PortStruct"],
     test_conf: "TestConfiguration",
     back_to_back_conf: "BackToBackTest",
     has_l3: bool,
@@ -155,13 +155,13 @@ async def run_back_to_back_test(
 
 async def back_to_back_sweep(
     stream_lists: List["StreamInfo"],
-    control_ports: List["Structure"],
+    control_ports: List["PortStruct"],
     test_conf: "TestConfiguration",
     back_to_back_conf: "BackToBackTest",
     current_packet_size: NonNegativeDecimal,
     iteration: int,
     result_handler: "ResultHandler",
-    source_port_structs: List["Structure"],
+    source_port_structs: List["PortStruct"],
     address_refresh_handler: Optional["AddressRefreshHandler"],
     state_checker: "StateChecker",
     xoa_out: "TestSuitPipe",
@@ -193,7 +193,7 @@ async def back_to_back_sweep(
 
 async def setup_source_port_burst_for_streams(
     stream_lists: List["StreamInfo"],
-    source_port_structs: List["Structure"],
+    source_port_structs: List["PortStruct"],
     rate_percent_dic: Dict[str, IterationEntry],
     current_packet_size: NonNegativeDecimal,
     boundaries: Dict[str, "BackToBackBoutEntry"],
@@ -235,7 +235,7 @@ async def setup_source_port_burst_for_streams(
                 / (Decimal(str(current_packet_size)) + Decimal(str(inter_frame_gap)))
             )
             for stream_info in stream_info_list:
-                stream = port_struct.port.streams.obtain(stream_info.stream_id)
+                stream = port_struct.port_info.port.streams.obtain(stream_info.stream_id)
                 tokens.append(stream.rate.l2bps.set(stream_rate_bps_L2))
                 tokens += [stream.packet.limit.set(math.floor(stream_burst))]
                 burst_frame_dic[
@@ -253,13 +253,13 @@ async def setup_source_port_burst_for_streams(
 
 async def back_to_back_binary_search(
     stream_lists: List["StreamInfo"],
-    control_ports: List["Structure"],
+    control_ports: List["PortStruct"],
     test_conf: "TestConfiguration",
     back_to_back_conf: "BackToBackTest",
     current_packet_size: NonNegativeDecimal,
     iteration: int,
     result_handler: "ResultHandler",
-    source_port_structs: List["Structure"],
+    source_port_structs: List["PortStruct"],
     address_refresh_handler: Optional["AddressRefreshHandler"],
     rate_percent_dic: Dict[str, BackToBackBoutEntry],
     state_checker: "StateChecker",

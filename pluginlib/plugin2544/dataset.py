@@ -198,11 +198,11 @@ class PluginModel2544(BaseModel):  # Main Model
         )
         return len(gateways) == 1
 
-    @property
-    def has_l3(self) -> bool:
-        return any(
-            [
-                conf.profile.protocol_version.is_l3
-                for conf in self.ports_configuration.values()
-            ]
-        )
+    # @property
+    # def has_l3(self) -> bool:
+    #     return any(
+    #         [
+    #             conf.profile.protocol_version.is_l3
+    #             for conf in self.ports_configuration.values()
+    #         ]
+    #     )

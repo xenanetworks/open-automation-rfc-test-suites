@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Iterable, List
+from typing import Iterable, List, Tuple
 from pydantic import (
     BaseModel,
     Field,
@@ -96,6 +96,20 @@ class FrameSizeConfiguration(BaseModel):
         else:
             raise exceptions.FrameSizeTypeError(packet_size_type.value)
 
+
+    @property
+    def size_range(self) -> Tuple[int, int]:
+        if (
+            self.packet_size_type in [const.PacketSizeType.INCREMENTING,
+            const.PacketSizeType.RANDOM,
+            const.PacketSizeType.BUTTERFLY]
+        ):
+            min_size = self.varying_packet_min_size
+            max_size = self.varying_packet_max_size
+        else:
+            # Packet length is useless when mixed
+            min_size = max_size = int(self.mixed_average_packet_size)
+        return (min_size, max_size)
 
 
 class MultiStreamConfig(BaseModel):

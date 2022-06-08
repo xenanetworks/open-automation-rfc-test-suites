@@ -11,7 +11,7 @@ from pluginlib.plugin2544.utils.constants import TestResultState, TestType
 
 from .common import filter_port_structs
 from .flow_based_learning import add_flow_based_learning_preamble_steps
-from .l3_learning import (
+from .learning import (
     AddressRefreshHandler,
     schedule_arp_refresh,
     add_L3_learning_preamble_steps,
@@ -39,7 +39,7 @@ from .test_operations import (
 
 if TYPE_CHECKING:
     from ..model import CommonOptions, TestConfiguration
-    from .structure import StreamInfo, Structure
+    from .structure import StreamInfo, PortStruct
     from ..model import ThroughputTest
     from pluginlib.plugin2544.utils.logger import TestSuitPipe
 
@@ -65,7 +65,7 @@ async def show_throughput_result(
 
 
 def get_initial_boundaries(
-    throughput_conf: "ThroughputTest", source_port_structs: List["Structure"]
+    throughput_conf: "ThroughputTest", source_port_structs: List["PortStruct"]
 ) -> Dict[str, "ThroughputBoutEntry"]:
     one = ThroughputBoutEntry(
         current=Decimal(str(throughput_conf.rate_iteration_options.initial_value_pct)),
@@ -245,7 +245,7 @@ async def throughput_statistic_collect(
 
 async def run_throughput_test(
     stream_lists: List["StreamInfo"],
-    control_ports: List["Structure"],
+    control_ports: List["PortStruct"],
     test_conf: "TestConfiguration",
     throughput_conf: "ThroughputTest",
     has_l3: bool,
@@ -295,13 +295,13 @@ async def run_throughput_test(
 
 async def throughput_binary_search(
     stream_lists: List["StreamInfo"],
-    control_ports: List["Structure"],
+    control_ports: List["PortStruct"],
     test_conf: "TestConfiguration",
     throughput_conf: "ThroughputTest",
     current_packet_size: NonNegativeDecimal,
     iteration: int,
     result_handler: "ResultHandler",
-    source_port_structs: List["Structure"],
+    source_port_structs: List["PortStruct"],
     address_refresh_handler: Optional["AddressRefreshHandler"],
     state_checker: "StateChecker",
     xoa_out: "TestSuitPipe",

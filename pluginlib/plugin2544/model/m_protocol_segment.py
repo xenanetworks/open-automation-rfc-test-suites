@@ -5,6 +5,7 @@ from pydantic import (
     validator,
     NonNegativeInt,
 )
+from xoa_driver import enums
 from pluginlib.plugin2544.utils import exceptions
 from ..utils import constants as const
 from ..utils.protocol_segments import (
@@ -208,5 +209,5 @@ class ProtocolSegmentProfileConfig(BaseModel):
         return v
 
     @property
-    def header_segment_id_list(self) -> List[int]:
-        return [h.segment_type.to_xmp().value for h in self.header_segments]
+    def header_segment_id_list(self) -> List[enums.ProtocolOption]:
+        return [h.segment_type.to_xmp() for h in self.header_segments]

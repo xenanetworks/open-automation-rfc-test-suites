@@ -18,7 +18,7 @@ from .statistics import (
     set_traffic_status,
     stop_traffic,
 )
-from .l3_learning import (
+from .learning import (
     add_L3_learning_preamble_steps,
     schedule_arp_refresh,
 )
@@ -39,7 +39,7 @@ from .test_operations import (
 
 
 if TYPE_CHECKING:
-    from .structure import Structure, StreamInfo
+    from .structure import PortStruct, StreamInfo
     from ..model import LatencyTest, TestConfiguration, CommonOptions
     from pluginlib.plugin2544.utils.logger import TestSuitPipe
 
@@ -140,11 +140,7 @@ async def collect_latency_statistics(
 
 
 async def run_latency_test(
-    stream_lists: List["StreamInfo"],
-    control_ports: List["Structure"],
-    test_conf: "TestConfiguration",
     latency_conf: "LatencyTest",
-    has_l3: bool,
     current_packet_size: NonNegativeDecimal,
     iteration: int,
     result_handler: "ResultHandler",
@@ -218,8 +214,3 @@ async def run_latency_test(
             source_port_structs,
             Decimal(0),
         )
-
-async def query_tester_time(port_struct: "Structure"):
-    tester = port_struct.tester
-    local_time = (await tester.time.get()).local_time
-    logger.error(f"{port_struct.properties.identity} -> {local_time}")

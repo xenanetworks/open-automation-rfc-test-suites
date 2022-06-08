@@ -15,7 +15,7 @@ from .statistics import (
 from pluginlib.plugin2544.utils.constants import TestResultState, TestType
 from .common import filter_port_structs
 from .flow_based_learning import add_flow_based_learning_preamble_steps
-from .l3_learning import schedule_arp_refresh, add_L3_learning_preamble_steps
+from .learning import schedule_arp_refresh, add_L3_learning_preamble_steps
 from .mac_learning import add_L2_trial_learning_steps
 from .setup_source_port_rates import setup_source_port_rates
 from .test_result_structure import (
@@ -37,7 +37,7 @@ from xoa_driver.utils import apply
 
 if TYPE_CHECKING:
     from ..model import TestConfiguration
-    from .structure import StreamInfo, Structure
+    from .structure import StreamInfo, PortStruct
     from ..model import FrameLossRateTest
     from pluginlib.plugin2544.utils.logger import TestSuitPipe
 
@@ -133,7 +133,7 @@ async def collect_frame_loss_statistics(
 
 
 async def set_gap_monitor(
-    source_port_structs: List["Structure"],
+    source_port_structs: List["PortStruct"],
     use_gap_monitor: bool,
     gap_monitor_start_microsec: NonNegativeInt,
     gap_monitor_stop_frames: NonNegativeInt,
@@ -142,7 +142,7 @@ async def set_gap_monitor(
         tokens = []
         for port_struct in source_port_structs:
             tokens.append(
-                port_struct.port.gap_monitor.set(
+                port_struct.port_info.port.gap_monitor.set(
                     gap_monitor_start_microsec, gap_monitor_stop_frames
                 )
             )
@@ -151,7 +151,7 @@ async def set_gap_monitor(
 
 async def run_frame_loss_test(
     stream_lists: List["StreamInfo"],
-    control_ports: List["Structure"],
+    control_ports: List["PortStruct"],
     test_conf: "TestConfiguration",
     frame_loss_conf: "FrameLossRateTest",
     has_l3: bool,

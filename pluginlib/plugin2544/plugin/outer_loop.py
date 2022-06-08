@@ -17,13 +17,13 @@ from pluginlib.plugin2544.utils.constants import TestType
 
 if TYPE_CHECKING:
     from ..model import TestConfiguration
-    from .structure import Structure
+    from .structure import PortStruct
     from pluginlib.plugin2544.utils.logger import TestSuitPipe
 
 
 async def test_run(
     stream_lists: List["StreamInfo"],
-    control_ports: List["Structure"],
+    control_ports: List["PortStruct"],
     type_conf: "TypeConf",
     test_conf: "TestConfiguration",
     has_l3: bool,
@@ -120,7 +120,7 @@ def gen_loop(
 
 async def setup_for_outer_loop(
     stream_lists: List["StreamInfo"],
-    control_ports: List["Structure"],
+    control_ports: List["PortStruct"],
     type_conf: "TypeConf",
     test_conf: "TestConfiguration",
     has_l3: bool,

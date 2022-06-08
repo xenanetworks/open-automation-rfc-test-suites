@@ -34,6 +34,10 @@ class IPV6AddressProperties(BaseModel):
     def set_prefix(cls, v) -> Prefix:
         return Prefix(v)
 
+    @property
+    def dst_addr(self):
+        return self.public_address if not self.public_address.is_empty else self.address
+
 
 class IPV4AddressProperties(BaseModel):
     address: IPv4Address = IPv4Address("0.0.0.0")
@@ -55,6 +59,10 @@ class IPV4AddressProperties(BaseModel):
     @validator("routing_prefix", "public_routing_prefix", pre=True)
     def set_prefix(cls, v) -> Prefix:
         return Prefix(v)
+
+    @property
+    def dst_addr(self):
+        return self.public_address if not self.public_address.is_empty else self.address
 
 
 class PortConfiguration(BaseModel):
