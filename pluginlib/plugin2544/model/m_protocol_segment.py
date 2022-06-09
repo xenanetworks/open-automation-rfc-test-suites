@@ -209,5 +209,5 @@ class ProtocolSegmentProfileConfig(BaseModel):
         return v
 
     @property
-    def header_segment_id_list(self) -> List[enums.ProtocolOption]:
+    def segment_id_list(self) -> List[enums.ProtocolOption]:
         return [h.segment_type.to_xmp() for h in self.header_segments]

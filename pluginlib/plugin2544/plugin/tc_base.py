@@ -2,7 +2,7 @@ import asyncio, time
 from typing import Optional, TYPE_CHECKING
 
 from loguru import logger
-from pluginlib.plugin2544.model.m_test_type_config import LatencyTest
+from pluginlib.plugin2544.model.m_test_type_config import FrameLossRateTest, LatencyTest
 from pluginlib.plugin2544.plugin.learning import (
     AddressRefreshHandler,
     add_L3_learning_preamble_steps,
@@ -32,32 +32,29 @@ class TestCaseProcessor:
         self.address_refresh_handler = await setup_address_arp_refresh(self.resources)
 
     async def add_learning_steps(self, current_packet_size) -> None:
+        await self.resources.stop_traffic()
         await add_L3_learning_preamble_steps(self.resources, current_packet_size)
         await add_mac_learning_steps(self.resources, MACLearningMode.EVERYTRIAL)
         await add_flow_based_learning_preamble_steps(
             self.resources, current_packet_size
         )
 
+    async def start_test(self, test_type_conf, current_packet_size):
+        await self.add_learning_steps(current_packet_size)
+        await setup_source_port_rates(self.resources, current_packet_size)
+        await self.resources.set_tx_time_limit(
+            test_type_conf.common_options.actual_duration * 1_000_000
+        )
+        await self.resources.clear_statistic()
+        await self.resources.start_traffic(self.resources.test_conf.use_port_sync_start)
+        await schedule_arp_refresh(self.resources, self.address_refresh_handler)
+
     async def latency(
         self, test_type_conf: LatencyTest, current_packet_size, repetition
     ):
-        logger.info(f"packet size: {current_packet_size}")
-        for k, rate_percent in enumerate(
-            test_type_conf.rate_sweep_options.rate_sweep_list
-        ):
-            logger.info(f"rate: {rate_percent}")
+        for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
             self.resources.set_rate(rate_percent)
-            await self.resources.stop_traffic()
-            await self.add_learning_steps(current_packet_size)
-            await setup_source_port_rates(self.resources, current_packet_size)
-            await self.resources.set_tx_time_limit(
-                test_type_conf.common_options.actual_duration * 1_000_000
-            )
-            await self.resources.clear_statistic()
-            await self.resources.start_traffic(
-                self.resources.test_conf.use_port_sync_start
-            )
-            await schedule_arp_refresh(self.resources, self.address_refresh_handler)
+            await self.start_test(test_type_conf, current_packet_size)
             while True:
                 start_time = time.time()
                 await self.resources.collect(
@@ -78,11 +75,11 @@ class TestCaseProcessor:
                 ):
                     break
                 await asyncio.sleep(1)
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
             logger.info("final result:")
             await self.resources.collect(
                 current_packet_size,
-                test_type_conf.common_options.duration,
+                test_type_conf.common_options.actual_duration,
                 is_final=True,
             )
             data = aggregate_latency_data(
@@ -94,3 +91,10 @@ class TestCaseProcessor:
             )
             logger.info(data.json(indent=2))
             await self.resources.set_tx_time_limit(0)
+
+    async def frame_loss(
+        self, test_type_conf: FrameLossRateTest, current_packet_size, repetition
+    ):
+        for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
+            self.resources.set_rate(rate_percent)
+            await self.start_test(test_type_conf, current_packet_size)

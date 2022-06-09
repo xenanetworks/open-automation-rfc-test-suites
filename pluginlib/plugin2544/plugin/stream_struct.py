@@ -34,18 +34,19 @@ class PRStream:
         self._tx_port = tx_port
         self._tpldid = tpld_id
         self._rx_port = rx_port
-        self._rx = self._rx_port.port.statistics.rx.access_tpld(tpld_id)
-        self.max = PortMax()
+        self._rx = self._rx_port.port_statistic.rx.access_tpld(tpld_id)
         self.latency: DelayData
         self.jitter: DelayData
 
-    async def query(self,packet_size: Decimal, duration: Decimal, is_final: bool = False):
+    async def query(
+        self, packet_size: Decimal, duration: Decimal, is_final: bool = False
+    ):
         rx_frames, error, ji, latency, fcs = await utils.apply(
             self._rx.traffic.get(),
             self._rx.errors.get(),
             self._rx.jitter.get(),
             self._rx.latency.get(),
-            self._rx_port.port.statistics.rx.extra.get(),
+            self._rx_port.port_statistic.rx.extra.get(),
         )
         self.rx_frames = StreamCounter(
             frame_size=packet_size,
@@ -71,8 +72,6 @@ class PRStream:
         self._rx_port.statistic.add_jitter(self.jitter)
         self._rx_port.statistic.add_extra(fcs.fcs_error_count)
         self._tx_port.statistic.add_loss(error.non_incre_seq_event_count)
-        self.max.update_bps(rx_frames.bit_count_last_sec)
-        self.max.update_pps(rx_frames.packet_count_last_sec)
 
 
 class StreamStruct:
@@ -91,9 +90,11 @@ class StreamStruct:
         self.tpldid: int = tpldid
         self.arp_mac: Optional[MacAddress] = arp_mac
         self.stream: misc.GenuineStream
-        # self.modifiers: List[HwModifier] = []
+        self.flow_creation_type: const.FlowCreationType
         self.packet_header: bytearray
+        self.addr_coll: AddressCollection
         self.stream_offset = stream_offset
+        self._tx_frames: StreamCounter
         self.pr_streams = [
             PRStream(self.tx_port, port, self.tpldid) for port in self._rx_ports
         ]
@@ -155,7 +156,7 @@ class StreamStruct:
             ]
 
     async def configure(self, test_conf: "TestConfiguration") -> None:
-        stream = await self.tx_port.port.streams.create()
+        stream = await self.tx_port.create_stream()
         self.stream = stream
         self.flow_creation_type = test_conf.flow_creation_type
         self.addr_coll = await get_address_collection(
@@ -167,7 +168,7 @@ class StreamStruct:
         await utils.apply(
             self.stream.enable.set(enums.OnOffWithSuppress.ON),
             self.stream.packet.header.protocol.set(
-                self.tx_port.port_conf.profile.header_segment_id_list
+                self.tx_port.port_conf.profile.segment_id_list
             ),
             self.stream.payload.content.set(
                 test_conf.payload_type.to_xmp(), f"0x{test_conf.payload_pattern}"
@@ -224,10 +225,15 @@ class StreamStruct:
     async def query(
         self, packet_size: Decimal, duration: Decimal, is_final: bool = False
     ):
-        tx_frames = await self.tx_port.port.statistics.tx.obtain_from_stream(
+        tx_frames = await self.tx_port._port.statistics.tx.obtain_from_stream(
             self.stream_id
         ).get()
-        await asyncio.gather(*[pr_stream.query(packet_size, duration, is_final) for pr_stream in self.pr_streams])
+        await asyncio.gather(
+            *[
+                pr_stream.query(packet_size, duration, is_final)
+                for pr_stream in self.pr_streams
+            ]
+        )
         self._tx_frames = StreamCounter(
             frame_size=packet_size,
             duration=duration,
@@ -247,7 +253,7 @@ class StreamStruct:
             segment_type = segment.segment_type
             if (
                 segment_type == const.SegmentType.TCP
-                and self.tx_port.port.info.capabilities.can_tcp_checksum
+                and self.tx_port.capabilities.can_tcp_checksum
             ):
                 segment_type = const.SegmentType.TCPCHECK
             patched_value = ps.get_segment_value(segment, segment_index, self.addr_coll)
@@ -331,8 +337,8 @@ async def get_address_collection(
         )
     else:
         return AddressCollection(
-            smac=await port_struct.get_mac_address(),
-            dmac=await peer_struct.get_mac_address(),
+            smac=await port_struct.mac_address,
+            dmac=await peer_struct.mac_address,
             src_ipv4_addr=port_struct.port_conf.ipv4_properties.address,
             dst_ipv4_addr=peer_struct.port_conf.ipv4_properties.dst_addr,
             src_ipv6_addr=port_struct.port_conf.ipv6_properties.address,

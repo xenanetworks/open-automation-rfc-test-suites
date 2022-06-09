@@ -50,7 +50,7 @@ async def get_packet_header(
     ip_header = packet_cls(
         source_ip=addr_type(source_ip), destination_ip=destination_ip
     )
-    mac_address = await port_struct.get_mac_address()
+    mac_address = await port_struct.mac_address
     packet_header = (
         Ether(smac=mac_address, type=ether_type).hexstring + ip_header.hexstring
     )
@@ -60,9 +60,8 @@ async def get_packet_header(
 async def send_arp_request(
     port_struct: "PortStruct", source_ip, destination_ip
 ) -> MacAddress:
-    port = port_struct.port
     packet_header = await get_packet_header(port_struct, source_ip, destination_ip)
-    stream = await port.streams.create()
+    stream = await port_struct.create_stream()
     await utils.apply(
         stream.packet.limit.set(-1),
         stream.comment.set("Stream number 0"),

@@ -106,6 +106,7 @@ class PortCounter(CommonCounter):
             self.frame_size = counter.frame_size
         if not int(self.duration):
             self.duration = counter.duration
+        self.is_final = counter.is_final
 
         self.frames += counter.frames  # _cal_port_tx_frames  + _cal_port_rx_frames
         self.bps += counter.bps
@@ -128,7 +129,7 @@ class PortCounter(CommonCounter):
     @property
     def fps(self):  # _cal_port_tx_pps + _cal_port_rx_pps
         if self.is_final:
-            return self.frames
+            return self.frames / self.duration
         else:
             return self.pps
 
@@ -208,5 +209,5 @@ class LatencyStatistic(BaseModel):
     frame_size: int
     repetition: Union[int, str]
     port_data: List[LatencyPortStatistic]
-    stream_data: List[LatencyStreamStatistic]
+    # stream_data: List[LatencyStreamStatistic]
     total: LatencyTotalStatistic

@@ -1,5 +1,4 @@
 from typing import List
-from pluginlib.plugin2544.model.m_test_type_config import LatencyTest
 from pluginlib.plugin2544.plugin.statistics import (
     LatencyPortStatistic,
     LatencyStatistic,
@@ -9,7 +8,7 @@ from pluginlib.plugin2544.plugin.statistics import (
 from pluginlib.plugin2544.plugin.test_resource import ResourceManager
 
 
-def aggregate_stream_result(resource: ResourceManager) -> List[LatencyStreamStatistic]:
+def aggregate_stream_result(resource: "ResourceManager") -> List["LatencyStreamStatistic"]:
     res = []
     for port_struct in resource.port_structs:
         for stream_struct in port_struct.stream_structs:
@@ -34,7 +33,7 @@ def aggregate_stream_result(resource: ResourceManager) -> List[LatencyStreamStat
     return res
 
 
-def aggregate_port_data(resource: ResourceManager) -> List[LatencyPortStatistic]:
+def aggregate_port_data(resource: "ResourceManager") -> List["LatencyPortStatistic"]:
     res = []
     for port_struct in resource.port_structs:
         res.append(
@@ -56,8 +55,8 @@ def aggregate_port_data(resource: ResourceManager) -> List[LatencyPortStatistic]
 
 
 def aggregate_latency_total_data(
-    port_statistic: List[LatencyPortStatistic],
-) -> LatencyTotalStatistic:
+    port_statistic: List["LatencyPortStatistic"],
+) -> "LatencyTotalStatistic":
     total_tx_frames = 0
     total_rx_frames = 0
     total_tx_rate_l1_bps = 0
@@ -76,12 +75,12 @@ def aggregate_latency_total_data(
 
 
 def aggregate_latency_data(
-    resource: ResourceManager,
+    resource: "ResourceManager",
     frame_size,
     repetition,
     rate_percent,
     is_final: bool = False,
-) -> LatencyStatistic:
+) -> "LatencyStatistic":
     port_data = aggregate_port_data(resource)
     total = aggregate_latency_total_data(port_data)
     return LatencyStatistic(
@@ -90,6 +89,6 @@ def aggregate_latency_data(
         repetition=repetition,
         tx_rate_percent=rate_percent,
         port_data=port_data,
-        stream_data=aggregate_stream_result(resource),
+        # stream_data=aggregate_stream_result(resource),
         total=total,
     )

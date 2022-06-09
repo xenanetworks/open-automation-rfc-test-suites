@@ -102,7 +102,7 @@ async def get_address_learning_packet(
         if not gwmac.is_empty:
             dmac = gwmac
     smac = (
-        await port_struct.get_mac_address()
+        await port_struct.mac_address
         if not arp_refresh_data.source_mac or arp_refresh_data.source_mac.is_empty
         else arp_refresh_data.source_mac
     )
@@ -153,7 +153,7 @@ async def setup_address_refresh(
             )
             for packet in packet_list:
                 address_refresh_tokens.append(
-                    (port_struct.port.tx_single_pkt.send.set(packet), is_rx_only)
+                    (port_struct._port.tx_single_pkt.send.set(packet), is_rx_only)
                 )
     return address_refresh_tokens
 
@@ -311,11 +311,11 @@ async def mac_learning(port_struct: "PortStruct", mac_learning_frame_count: int)
     dest_mac = "FFFFFFFFFFFF"
     four_f = "FFFF"
     paddings = "00" * 118
-    mac_address = await port_struct.get_mac_address()
+    mac_address = await port_struct.mac_address
     own_mac = mac_address.to_hexstring()
     hex_data = f"{dest_mac}{own_mac}{four_f}{paddings}"
     packet = f"0x{hex_data}"
-    max_cap = port_struct.port.info.capabilities.max_xmit_one_packet_length
+    max_cap = port_struct.capabilities.max_xmit_one_packet_length
     cur_length = len(hex_data) // 2
     if cur_length > max_cap:
         raise exceptions.PacketLengthExceed(cur_length, max_cap)

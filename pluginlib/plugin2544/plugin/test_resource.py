@@ -1,18 +1,16 @@
 import asyncio, time
 from decimal import Decimal
-from typing import Dict, List, TYPE_CHECKING, Tuple, Union
+from typing import Dict, List, TYPE_CHECKING, Union
 
 from loguru import logger
-from pluginlib.plugin2544.plugin import stream_struct
+from pydantic import NonNegativeInt
 from pluginlib.plugin2544.plugin.learning import add_mac_learning_steps
 from xoa_driver import testers as xoa_testers, modules, enums, utils
 from pluginlib.plugin2544.model.m_test_config import (
     TestConfiguration,
 )
 from pluginlib.plugin2544.plugin.config_checkers import check_config
-from pluginlib.plugin2544.plugin.common import (
-    get_peers_for_source,
-)
+from pluginlib.plugin2544.plugin.common import get_peers_for_source
 from pluginlib.plugin2544.plugin.setup_streams import setup_streams
 from pluginlib.plugin2544.plugin.structure import PortStruct
 from pluginlib.plugin2544.utils import constants as const, exceptions
@@ -20,13 +18,7 @@ from pluginlib.plugin2544.utils.logger import TestSuitPipe
 
 if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity
-    from ..model import (
-        PortConfiguration,
-        ThroughputTest,
-        LatencyTest,
-        FrameLossRateTest,
-        BackToBackTest,
-    )
+    from ..model import PortConfiguration
 
 
 class ResourceManager:
@@ -79,12 +71,14 @@ class ResourceManager:
             if tester_id not in self.mapping:
                 self.mapping[tester_id] = []
             self.mapping[tester_id] += [
-                port_struct.port.kind.module_id,
-                port_struct.port.kind.port_id,
+                port_struct.port_identity.module_index,
+                port_struct.port_identity.port_index,
             ]
         await self.collect_control_ports()
         self.resolve_port_relations()
-        await check_config(self.port_structs, self.test_conf)
+        await check_config(
+            list(self.__testers.values()), self.port_structs, self.test_conf
+        )
         await self.stop_traffic()
         await asyncio.sleep(self.test_conf.delay_after_port_reset_second)
         await asyncio.gather(
@@ -161,10 +155,12 @@ class ResourceManager:
         # Delay After Sync On
         start_time = time.time()
         for port_struct in self.port_structs:
-            while not port_struct.port.sync_status:
+            while not port_struct.sync_status:
                 await asyncio.sleep(1)
                 if time.time() - start_time > 30:
-                    raise TimeoutError(f"Waiting for {port_struct.port} sync timeout!")
+                    raise TimeoutError(
+                        f"Waiting for {port_struct.port_identity.name} sync timeout!"
+                    )
         await asyncio.sleep(toggle_conf.delay_after_sync_on_second)
 
     def resolve_port_relations(self) -> None:
@@ -211,6 +207,23 @@ class ResourceManager:
                     max_size,
                 )
                 for port_struct in self.port_structs
+            ]
+        )
+
+    async def set_gap_monitor(
+        self,
+        use_gap_monitor: bool,
+        gap_monitor_start_microsec: NonNegativeInt,
+        gap_monitor_stop_frames: NonNegativeInt,
+    ) -> None:
+        if not use_gap_monitor:
+            return
+        await asyncio.gather(
+            *[
+                port_struct.set_gap_monitor(
+                    gap_monitor_start_microsec, gap_monitor_stop_frames
+                )
+                for port_struct in self.tx_ports
             ]
         )
 
@@ -269,7 +282,7 @@ class ResourceManager:
 
     async def query_traffic_status(self) -> None:
         await asyncio.gather(
-            *[port_struct.port.traffic.state.get() for port_struct in self.tx_ports]
+            *[port_struct.get_traffic_status() for port_struct in self.tx_ports]
         )
 
     async def start_traffic_sync(
@@ -277,9 +290,6 @@ class ResourceManager:
     ) -> None:
         local_time = (await tester.time.get()).local_time
         delay_seconds = 2
-        # logger.error(
-        #     f"SYNC {tester.management_interface.ip_address} -> {local_time + delay_seconds}"
-        # )
         await utils.apply(
             tester.traffic_sync.set(
                 enums.OnOff.ON, local_time + delay_seconds, module_port_list
@@ -320,9 +330,6 @@ class ResourceManager:
             port_struct.init_counter(packet_size, duration, is_final)
             for port_struct in self.port_structs
         ]
-        # for port_struct in self.port_structs:
-        #     for stream in port_struct.stream_structs:
-        #         await stream.query()
         await asyncio.gather(
             *[
                 stream.query(packet_size, duration, is_final)
@@ -330,4 +337,3 @@ class ResourceManager:
                 for stream in port_struct.stream_structs
             ]
         )
-        # logger.error([port_struct.statistic for port_struct in self.port_structs])

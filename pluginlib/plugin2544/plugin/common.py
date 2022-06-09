@@ -1,48 +1,22 @@
 import re
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
-from ..utils import constants as const
 from pluginlib.plugin2544.utils.constants import (
     ARPSenarioType,
     TidAllocationScope,
     TestTopology,
-    MICRO_TPLD_TOTAL_LENGTH,
-    STANDARD_TPLD_TOTAL_LENGTH,
 )
 
-from xoa_driver.enums import ProtocolOption
 
 if TYPE_CHECKING:
-    from xoa_driver.ports import GenericL23Port
     from .structure import PortStruct
-    from ..model import PortConfiguration, IPV4AddressProperties, IPV6AddressProperties
-
-
-# async def get_native_mac_address(port: "GenericL23Port") -> "MacAddress":
-#     mac_address = (await port.net_config.mac_address.get()).mac_address
-#     return MacAddress(mac_address)
+    from ..model import PortConfiguration
 
 
 def gen_macaddress(first_three_bytes: str, index: int) -> "MacAddress":
     hex_num = hex(index)[2:].zfill(6)
     last_three_bytes = ":".join(re.findall(r".{2}", hex_num))
     return MacAddress(f"{first_three_bytes}:{last_three_bytes}")
-
-
-# async def setup_macaddress(
-#     port_struct: "PortStruct", is_stream_based: bool, mac_base_address: str
-# ) -> None:
-#     if is_stream_based:
-#         port_struct.properties.change_mac_address(
-#             await get_native_mac_address(port_struct.port_info.port)
-#         )
-#     else:
-#         # mac address according to test_port_index
-#         port_struct.properties.change_mac_address(
-#             gen_macaddress(
-#                 mac_base_address, port_struct.properties.test_port_index
-#             )
-#         )
 
 
 def is_same_ipnetwork(port_struct: "PortStruct", peer_struct: "PortStruct") -> bool:
@@ -138,7 +112,9 @@ def is_port_pair(
     port_config: "PortConfiguration", peer_config: "PortConfiguration"
 ) -> bool:
     return (
-        True if port_config.is_pair(peer_config) and peer_config.is_pair(port_config) else False
+        True
+        if port_config.is_pair(peer_config) and peer_config.is_pair(port_config)
+        else False
     )
 
 
@@ -150,7 +126,7 @@ def is_peer_port(
     if topology.is_pair_topology:
         return is_port_pair(port_config, peer_config)
     elif topology.is_mesh_topology:
-        return port_config != peer_config 
+        return port_config != peer_config
     else:
         return port_config.port_group != peer_config.port_group
 
@@ -181,28 +157,3 @@ def filter_port_structs(
     ]
 
 
-# def get_usable_dest_ip_address(
-#     ip_properties: Union["IPV4AddressProperties", "IPV6AddressProperties"]
-# ) -> Union["IPv4Address", "IPv6Address"]:
-#     public_ip_address = ip_properties.public_address
-#     public_ip_address_empty = ip_properties.public_address.is_empty
-#     address = ip_properties.address
-#     return public_ip_address if not public_ip_address_empty else address
-
-
-def get_tpld_total_length(
-    port: "GenericL23Port", use_micro_tpld_on_demand: bool
-) -> int:
-    if use_micro_tpld_on_demand and port.info.capabilities.can_micro_tpld:
-        return MICRO_TPLD_TOTAL_LENGTH
-    return STANDARD_TPLD_TOTAL_LENGTH
-
-
-def may_change_segment_id_list(
-    port: "GenericL23Port", segment_id_list: List[ProtocolOption]
-) -> List[ProtocolOption]:
-    id_list_copy = segment_id_list[:]
-    for i, segment_id in enumerate(segment_id_list):
-        if segment_id == ProtocolOption.TCP and port.info.capabilities.can_tcp_checksum:
-            id_list_copy[i] = ProtocolOption.TCPCHECK
-    return id_list_copy

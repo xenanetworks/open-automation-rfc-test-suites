@@ -109,9 +109,9 @@ async def create_multi_streams(
                         port_struct.properties.test_port_index,
                         peer_struct.properties.test_port_index,
                     )
-                    if tpldid > port_struct.port.info.capabilities.max_tpid:
+                    if tpldid > port_struct.capabilities.max_tpid:
                         raise exceptions.TPLDIDExceed(
-                            tpldid, port_struct.port.info.capabilities.max_tpid
+                            tpldid, port_struct.capabilities.max_tpid
                         )
                     await port_struct.add_stream(
                         [peer_struct], stream_id_counter, tpldid, arp_mac, offsets

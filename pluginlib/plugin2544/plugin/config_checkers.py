@@ -4,49 +4,50 @@ from xoa_driver.enums import ProtocolOption
 from pluginlib.plugin2544.utils import field, exceptions, constants as const
 from pluginlib.plugin2544.plugin.common import (
     filter_port_structs,
-    get_tpld_total_length,
 )
 
 if TYPE_CHECKING:
     from pluginlib.plugin2544.plugin.structure import PortStruct
     from xoa_driver import testers as xoa_testers
-    from xoa_driver.ports import GenericL23Port
     from pluginlib.plugin2544.model import (
         ProtocolSegmentProfileConfig,
         PortConfiguration,
         TestConfiguration,
     )
+    from xoa_driver.internals.core.commands import (
+        P_CAPABILITIES,
+    )
 
 
 def check_port_config_profile(
-    port: "GenericL23Port", profile: "ProtocolSegmentProfileConfig"
+    capabilities: "P_CAPABILITIES.GetDataAttr", profile: "ProtocolSegmentProfileConfig"
 ) -> None:
-    cap = port.info.capabilities
-    if cap.max_protocol_segments < len(profile.header_segment_id_list):
+    segment_id_list = profile.segment_id_list
+    if capabilities.max_protocol_segments < len(segment_id_list):
         raise exceptions.ProtocolSegmentExceed(
-            len(profile.header_segment_id_list), cap.max_protocol_segments
+            len(segment_id_list), capabilities.max_protocol_segments
         )
     if (
-        ProtocolOption.TCPCHECK in profile.header_segment_id_list
-        and cap.can_tcp_checksum
+        ProtocolOption.TCPCHECK in segment_id_list
+        and not capabilities.can_tcp_checksum
     ):
         raise exceptions.ProtocolNotSupport("TCPCHECK")
     if (
-        ProtocolOption.UDPCHECK in profile.header_segment_id_list
-        and cap.can_udp_checksum
+        ProtocolOption.UDPCHECK in segment_id_list
+        and  not capabilities.can_udp_checksum
     ):
         raise exceptions.ProtocolNotSupport("UDPCHECK")
 
-    if profile.packet_header_length > cap.max_header_length:
+    if profile.packet_header_length > capabilities.max_header_length:
         raise exceptions.PacketHeaderExceed(
-            profile.packet_header_length, cap.max_header_length
+            profile.packet_header_length, capabilities.max_header_length
         )
 
     for header_segment in profile.header_segments:
         for modifier in header_segment.hw_modifiers:
-            if modifier.repeat_count > cap.max_repeat:
+            if modifier.repeat_count > capabilities.max_repeat:
                 raise exceptions.ModifierRepeatCountExceed(
-                    modifier.repeat_count, cap.max_repeat
+                    modifier.repeat_count, capabilities.max_repeat
                 )
 
 
@@ -67,38 +68,37 @@ def check_can_fec(can_fec: int, fec_mode: const.FECModeStr) -> None:
 
 
 async def check_custom_port_config(
-    port: "GenericL23Port", port_conf: "PortConfiguration"
+    capabilities: "P_CAPABILITIES.GetDataAttr", port_conf: "PortConfiguration"
 ) -> None:
-    cap = port.info.capabilities
 
-    if port_conf.port_rate > cap.max_speed * 1_000_000:
-        raise exceptions.PortRateError(port_conf.port_rate, cap.max_speed * 1_000_000)
-    if port_conf.speed_reduction_ppm > cap.max_speed_reduction:
+    if port_conf.port_rate > capabilities.max_speed * 1_000_000:
+        raise exceptions.PortRateError(port_conf.port_rate, capabilities.max_speed * 1_000_000)
+    if port_conf.speed_reduction_ppm > capabilities.max_speed_reduction:
         raise exceptions.SpeedReductionError(
-            port_conf.speed_reduction_ppm, cap.max_speed_reduction
+            port_conf.speed_reduction_ppm, capabilities.max_speed_reduction
         )
     if (
-        cap.min_interframe_gap > port_conf.inter_frame_gap
-        or port_conf.inter_frame_gap > cap.max_interframe_gap
+        capabilities.min_interframe_gap > port_conf.inter_frame_gap
+        or port_conf.inter_frame_gap > capabilities.max_interframe_gap
     ):
         raise exceptions.InterFrameGapError(
-            port_conf.inter_frame_gap, cap.min_interframe_gap, cap.max_interframe_gap
+            port_conf.inter_frame_gap, capabilities.min_interframe_gap, capabilities.max_interframe_gap
         )
-    check_can_fec(port.info.capabilities.can_fec, port_conf.fec_mode)
-    check_port_config_profile(port, port_conf.profile)
+    check_can_fec(capabilities.can_fec, port_conf.fec_mode)
+    check_port_config_profile(capabilities, port_conf.profile)
 
 
 async def check_ports(control_ports: List["PortStruct"]) -> None:
     await asyncio.gather(
         *[
-            check_custom_port_config(port_struct.port, port_struct.port_conf)
+            check_custom_port_config(port_struct.capabilities, port_struct.port_conf)
             for port_struct in control_ports
         ]
     )
 
 
 async def check_port_modifiers(
-    port: "GenericL23Port",
+    capabilities: "P_CAPABILITIES.GetDataAttr",
     port_conf: "PortConfiguration",
     is_stream_based: bool,
 ) -> None:
@@ -107,9 +107,9 @@ async def check_port_modifiers(
 
     modifier_count = port_conf.profile.modifier_count
     if is_stream_based:
-        if modifier_count > port.info.capabilities.max_modifiers:
+        if modifier_count > capabilities.max_modifiers:
             raise exceptions.ModifierExceed(
-                modifier_count, port.info.capabilities.max_modifiers
+                modifier_count, capabilities.max_modifiers
             )
     else:
         if modifier_count > 0:
@@ -124,9 +124,9 @@ async def check_stream_limitations(
     if not port_struct.port_conf.is_tx_port:
         return
     stream_count = len(port_struct.properties.peers) * per_port_stream_count
-    if stream_count > port_struct.port.info.capabilities.max_streams_per_port:
+    if stream_count > port_struct.capabilities.max_streams_per_port:
         raise exceptions.StreamExceed(
-            stream_count, port_struct.port.info.capabilities.max_streams_per_port
+            stream_count, port_struct.capabilities.max_streams_per_port
         )
 
 
@@ -155,35 +155,43 @@ def check_tid_limitations(
     for peer_struct in dest_port_structs:
         src_port_count = count_source_port(control_ports, peer_struct)
         tid_value += src_port_count
-        max_tpld_stats = peer_struct.port.info.capabilities.max_tpld_stats
+        max_tpld_stats = peer_struct.capabilities.max_tpld_stats
         if tid_value > max_tpld_stats:
             raise exceptions.TPLDIDExceed(tid_value, max_tpld_stats)
 
 
 async def check_port_min_packet_length(
-    port: "GenericL23Port",
+    capabilities: "P_CAPABILITIES.GetDataAttr",
     min_packet_size: Union[field.NonNegativeDecimal, int],
     packet_size_type: "const.PacketSizeType",
 ) -> None:
-    if port.info.capabilities.min_packet_length > min_packet_size:
+    if capabilities.min_packet_length > min_packet_size:
         raise exceptions.MinPacketLengthExceed(
             packet_size_type.value,
             int(min_packet_size),
-            port.info.capabilities.min_packet_length,
+            capabilities.min_packet_length,
         )
 
 
 async def check_port_max_packet_length(
-    port: "GenericL23Port",
+    capabilities: "P_CAPABILITIES.GetDataAttr",
     max_packet_size: Union[field.NonNegativeDecimal, int],
     packet_size_type: "const.PacketSizeType",
 ) -> None:
-    if port.info.capabilities.max_packet_length < max_packet_size:
+    if capabilities.max_packet_length < max_packet_size:
         raise exceptions.MaxPacketLengthExceed(
             packet_size_type.value,
             int(max_packet_size),
-            port.info.capabilities.max_packet_length,
+            capabilities.max_packet_length,
         )
+
+
+def get_tpld_total_length(
+    capabilities: "P_CAPABILITIES.GetDataAttr", use_micro_tpld_on_demand: bool
+) -> int:
+    if use_micro_tpld_on_demand and capabilities.can_micro_tpld:
+        return const.MICRO_TPLD_TOTAL_LENGTH
+    return const.STANDARD_TPLD_TOTAL_LENGTH
 
 
 def get_needed_packet_length(
@@ -191,7 +199,7 @@ def get_needed_packet_length(
 ) -> int:
     packet_header_length = port_struct.port_conf.profile.packet_header_length
     return packet_header_length + get_tpld_total_length(
-        port_struct.port, use_micro_tpld_on_demand
+        port_struct.capabilities, use_micro_tpld_on_demand
     )
 
 
@@ -205,18 +213,18 @@ async def check_needed_packet_length(
         raise exceptions.PacketSizeTooSmall(int(min_packet_size), need_packet_length)
 
 
-async def check_payload_pattern(port: "GenericL23Port", payload_pattern: str) -> None:
+async def check_payload_pattern(capabilities: "P_CAPABILITIES.GetDataAttr", payload_pattern: str) -> None:
     cur = len(payload_pattern) // 2
-    if port.info.capabilities.max_pattern_length < cur:
+    if capabilities.max_pattern_length < cur:
         raise exceptions.PayloadPatternExceed(
-            cur, port.info.capabilities.max_pattern_length
+            cur, capabilities.max_pattern_length
         )
 
 
-async def check_micro_tpld(port: "GenericL23Port", use_mocro_tpld: bool) -> None:
+async def check_micro_tpld(capabilities: "P_CAPABILITIES.GetDataAttr", use_mocro_tpld: bool) -> None:
     if not use_mocro_tpld:
         return
-    if not bool(port.info.capabilities.can_micro_tpld):
+    if not bool(capabilities.can_micro_tpld):
         raise exceptions.MicroTPLDNotSupport()
 
 
@@ -232,18 +240,20 @@ async def check_port_test_config(
     min_packet_size = min(packet_size_list)
     max_packet_size = max(packet_size_list)
     per_port_stream_count = test_conf.multi_stream_config.per_port_stream_count
-    await check_payload_pattern(port_struct.port, test_conf.payload_pattern)
-    await check_micro_tpld(port_struct.port, test_conf.use_micro_tpld_on_demand)
+    await check_payload_pattern(port_struct.capabilities, test_conf.payload_pattern)
+    await check_micro_tpld(port_struct.capabilities, test_conf.use_micro_tpld_on_demand)
     await check_port_min_packet_length(
-        port_struct.port, min_packet_size, packet_size_type
+        port_struct.capabilities, min_packet_size, packet_size_type
     )
     await check_port_max_packet_length(
-        port_struct.port, max_packet_size, packet_size_type
+        port_struct.capabilities, max_packet_size, packet_size_type
     )
     await check_needed_packet_length(
         port_struct, min_packet_size, test_conf.use_micro_tpld_on_demand
     )
-    await check_port_modifiers(port_struct.port, port_struct.port_conf, is_stream_based)
+    await check_port_modifiers(
+        port_struct.capabilities, port_struct.port_conf, is_stream_based
+    )
     await check_stream_limitations(port_struct, per_port_stream_count, is_stream_based)
 
 
@@ -273,20 +283,21 @@ async def check_tester_sync_start(
 
 
 async def check_testers(
-    control_ports: List["PortStruct"], test_conf: "TestConfiguration"
+    testers: List["xoa_testers.L23Tester"], test_conf: "TestConfiguration"
 ) -> None:
     await asyncio.gather(
         *[
-            check_tester_sync_start(port_struct.tester, test_conf.use_port_sync_start)
-            for port_struct in control_ports
+            check_tester_sync_start(tester, test_conf.use_port_sync_start)
+            for tester in testers
         ]
     )
 
 
 async def check_config(
+    testers: List["xoa_testers.L23Tester"],
     control_ports: List["PortStruct"],
     test_conf: "TestConfiguration",
 ) -> None:
-    await check_testers(control_ports, test_conf)
+    await check_testers(testers, test_conf)
     await check_ports(control_ports)
     await check_test_config(control_ports, test_conf)
