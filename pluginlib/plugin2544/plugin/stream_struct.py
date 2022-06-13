@@ -6,7 +6,6 @@ from typing import List, Optional, TYPE_CHECKING
 from pluginlib.plugin2544.model import TestConfiguration, HwModifier
 from pluginlib.plugin2544.plugin.common import gen_macaddress
 from pluginlib.plugin2544.plugin.data_model import (
-    PortMax,
     RXTableData,
     StreamOffset,
 )
@@ -14,8 +13,6 @@ from pluginlib.plugin2544.plugin.learning import (
     add_address_refresh_entry,
 )
 from pluginlib.plugin2544.plugin.statistics import (
-    AvgMinMax,
-    CounterType,
     DelayCounter,
     DelayData,
     StreamCounter,
@@ -49,26 +46,21 @@ class PRStream:
             self._rx_port.port_statistic.rx.extra.get(),
         )
         self.rx_frames = StreamCounter(
-            frame_size=packet_size,
-            duration=duration,
-            is_final=is_final,
             frames=rx_frames.packet_count_since_cleared,
             bps=rx_frames.bit_count_last_sec,
             pps=rx_frames.packet_count_last_sec,
         )
         self._rx_port.statistic.add_rx(self.rx_frames)
-        # la = DelayCounter(latency.min_val, latency.avg_val, latency.max_val)
         self.latency = DelayData(
-            minimum=latency.min_val, total=latency.avg_val, maximun=latency.max_val
+            minimum=latency.min_val, average=latency.avg_val, maximum=latency.max_val
         )
         self._rx_port.statistic.add_latency(self.latency)
         self.jitter = DelayData(
-            counter_type=CounterType.JITTER,
+            counter_type=const.CounterType.JITTER,
             minimum=ji.min_val,
-            total=ji.avg_val,
-            maximun=ji.max_val,
+            average=ji.avg_val,
+            maximum=ji.max_val,
         )
-        # ji = DelayCounter(ji.min_val, ji.avg_val, ji.max_val)
         self._rx_port.statistic.add_jitter(self.jitter)
         self._rx_port.statistic.add_extra(fcs.fcs_error_count)
         self._tx_port.statistic.add_loss(error.non_incre_seq_event_count)
@@ -110,30 +102,18 @@ class StreamStruct:
             return self.tx_port
 
     @property
-    def latency(self) -> AvgMinMax:
-        latency_data = [
-            pr_stream.latency
-            for pr_stream in self.pr_streams
-            if pr_stream.latency.is_valid
-        ]
-        total = sum([data.total for data in latency_data])
-        min_val = min([data.minimum for data in latency_data])
-        max_val = max([data.maximum for data in latency_data])
-        avg_val = Decimal(str(total)) / Decimal(len(latency_data))
-        return AvgMinMax(minimum=min_val, maximun=max_val, avg=avg_val)
+    def latency(self) -> DelayCounter:
+        la = DelayCounter()
+        for pr_stream in self.pr_streams:
+            la.update(pr_stream.latency)
+        return la
 
     @property
-    def jitter(self) -> AvgMinMax:
-        jitter_data = [
-            pr_stream.jitter
-            for pr_stream in self.pr_streams
-            if pr_stream.jitter.is_valid
-        ]
-        total = sum([data.total for data in jitter_data])
-        min_val = min([data.minimum for data in jitter_data])
-        max_val = max([data.maximum for data in jitter_data])
-        avg_val = Decimal(str(total)) / Decimal(len(jitter_data))
-        return AvgMinMax(minimum=min_val, maximun=max_val, avg=avg_val)
+    def jitter(self) -> DelayCounter:
+        ji = DelayCounter(counter_type = const.CounterType.JITTER)
+        for pr_stream in self.pr_streams:
+            ji.update(pr_stream.jitter)
+        return ji
 
     @property
     def hw_modifiers(self) -> List["HwModifier"]:
@@ -235,10 +215,6 @@ class StreamStruct:
             ]
         )
         self._tx_frames = StreamCounter(
-            frame_size=packet_size,
-            duration=duration,
-            is_final=is_final,
-            interframe_gap=self.tx_port.port_conf.inter_frame_gap,
             frames=tx_frames.packet_count_since_cleared,
             bps=tx_frames.bit_count_last_sec,
             pps=tx_frames.packet_count_last_sec,

@@ -337,3 +337,7 @@ class ResourceManager:
                 for stream in port_struct.stream_structs
             ]
         )
+        [
+            port_struct.statistic.calculate_rate()
+            for port_struct in self.port_structs
+        ]

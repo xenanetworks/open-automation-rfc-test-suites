@@ -108,6 +108,22 @@ AutoNegPorts = (
 PCSPMAPorts = (ports.PThor400G7S1P_c, ports.PThor400G7S1P_b)
 
 
+class CounterType(Enum):
+    JITTER = -1
+    LATENCY = -2147483648
+
+
+class PortCounterType(Enum):
+    TX = 0
+    RX = 1
+
+
+class ResultState(Enum):
+    SUCCESS = "success"
+    FAIL = "fail"
+    DONE = "done"
+    PENDING = "pending"
+
 
 class TestTopology(Enum):
     PAIRS = "pairs"
@@ -552,4 +568,3 @@ class IPPrefixLength(Enum):
 class TestState(Enum):
     L3_LEARNING = 3
     RUNNING_TEST = 5
-
