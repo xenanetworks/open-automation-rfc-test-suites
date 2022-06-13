@@ -94,9 +94,11 @@ class RateSweepOptions(BaseModel):
         pct = start_value_pct
         while True:
             yield pct
-            if pct < end_value_pct:
+            if pct == end_value_pct:
+                break
+            elif pct < end_value_pct:
                 pct += step_value_pct
-            if pct >= end_value_pct:
+            if pct > end_value_pct:
                 break
         if pct != end_value_pct:
             yield end_value_pct

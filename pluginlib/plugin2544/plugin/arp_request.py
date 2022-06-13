@@ -50,7 +50,7 @@ async def get_packet_header(
     ip_header = packet_cls(
         source_ip=addr_type(source_ip), destination_ip=destination_ip
     )
-    mac_address = await port_struct.mac_address
+    mac_address = await port_struct.get_mac_address()
     packet_header = (
         Ether(smac=mac_address, type=ether_type).hexstring + ip_header.hexstring
     )

@@ -1,6 +1,5 @@
 import asyncio
 from dataclasses import dataclass
-from decimal import Decimal
 from typing import List, Optional, TYPE_CHECKING
 
 from pluginlib.plugin2544.model import TestConfiguration, HwModifier
@@ -35,9 +34,7 @@ class PRStream:
         self.latency: DelayData
         self.jitter: DelayData
 
-    async def query(
-        self, packet_size: Decimal, duration: Decimal, is_final: bool = False
-    ):
+    async def query(self):
         rx_frames, error, ji, latency, fcs = await utils.apply(
             self._rx.traffic.get(),
             self._rx.errors.get(),
@@ -110,7 +107,7 @@ class StreamStruct:
 
     @property
     def jitter(self) -> DelayCounter:
-        ji = DelayCounter(counter_type = const.CounterType.JITTER)
+        ji = DelayCounter(counter_type=const.CounterType.JITTER)
         for pr_stream in self.pr_streams:
             ji.update(pr_stream.jitter)
         return ji
@@ -202,18 +199,11 @@ class StreamStruct:
             total_rx_frames.update(pr_stream.rx_frames)
         return total_rx_frames
 
-    async def query(
-        self, packet_size: Decimal, duration: Decimal, is_final: bool = False
-    ):
+    async def query(self):
         tx_frames = await self.tx_port._port.statistics.tx.obtain_from_stream(
             self.stream_id
         ).get()
-        await asyncio.gather(
-            *[
-                pr_stream.query(packet_size, duration, is_final)
-                for pr_stream in self.pr_streams
-            ]
-        )
+        await asyncio.gather(*[pr_stream.query() for pr_stream in self.pr_streams])
         self._tx_frames = StreamCounter(
             frames=tx_frames.packet_count_since_cleared,
             bps=tx_frames.bit_count_last_sec,
@@ -313,8 +303,8 @@ async def get_address_collection(
         )
     else:
         return AddressCollection(
-            smac=await port_struct.mac_address,
-            dmac=await peer_struct.mac_address,
+            smac=await port_struct.get_mac_address(),
+            dmac=await peer_struct.get_mac_address(),
             src_ipv4_addr=port_struct.port_conf.ipv4_properties.address,
             dst_ipv4_addr=peer_struct.port_conf.ipv4_properties.dst_addr,
             src_ipv6_addr=port_struct.port_conf.ipv6_properties.address,

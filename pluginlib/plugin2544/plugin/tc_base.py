@@ -16,6 +16,7 @@ from pluginlib.plugin2544.plugin.statistics import (
     FRAME_LOSS_OUTPUT,
     LATENCY_OUTPUT,
     FinalStatistic,
+    StatisticParams,
 )
 from pluginlib.plugin2544.plugin.test_result import aggregate_data
 import pluginlib.plugin2544.utils.constants as const
@@ -45,6 +46,7 @@ class TestCaseProcessor:
         )
 
     async def start_test(self, test_type_conf, current_packet_size):
+        self.resources.monitor_status()
         await self.add_learning_steps(current_packet_size)
         await setup_source_port_rates(self.resources, current_packet_size)
         await self.resources.set_tx_time_limit(
@@ -52,44 +54,45 @@ class TestCaseProcessor:
         )
         await self.resources.clear_statistic()
         await self.resources.start_traffic(self.resources.test_conf.use_port_sync_start)
-        await schedule_arp_refresh(self.resources, self.address_refresh_handler)
 
+        await schedule_arp_refresh(self.resources, self.address_refresh_handler)
     async def latency(
         self, test_type_conf: LatencyTest, current_packet_size, repetition
     ):
         for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
+            params = StatisticParams(
+                test_case_type=const.TestType.LATENCY_JITTER,
+                rate_percent=rate_percent,
+                frame_size=current_packet_size,
+                repetition=repetition,
+                duration=test_type_conf.common_options.actual_duration,
+            )
             self.resources.set_rate(rate_percent)
             await self.start_test(test_type_conf, current_packet_size)
             while True:
                 start_time = time.time()
                 data = await aggregate_data(
                     self.resources,
-                    current_packet_size,
-                    test_type_conf.common_options.actual_duration,
-                    repetition,
-                    rate_percent,
-                    test_case_type=const.TestType.LATENCY_JITTER,
+                    params,
                     is_final=False,
                 )
                 logger.info(data.json(include=LATENCY_OUTPUT, indent=2))
                 if self.resources.should_quit(
                     start_time, test_type_conf.common_options.actual_duration
                 ):
+                    logger.info('quit the test...')
                     break
                 await asyncio.sleep(1)
             await asyncio.sleep(3)
             logger.info("final result:")
             data = await aggregate_data(
                 self.resources,
-                current_packet_size,
-                test_type_conf.common_options.actual_duration,
-                repetition,
-                rate_percent,
-                test_case_type=const.TestType.LATENCY_JITTER,
+                params,
                 is_final=True,
             )
             logger.info(data.json(include=LATENCY_OUTPUT, indent=2))
             await self.resources.set_tx_time_limit(0)
+            # await self.resources.stop_traffic()
 
     async def frame_loss(
         self, test_type_conf: FrameLossRateTest, current_packet_size, repetition
@@ -97,15 +100,18 @@ class TestCaseProcessor:
         for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
             self.resources.set_rate(rate_percent)
             await self.start_test(test_type_conf, current_packet_size)
+            params = StatisticParams(
+                test_case_type=const.TestType.FRAME_LOSS_RATE,
+                rate_percent=rate_percent,
+                frame_size=current_packet_size,
+                repetition=repetition,
+                duration=test_type_conf.common_options.actual_duration,
+            )
             while True:
                 start_time = time.time()
                 data = await aggregate_data(
                     self.resources,
-                    current_packet_size,
-                    test_type_conf.common_options.actual_duration,
-                    repetition,
-                    rate_percent,
-                    test_case_type=const.TestType.FRAME_LOSS_RATE,
+                    params,
                     is_final=False,
                 )
                 logger.info(data.json(include=FRAME_LOSS_OUTPUT, indent=2))
@@ -118,11 +124,7 @@ class TestCaseProcessor:
             logger.info("final result:")
             data = await aggregate_data(
                 self.resources,
-                current_packet_size,
-                test_type_conf.common_options.actual_duration,
-                repetition,
-                rate_percent,
-                test_case_type=const.TestType.FRAME_LOSS_RATE,
+                params,
                 is_final=True,
             )
             check_if_frame_loss_success(test_type_conf, data)

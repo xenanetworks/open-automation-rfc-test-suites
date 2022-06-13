@@ -2,7 +2,6 @@ import asyncio
 from decimal import Decimal
 from typing import Dict, List, TYPE_CHECKING, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
-from pluginlib.plugin2544.conversion.model2544 import HeaderSegments
 from pluginlib.plugin2544.model.m_protocol_segment import HeaderSegment
 from pluginlib.plugin2544.model.m_test_config import (
     FrameSizeConfiguration,
@@ -197,8 +196,7 @@ class BasePort:
                 position = int(k.split("_")[-1])
                 await self._port.mix.lengths[position].set(v)
 
-    @property
-    async def mac_address(self) -> MacAddress:
+    async def get_mac_address(self) -> MacAddress:
         return MacAddress((await self._port.net_config.mac_address.get()).mac_address)
 
     async def send_packet(self, packet: str) -> None:
@@ -318,8 +316,7 @@ class BasePort:
     def local_states(self):
         return self._port.local_states
 
-    @property
-    async def physics_speed(self) -> float:
+    async def get_physics_speed(self) -> float:
         return (await self._port.speed.current.get()).port_speed * 1e6
 
     async def clear(self) -> None:
@@ -442,18 +439,17 @@ class PortStruct(BasePort):
         await self.set_arp_trucks(self.properties.arp_trunks)
         await self.set_ndp_trucks(self.properties.ndp_trunks)
 
-    @property
-    async def port_speed(self) -> Decimal:
-        port_speed = await self.physics_speed
+    async def get_port_speed(self) -> Decimal:
+        port_speed = await self.get_physics_speed()
         if self.port_conf.port_rate_cap_profile.is_custom:
             port_speed = min(self.port_conf.port_rate, port_speed)
         return Decimal(str(port_speed))
 
     async def get_use_port_speed(self) -> NonNegativeDecimal:
-        tx_speed = await self.port_speed
+        tx_speed = await self.get_port_speed()
         if self.port_conf.peer_config_slot and len(self.properties.peers) == 1:
             peer_struct = self.properties.peers[0]
-            rx_speed = await peer_struct.port_speed
+            rx_speed = await peer_struct.get_port_speed()
             tx_speed = min(tx_speed, rx_speed)
         tx_speed = (
             tx_speed

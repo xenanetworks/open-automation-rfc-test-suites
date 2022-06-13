@@ -2,6 +2,7 @@ from decimal import Decimal
 from typing import List
 from pluginlib.plugin2544.plugin.statistics import (
     FinalStatistic,
+    StatisticParams,
     StreamStatistic,
 )
 from pluginlib.plugin2544.plugin.test_resource import ResourceManager
@@ -56,25 +57,21 @@ def aggregate_stream_result(resource: "ResourceManager") -> List["StreamStatisti
 
 async def aggregate_data(
     resource: "ResourceManager",
-    frame_size,
-    duration: int,
-    repetition: int,
-    rate_percent,
-    test_case_type: const.TestType,
+    params: StatisticParams,
     is_final: bool = False,
 ) -> "FinalStatistic":
     await resource.collect(
-        frame_size,
-        duration,
+        params.frame_size,
+        params.duration,
         is_final=is_final,
     )
     # port_data = aggregate_port_data(resource)
     return FinalStatistic(
-        test_case_type=test_case_type,
+        test_case_type=params.test_case_type,
         is_final=is_final,
-        frame_size=frame_size,
-        repetition=repetition,
-        tx_rate_percent=rate_percent,
+        frame_size=params.frame_size,
+        repetition=params.repetition,
+        tx_rate_percent=params.rate_percent,
         port_data=[port_struct.statistic for port_struct in resource.port_structs],
         # stream_data=aggregate_stream_result(resource),
     )

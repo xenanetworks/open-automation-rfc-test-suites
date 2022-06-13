@@ -102,7 +102,7 @@ async def get_address_learning_packet(
         if not gwmac.is_empty:
             dmac = gwmac
     smac = (
-        await port_struct.mac_address
+        await port_struct.get_mac_address()
         if not arp_refresh_data.source_mac or arp_refresh_data.source_mac.is_empty
         else arp_refresh_data.source_mac
     )
@@ -311,7 +311,7 @@ async def mac_learning(port_struct: "PortStruct", mac_learning_frame_count: int)
     dest_mac = "FFFFFFFFFFFF"
     four_f = "FFFF"
     paddings = "00" * 118
-    mac_address = await port_struct.mac_address
+    mac_address = await port_struct.get_mac_address()
     own_mac = mac_address.to_hexstring()
     hex_data = f"{dest_mac}{own_mac}{four_f}{paddings}"
     packet = f"0x{hex_data}"

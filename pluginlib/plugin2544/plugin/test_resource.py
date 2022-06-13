@@ -65,7 +65,11 @@ class ResourceManager:
         ]
 
     async def init_resource(self, latency_mode: const.LatencyModeStr):
-
+        await self.collect_control_ports()
+        self.resolve_port_relations()
+        await check_config(
+            list(self.__testers.values()), self.port_structs, self.test_conf
+        )
         for port_struct in self.tx_ports:
             tester_id = port_struct.port_identity.tester_id
             if tester_id not in self.mapping:
@@ -74,11 +78,6 @@ class ResourceManager:
                 port_struct.port_identity.module_index,
                 port_struct.port_identity.port_index,
             ]
-        await self.collect_control_ports()
-        self.resolve_port_relations()
-        await check_config(
-            list(self.__testers.values()), self.port_structs, self.test_conf
-        )
         await self.stop_traffic()
         await asyncio.sleep(self.test_conf.delay_after_port_reset_second)
         await asyncio.gather(
@@ -235,7 +234,18 @@ class ResourceManager:
             port_struct.monitor_traffic()
 
     def test_running(self) -> bool:
-        return any([port_struct.traffic_status for port_struct in self.tx_ports])
+        s = any([port_struct.traffic_status for port_struct in self.tx_ports])
+        if s:
+            logger.info([port_struct.traffic_status for port_struct in self.tx_ports])
+            logger.info('Test Start')
+        return s
+    
+    def test_finished(self) -> bool:
+        s = all([not port_struct.traffic_status for port_struct in self.tx_ports])
+        if s:
+            logger.info([port_struct.traffic_status for port_struct in self.tx_ports])
+            logger.info('Test Finish')
+        return s
 
     def los(self) -> bool:
         if self.test_conf.should_stop_on_los:
@@ -245,12 +255,13 @@ class ResourceManager:
         return False
 
     def should_quit(self, start_time: float, actual_duration: int) -> bool:
-        test_finished = not self.test_running()
+        test_finished = self.test_finished()
         elapsed = time.time() - start_time
         actual_duration_elapsed = elapsed >= actual_duration + 5
         los = self.los()
         if los:
             logger.error("Test is stopped due to the loss of signal of ports.")
+        
         return test_finished or los or actual_duration_elapsed
 
     def set_rate(self, rate: Decimal) -> None:
@@ -290,10 +301,8 @@ class ResourceManager:
     ) -> None:
         local_time = (await tester.time.get()).local_time
         delay_seconds = 2
-        await utils.apply(
-            tester.traffic_sync.set(
-                enums.OnOff.ON, local_time + delay_seconds, module_port_list
-            )
+        await tester.traffic_sync.set(
+            enums.OnOff.ON, local_time + delay_seconds, module_port_list
         )
 
     async def start_traffic(self, port_sync=False) -> None:
@@ -309,11 +318,10 @@ class ResourceManager:
             # same tester
             tester_id = list(self.mapping.keys())[0]
             tester = self.__testers[tester_id]
-            await utils.apply(
-                tester.traffic.set(
-                    enums.OnOff(enums.StartOrStop.START), self.mapping[tester_id]
-                )
+            await tester.traffic.set(
+                enums.OnOff(enums.StartOrStop.START), self.mapping[tester_id]
             )
+
         else:
             # multi tester need to use c_trafficsync cmd
             await asyncio.gather(
@@ -322,6 +330,8 @@ class ResourceManager:
                     for tester_id, module_port_list in self.mapping.items()
                 ]
             )
+            # while not self.test_running():
+            #     await asyncio.sleep(1)
 
     async def collect(
         self, packet_size: Decimal, duration: Decimal, is_final: bool = False
@@ -332,12 +342,9 @@ class ResourceManager:
         ]
         await asyncio.gather(
             *[
-                stream.query(packet_size, duration, is_final)
+                stream.query()
                 for port_struct in self.port_structs
                 for stream in port_struct.stream_structs
             ]
         )
-        [
-            port_struct.statistic.calculate_rate()
-            for port_struct in self.port_structs
-        ]
+        [port_struct.statistic.calculate_rate() for port_struct in self.port_structs]

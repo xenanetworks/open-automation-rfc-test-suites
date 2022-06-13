@@ -275,6 +275,14 @@ class FinalStatistic(BaseModel):
         self.result_state = state
 
 
+class StatisticParams(BaseModel):
+    test_case_type: const.TestType
+    result_state: const.ResultState = const.ResultState.PENDING
+    rate_percent: float
+    frame_size: int
+    duration: int
+    repetition: Union[int, str]
+
 LATENCY_OUTPUT = {
     "test_suit_type": ...,
     "result_state": ...,
