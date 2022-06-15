@@ -5,6 +5,7 @@ from typing import List, Optional, TYPE_CHECKING
 from pluginlib.plugin2544.model import TestConfiguration, HwModifier
 from pluginlib.plugin2544.plugin.common import gen_macaddress
 from pluginlib.plugin2544.plugin.data_model import (
+    AddressCollection,
     RXTableData,
     StreamOffset,
 )
@@ -15,6 +16,7 @@ from pluginlib.plugin2544.plugin.statistics import (
     DelayCounter,
     DelayData,
     StreamCounter,
+    StreamStatisticData,
 )
 
 from pluginlib.plugin2544.utils.field import MacAddress, IPv4Address, IPv6Address
@@ -33,6 +35,8 @@ class PRStream:
         self._rx = self._rx_port.port_statistic.rx.access_tpld(tpld_id)
         self.latency: DelayData
         self.jitter: DelayData
+        self.fcs: int
+        self.loss_frames: int
 
     async def query(self):
         rx_frames, error, ji, latency, fcs = await utils.apply(
@@ -46,6 +50,7 @@ class PRStream:
             frames=rx_frames.packet_count_since_cleared,
             bps=rx_frames.bit_count_last_sec,
             pps=rx_frames.packet_count_last_sec,
+            bytes_count=rx_frames.byte_count_since_cleared,
         )
         self._rx_port.statistic.add_rx(self.rx_frames)
         self.latency = DelayData(
@@ -58,9 +63,11 @@ class PRStream:
             average=ji.avg_val,
             maximum=ji.max_val,
         )
+        self.fcs = fcs.fcs_error_count
+        self.loss_frames = error.non_incre_seq_event_count
         self._rx_port.statistic.add_jitter(self.jitter)
-        self._rx_port.statistic.add_extra(fcs.fcs_error_count)
-        self._tx_port.statistic.add_loss(error.non_incre_seq_event_count)
+        self._rx_port.statistic.add_extra(self.fcs)
+        # self._tx_port.statistic.add_loss(self.loss_frames)
 
 
 class StreamStruct:
@@ -84,9 +91,11 @@ class StreamStruct:
         self.addr_coll: AddressCollection
         self.stream_offset = stream_offset
         self._tx_frames: StreamCounter
+        self._rx_frames: StreamCounter
         self.pr_streams = [
             PRStream(self.tx_port, port, self.tpldid) for port in self._rx_ports
         ]
+        self._best_result: StreamStatisticData
 
     def is_rx_port(self, peer_struct: "PortStruct"):
         return True if peer_struct in self._rx_ports else False
@@ -131,6 +140,24 @@ class StreamStruct:
                     stop_value=modifier_range[1],
                 )
             ]
+
+    @property
+    def best_result(self) -> StreamStatisticData:
+        return self._best_result
+
+    def set_best_result(self):  # Only for stream based used
+        self._best_result = StreamStatisticData(
+            tx_counter=self.tx_frames,
+            rx_counter=self.rx_frames,
+            latency=self.pr_streams[0].latency,
+            jitter=self.pr_streams[0].jitter,
+            addr_coll=self.addr_coll,
+            fcs=self.pr_streams[0].fcs,
+            loss_frames=self.pr_streams[0].loss_frames,
+        )
+
+    def aggregate(self):
+        self._best_result.calculate(self.tx_port, self.rx_port)
 
     async def configure(self, test_conf: "TestConfiguration") -> None:
         stream = await self.tx_port.create_stream()
@@ -194,10 +221,7 @@ class StreamStruct:
 
     @property
     def rx_frames(self) -> StreamCounter:
-        total_rx_frames = StreamCounter()
-        for pr_stream in self.pr_streams:
-            total_rx_frames.update(pr_stream.rx_frames)
-        return total_rx_frames
+        return self._rx_frames
 
     async def query(self):
         tx_frames = await self.tx_port._port.statistics.tx.obtain_from_stream(
@@ -209,7 +233,13 @@ class StreamStruct:
             bps=tx_frames.bit_count_last_sec,
             pps=tx_frames.packet_count_last_sec,
         )
+        self._rx_frames = StreamCounter()
+        self.loss_frames = 0
+        for pr_stream in self.pr_streams:
+            self._rx_frames.update(pr_stream.rx_frames)
+            self.loss_frames += pr_stream.loss_frames
         self.tx_port.statistic.add_tx(self._tx_frames)
+        self.tx_port.statistic.add_loss(self._tx_frames.frames, self.rx_frames.frames, self.loss_frames)
 
     async def set_packet_header(self):
         packet_header_list = bytearray()
@@ -266,16 +296,6 @@ class StreamStruct:
 
     async def set_frame_limit(self, frame_count: int) -> None:
         await self.stream.packet.limit.set(frame_count)
-
-
-@dataclass
-class AddressCollection:
-    smac: MacAddress
-    dmac: MacAddress
-    src_ipv4_addr: IPv4Address
-    dst_ipv4_addr: IPv4Address
-    src_ipv6_addr: IPv6Address
-    dst_ipv6_addr: IPv6Address
 
 
 async def get_address_collection(

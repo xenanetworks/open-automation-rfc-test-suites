@@ -330,8 +330,6 @@ class ResourceManager:
                     for tester_id, module_port_list in self.mapping.items()
                 ]
             )
-            # while not self.test_running():
-            #     await asyncio.sleep(1)
 
     async def collect(
         self, packet_size: Decimal, duration: Decimal, is_final: bool = False

@@ -27,6 +27,16 @@ class StreamOffset(BaseModel):
         return StreamOffset(tx_offset=self.rx_offset, rx_offset=self.tx_offset)
 
 
+@dataclass
+class AddressCollection:
+    smac: MacAddress
+    dmac: MacAddress
+    src_ipv4_addr: IPv4Address
+    dst_ipv4_addr: IPv4Address
+    src_ipv6_addr: IPv6Address
+    dst_ipv6_addr: IPv6Address
+
+
 @dataclass(init=False, repr=False)
 class PortMax:
     bps: int = 0

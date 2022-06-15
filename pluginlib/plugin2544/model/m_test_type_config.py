@@ -35,13 +35,13 @@ class CommonOptions(BaseModel):
 class RateIterationOptions(BaseModel):
     search_type: SearchType
     result_scope: RateResultScopeType
-    initial_value_pct: float = Field(ge=0.0, le=100.0)
-    maximum_value_pct: float = Field(ge=0.0, le=100.0)
-    minimum_value_pct: float = Field(ge=0.0, le=100.0)
-    value_resolution_pct: float = Field(ge=0.0, le=100.0)
+    initial_value_pct: Decimal = Field(ge=0.0, le=100.0)
+    maximum_value_pct: Decimal = Field(ge=0.0, le=100.0)
+    minimum_value_pct: Decimal = Field(ge=0.0, le=100.0)
+    value_resolution_pct: Decimal = Field(ge=0.0, le=100.0)
 
     @validator("initial_value_pct", "minimum_value_pct")
-    def check_if_larger_than_maximun(cls, v: float, values) -> float:
+    def check_if_larger_than_maximun(cls, v: Decimal, values) -> Decimal:
         if "maximum_value_pct" in values:
             if v > values["maximum_value_pct"]:
                 raise exceptions.RateRestriction(v, values["maximum_value_pct"])

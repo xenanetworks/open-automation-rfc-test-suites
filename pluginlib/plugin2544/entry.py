@@ -35,7 +35,6 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
             self.cfg.test_types_configuration.latency_test.latency_mode,
         )
 
-
     async def __pre_test(self) -> None:
         await self.__prepare_data()
 
@@ -59,22 +58,23 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
 
     async def __do_test(self) -> None:
         tc = TestCaseProcessor(self.resources)
+        self.resources.monitor_status()
         while True:
-
             for type_conf in self.cfg.test_types_configuration.available_test:
-
-                for iteration, current_packet_size in self.gen_loop(
-                    type_conf
-                ):
+                for iteration, current_packet_size in self.gen_loop(type_conf):
                     await self.state_conditions.wait_if_paused()
                     await self.state_conditions.stop_if_stopped()
                     await self.resources.setup_packet_size(current_packet_size)
                     if type_conf.test_type == const.TestType.THROUGHPUT:
-                        pass
+                        await tc.throughput(type_conf, current_packet_size, iteration)
                     elif type_conf.test_type == const.TestType.LATENCY_JITTER:
-                        await tc.latency(type_conf, current_packet_size, iteration) # type:ignore
+                        await tc.latency(
+                            type_conf, current_packet_size, iteration
+                        )  # type:ignore
                     elif type_conf.test_type == const.TestType.FRAME_LOSS_RATE:
-                        await tc.frame_loss(type_conf, current_packet_size, iteration) # type:ignore
+                        await tc.frame_loss(
+                            type_conf, current_packet_size, iteration
+                        )  # type:ignore
                     elif type_conf.test_type == const.TestType.BACK_TO_BACK:
                         pass
 

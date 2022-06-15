@@ -20,10 +20,11 @@ class FieldDefinition(BaseModel):
     value_map_name: Optional[str] = Field(alias="ValueMapName")
     is_reserved: Optional[bool] = Field(alias="IsReserved")
     # computed properties
-    bit_offset: int = 0
-    byte_offset: int = 0
-    byte_length: int = 0
-    bit_padding: int = 0
+    # TODO
+    bit_offset: int = 0 # bit offset from current segment start
+    byte_offset: int = 0  # The offset from the segment start in whole bytes
+    byte_length: int = 0   # The total length of this field in bytes.
+    bit_padding: int = 0    # The number of MSB bits in the first byte that are unused
 
     @validator("byte_length")
     def set_byte_length(cls, v):
@@ -130,16 +131,16 @@ def calculate_checksum(
     return patched_value
 
 
-def get_field_bit_length(
-    segment_type: "const.SegmentType", field_def: "FieldDefinition"
-) -> int:
-    return 8 * segment_type.raw_length if segment_type.is_raw else field_def.bit_length
+# def get_field_bit_length(
+#     segment_type: "const.SegmentType", field_def: "FieldDefinition"
+# ) -> int:
+#     return 8 * segment_type.raw_length if segment_type.is_raw else field_def.bit_length
 
 
-def get_field_byte_length(
-    segment_type: "const.SegmentType", field_def: "FieldDefinition"
-) -> int:
-    return segment_type.raw_length if segment_type.is_raw else field_def.byte_length
+# def get_field_byte_length(
+#     segment_type: "const.SegmentType", field_def: "FieldDefinition"
+# ) -> int:
+#     return segment_type.raw_length if segment_type.is_raw else field_def.byte_length
 
 
 def get_segment_definition(protocol: "const.SegmentType") -> SegmentDefinition:

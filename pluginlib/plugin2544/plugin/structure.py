@@ -347,14 +347,18 @@ class PortStruct(BasePort):
         self.properties = Properties()
         self.stream_structs: List["StreamStruct"] = []
         self.rate: Decimal
+        self._port_speed: Decimal
 
     def init_counter(
         self, packet_size: Decimal, duration: Decimal, is_final: bool = False
     ):
         self.statistic = Statistic(
+            port_id=self.port_identity.name,
             frame_size=packet_size,
+            rate=self.rate,
             duration=duration,
             is_final=is_final,
+            port_speed=self._port_speed,
             interframe_gap=self.port_conf.inter_frame_gap,
         )
 
@@ -374,6 +378,7 @@ class PortStruct(BasePort):
             self, rx_ports, stream_id, tpldid, arp_mac, stream_offset
         )
         self.stream_structs.append(stream_struct)
+
 
     async def configure_streams(self, test_conf: "TestConfiguration") -> None:
         for header_segment in self.port_conf.profile.header_segments:
@@ -451,12 +456,12 @@ class PortStruct(BasePort):
             peer_struct = self.properties.peers[0]
             rx_speed = await peer_struct.get_port_speed()
             tx_speed = min(tx_speed, rx_speed)
-        tx_speed = (
+        self._port_speed = (
             tx_speed
             * Decimal(str(1e6 - self.port_conf.speed_reduction_ppm))
             / Decimal(str(1e6))
         )
-        return NonNegativeDecimal(str(tx_speed))
+        return NonNegativeDecimal(str(self._port_speed))
 
 
 TypeConf = Union["ThroughputTest", "LatencyTest", "FrameLossRateTest", "BackToBackTest"]
