@@ -1,12 +1,12 @@
 from decimal import Decimal
 from typing import List
-from pluginlib.plugin2544.plugin.statistics import (
+from .statistics import (
     FinalStatistic,
     StatisticParams,
     StreamStatistic,
 )
-from pluginlib.plugin2544.plugin.test_resource import ResourceManager
-from pluginlib.plugin2544.utils import constants as const
+from .test_resource import ResourceManager
+from ..utils import constants as const
 
 
 def aggregate_stream_result(resource: "ResourceManager") -> List["StreamStatistic"]:

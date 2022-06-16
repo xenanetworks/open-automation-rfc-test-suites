@@ -8,9 +8,7 @@ from pydantic import (
     PositiveInt,
 )
 from ..utils.field import NonNegativeDecimal
-
-from ..utils import exceptions
-from pluginlib.plugin2544.utils import constants as const
+from ..utils import constants as const, exceptions
 
 
 class FrameSizesOptions(BaseModel):

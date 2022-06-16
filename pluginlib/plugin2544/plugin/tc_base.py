@@ -1,13 +1,13 @@
 import asyncio, time
-from typing import Final, Iterable, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from loguru import logger
-from pluginlib.plugin2544.model.m_test_type_config import (
+from ..model.m_test_type_config import (
     FrameLossRateTest,
     LatencyTest,
     ThroughputTest,
 )
-from pluginlib.plugin2544.plugin.learning import (
+from .learning import (
     AddressRefreshHandler,
     add_L3_learning_preamble_steps,
     add_flow_based_learning_preamble_steps,
@@ -15,8 +15,8 @@ from pluginlib.plugin2544.plugin.learning import (
     schedule_arp_refresh,
     setup_address_arp_refresh,
 )
-from pluginlib.plugin2544.plugin.setup_source_port_rates import setup_source_port_rates
-from pluginlib.plugin2544.plugin.statistics import (
+from .setup_source_port_rates import setup_source_port_rates
+from .statistics import (
     FRAME_LOSS_OUTPUT,
     LATENCY_OUTPUT,
     THROUGHPUT_COMMON,
@@ -24,12 +24,12 @@ from pluginlib.plugin2544.plugin.statistics import (
     FinalStatistic,
     StatisticParams,
 )
-from pluginlib.plugin2544.plugin.tc_throughput import get_initial_boundaries
-from pluginlib.plugin2544.plugin.test_result import aggregate_data
-import pluginlib.plugin2544.utils.constants as const
+from .tc_throughput import get_initial_boundaries
+from .test_result import aggregate_data
+from ..utils import constants as const
 
 if TYPE_CHECKING:
-    from pluginlib.plugin2544.plugin.test_resource import ResourceManager
+    from .test_resource import ResourceManager
 
 
 class TestCaseProcessor:
@@ -132,7 +132,11 @@ class TestCaseProcessor:
             repetition=repetition,
             duration=test_type_conf.common_options.actual_duration,
         )
-        data_format = THROUGHPUT_PER_PORT if test_type_conf.rate_iteration_options.result_scope.is_per_source_port else THROUGHPUT_COMMON
+        data_format = (
+            THROUGHPUT_PER_PORT
+            if test_type_conf.rate_iteration_options.result_scope.is_per_source_port
+            else THROUGHPUT_COMMON
+        )
         while True:
             [boundary.update_boundary(result) for boundary in boundaries]
             should_continue = any(
@@ -175,7 +179,9 @@ class TestCaseProcessor:
                 ],
                 # stream_data=aggregate_stream_result(resource),
             )
-        final.set_result_state(const.ResultState.SUCCESS if test_passed else const.ResultState.FAIL)
+        final.set_result_state(
+            const.ResultState.SUCCESS if test_passed else const.ResultState.FAIL
+        )
         logger.info(final)
 
 

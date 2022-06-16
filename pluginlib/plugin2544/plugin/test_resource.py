@@ -4,17 +4,17 @@ from typing import Dict, List, TYPE_CHECKING, Union
 
 from loguru import logger
 from pydantic import NonNegativeInt
-from pluginlib.plugin2544.plugin.learning import add_mac_learning_steps
+from .learning import add_mac_learning_steps
 from xoa_driver import testers as xoa_testers, modules, enums, utils
-from pluginlib.plugin2544.model.m_test_config import (
+from ..model.m_test_config import (
     TestConfiguration,
 )
-from pluginlib.plugin2544.plugin.config_checkers import check_config
-from pluginlib.plugin2544.plugin.common import get_peers_for_source
-from pluginlib.plugin2544.plugin.setup_streams import setup_streams
-from pluginlib.plugin2544.plugin.structure import PortStruct
-from pluginlib.plugin2544.utils import constants as const, exceptions
-from pluginlib.plugin2544.utils.logger import TestSuitPipe
+from .config_checkers import check_config
+from .common import get_peers_for_source
+from .setup_streams import setup_streams
+from .structure import PortStruct
+from ..utils import constants as const, exceptions
+from ..utils.logger import TestSuitPipe
 
 if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity

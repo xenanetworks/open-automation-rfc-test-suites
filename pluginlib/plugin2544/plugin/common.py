@@ -1,7 +1,7 @@
 import re
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
-from pluginlib.plugin2544.utils.constants import (
+from ..utils.constants import (
     ARPSenarioType,
     TidAllocationScope,
     TestTopology,

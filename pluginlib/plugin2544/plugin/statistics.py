@@ -1,11 +1,11 @@
 from decimal import Decimal
 from typing import Dict, List, Union, TYPE_CHECKING
-from pydantic import BaseModel, Field, validator
-from pluginlib.plugin2544.plugin.data_model import AddressCollection
-import pluginlib.plugin2544.utils.constants as const
+from pydantic import BaseModel, validator
+from .data_model import AddressCollection
+from ..utils import constants as const
 
 if TYPE_CHECKING:
-    from pluginlib.plugin2544.plugin.structure import PortStruct
+    from .structure import PortStruct
 
 
 class AvgMinMax(BaseModel):

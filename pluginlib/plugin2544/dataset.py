@@ -5,7 +5,7 @@ from pydantic import (
     validator,
 )
 
-from pluginlib.plugin2544.utils import exceptions, constants as const
+from .utils import exceptions, constants as const
 
 
 from .model.m_test_config import TestConfiguration

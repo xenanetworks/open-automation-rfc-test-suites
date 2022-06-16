@@ -6,8 +6,7 @@ from pydantic import (
     NonNegativeInt,
 )
 from xoa_driver import enums
-from pluginlib.plugin2544.utils import exceptions
-from ..utils import constants as const
+from ..utils import constants as const, exceptions
 from ..utils.protocol_segments import (
     get_field_definition,
     get_segment_definition,

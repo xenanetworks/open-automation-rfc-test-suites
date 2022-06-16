@@ -2,24 +2,24 @@ import asyncio
 from decimal import Decimal
 from typing import Dict, List, TYPE_CHECKING, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
-from pluginlib.plugin2544.model.m_protocol_segment import HeaderSegment
-from pluginlib.plugin2544.model.m_test_config import (
+from ..model.m_protocol_segment import HeaderSegment
+from ..model.m_test_config import (
     FrameSizeConfiguration,
     TestConfiguration,
 )
-from pluginlib.plugin2544.plugin.common import gen_macaddress
-from pluginlib.plugin2544.plugin.data_model import (
+from .common import gen_macaddress
+from .data_model import (
     ArpRefreshData,
     RXTableData,
     StreamOffset,
 )
-from pluginlib.plugin2544.plugin.statistics import Statistic
-from pluginlib.plugin2544.plugin.stream_struct import StreamStruct
+from .statistics import Statistic
+from .stream_struct import StreamStruct
 
-from pluginlib.plugin2544.utils import exceptions, constants as const
-from pluginlib.plugin2544.utils.logger import TestSuitPipe
+from ..utils import exceptions, constants as const
+from ..utils.logger import TestSuitPipe
 
-from ..utils.field import MacAddress, IPv4Address, IPv6Address, NonNegativeDecimal
+from ..utils.field import MacAddress,  NonNegativeDecimal
 
 from xoa_core.core.test_suites.datasets import PortIdentity
 from xoa_driver import enums, misc, utils, ports as xoa_ports, testers as xoa_testers

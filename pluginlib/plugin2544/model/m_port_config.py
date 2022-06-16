@@ -7,7 +7,6 @@ from pydantic import (
     NonNegativeInt,
 )
 
-from pluginlib.plugin2544.utils import exceptions
 from ..utils import constants as const
 from ..utils.field import MacAddress, IPv4Address, IPv6Address, Prefix
 from .m_protocol_segment import ProtocolSegmentProfileConfig

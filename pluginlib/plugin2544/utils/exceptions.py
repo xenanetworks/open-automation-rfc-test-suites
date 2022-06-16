@@ -4,7 +4,7 @@ from loguru import logger
 
 from pydantic import NonNegativeInt
 from xoa_driver import ports as xoa_ports, testers as xoa_testers
-from pluginlib.plugin2544.utils.constants import MIXED_DEFAULT_WEIGHTS
+from .constants import MIXED_DEFAULT_WEIGHTS
 
 
 class BXMPWarning(Warning):

@@ -1,13 +1,11 @@
 import asyncio
 import math
 from typing import TYPE_CHECKING
-from math import floor
 from decimal import Decimal
-
 from ..utils.field import NonNegativeDecimal
 
 if TYPE_CHECKING:
-    from pluginlib.plugin2544.plugin.test_resource import ResourceManager
+    from .test_resource import ResourceManager
     from .structure import PortStruct
 
 

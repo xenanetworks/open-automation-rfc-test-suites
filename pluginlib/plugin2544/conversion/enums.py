@@ -1,6 +1,6 @@
 from enum import Enum as CaseSensitiveEnum
 
-from pluginlib.plugin2544.utils import constants as const
+from ..utils import constants as const
 
 
 class Enum(CaseSensitiveEnum):

@@ -4,7 +4,7 @@ from ipaddress import IPv4Address
 from typing import List, Any
 from enum import Enum
 from decimal import Decimal
-from pluginlib.plugin2544.utils.constants import ACTIVE_MODE
+from .constants import ACTIVE_MODE
 
 
 class Ports(BaseModel):

@@ -1,30 +1,25 @@
 import asyncio
-from dataclasses import dataclass
 from typing import List, Optional, TYPE_CHECKING
-
-from pluginlib.plugin2544.model import TestConfiguration, HwModifier
-from pluginlib.plugin2544.plugin.common import gen_macaddress
-from pluginlib.plugin2544.plugin.data_model import (
+from xoa_driver import utils,  misc, enums
+from ..model import TestConfiguration, HwModifier
+from .common import gen_macaddress
+from .data_model import (
     AddressCollection,
     RXTableData,
     StreamOffset,
 )
-from pluginlib.plugin2544.plugin.learning import (
-    add_address_refresh_entry,
-)
-from pluginlib.plugin2544.plugin.statistics import (
+from .learning import add_address_refresh_entry
+from .statistics import (
     DelayCounter,
     DelayData,
     StreamCounter,
     StreamStatisticData,
 )
-
-from pluginlib.plugin2544.utils.field import MacAddress, IPv4Address, IPv6Address
-from pluginlib.plugin2544.utils import constants as const, protocol_segments as ps
-from xoa_driver import utils, ports as xoa_ports, misc, enums
+from ..utils.field import MacAddress, IPv4Address, IPv6Address
+from ..utils import constants as const, protocol_segments as ps
 
 if TYPE_CHECKING:
-    from pluginlib.plugin2544.plugin.structure import PortStruct
+    from .structure import PortStruct
 
 
 class PRStream:
@@ -239,7 +234,9 @@ class StreamStruct:
             self._rx_frames.update(pr_stream.rx_frames)
             self.loss_frames += pr_stream.loss_frames
         self.tx_port.statistic.add_tx(self._tx_frames)
-        self.tx_port.statistic.add_loss(self._tx_frames.frames, self.rx_frames.frames, self.loss_frames)
+        self.tx_port.statistic.add_loss(
+            self._tx_frames.frames, self.rx_frames.frames, self.loss_frames
+        )
 
     async def set_packet_header(self):
         packet_header_list = bytearray()

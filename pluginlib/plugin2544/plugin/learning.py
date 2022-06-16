@@ -1,23 +1,17 @@
 import math
-from typing import TYPE_CHECKING, Iterator, List, Optional, Tuple, Union
-from pluginlib.plugin2544.plugin.data_model import ArpRefreshData
-from pluginlib.plugin2544.utils import exceptions, constants as const
-from xoa_driver import misc, enums, utils
-from ..utils.field import NonNegativeDecimal
-
-from ..utils.scheduler import schedule
-
-from .setup_source_port_rates import setup_source_port_rates
-from ..utils.field import IPv4Address, IPv6Address
-from ..utils.packet import ARPPacket, MacAddress, NDPPacket
 import asyncio
-from ..utils.field import NonNegativeDecimal
-
+from xoa_driver import misc, utils
+from typing import TYPE_CHECKING, Iterator, List, Optional, Tuple, Union
+from .data_model import ArpRefreshData
 from .setup_source_port_rates import setup_source_port_rates
+from ..utils import exceptions, constants as const
+from ..utils.scheduler import schedule
+from ..utils.field import IPv4Address, IPv6Address, NonNegativeDecimal
+from ..utils.packet import ARPPacket, MacAddress, NDPPacket
 
 
 if TYPE_CHECKING:
-    from pluginlib.plugin2544.plugin.test_resource import ResourceManager
+    from .test_resource import ResourceManager
     from .structure import PortStruct
 
 
@@ -28,7 +22,10 @@ def get_dest_ip_modifier_addr_range(
     flag = False
     addr_range = None
     for header_segment in header_segments:
-        if header_segment.segment_type in (const.SegmentType.IP, const.SegmentType.IPV6):
+        if header_segment.segment_type in (
+            const.SegmentType.IP,
+            const.SegmentType.IPV6,
+        ):
             flag = True
         for modifier in header_segment.hw_modifiers:
             if modifier.field_name in ["Dest IP Addr", "Dest IPv6 Addr"]:
@@ -269,14 +266,16 @@ async def schedule_arp_refresh(
 async def add_L3_learning_preamble_steps(
     resources: "ResourceManager",
     current_packet_size: NonNegativeDecimal,
-    address_refresh_handler:Optional["AddressRefreshHandler"] = None,
+    address_refresh_handler: Optional["AddressRefreshHandler"] = None,
 ) -> None:  # AddL3LearningPreambleSteps
     if not address_refresh_handler:
         return
     address_refresh_handler.set_current_state(const.TestState.L3_LEARNING)
     resources.set_rate(resources.test_conf.learning_rate_pct)
     await setup_source_port_rates(resources, current_packet_size)
-    await resources.set_tx_time_limit(resources.test_conf.learning_duration_second * 1000)
+    await resources.set_tx_time_limit(
+        resources.test_conf.learning_duration_second * 1000
+    )
 
     await resources.start_traffic()
     await asyncio.gather(*address_refresh_handler.tokens)
@@ -305,7 +304,10 @@ async def add_flow_based_learning_preamble_steps(
     await asyncio.sleep(resources.test_conf.delay_after_flow_based_learning_ms / 1000)
     await resources.set_frame_limit(0)  # clear packet limit
 
-async def mac_learning(port_struct: "PortStruct", mac_learning_frame_count: int) -> None:
+
+async def mac_learning(
+    port_struct: "PortStruct", mac_learning_frame_count: int
+) -> None:
     if not port_struct.port_conf.is_rx_port:
         return
     dest_mac = "FFFFFFFFFFFF"
@@ -320,8 +322,9 @@ async def mac_learning(port_struct: "PortStruct", mac_learning_frame_count: int)
     if cur_length > max_cap:
         raise exceptions.PacketLengthExceed(cur_length, max_cap)
     for _ in range(mac_learning_frame_count):
-        await port_struct.send_packet(packet)# P_XMITONE
+        await port_struct.send_packet(packet)  # P_XMITONE
         await asyncio.sleep(1)
+
 
 async def add_mac_learning_steps(
     resources: "ResourceManager",

@@ -1,7 +1,7 @@
 import asyncio
 from typing import Optional
 
-from pluginlib.plugin2544.plugin.common import is_same_ipnetwork
+from .common import is_same_ipnetwork
 from ..utils.field import IPv4Address, IPv6Address, MacAddress, IPAddress
 from ..utils.packet import Ether, IPV4Packet, IPV6Packet
 from ..utils.traffic_definitions import EtherType

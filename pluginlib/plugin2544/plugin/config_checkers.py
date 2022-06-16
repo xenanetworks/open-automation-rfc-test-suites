@@ -1,15 +1,15 @@
 import asyncio
 from typing import TYPE_CHECKING, List, Union
 from xoa_driver.enums import ProtocolOption
-from pluginlib.plugin2544.utils import field, exceptions, constants as const
-from pluginlib.plugin2544.plugin.common import (
+from ..utils import field, exceptions, constants as const
+from .common import (
     filter_port_structs,
 )
 
 if TYPE_CHECKING:
-    from pluginlib.plugin2544.plugin.structure import PortStruct
+    from .structure import PortStruct
     from xoa_driver import testers as xoa_testers
-    from pluginlib.plugin2544.model import (
+    from ..model import (
         ProtocolSegmentProfileConfig,
         PortConfiguration,
         TestConfiguration,

@@ -2,7 +2,7 @@ from dataclasses import dataclass, fields
 import functools
 from typing import Optional, Union
 from pydantic import BaseModel
-from pluginlib.plugin2544.utils.field import IPv4Address, IPv6Address, MacAddress
+from ..utils.field import IPv4Address, IPv6Address, MacAddress
 
 
 @dataclass(frozen=True)

@@ -3,8 +3,8 @@ from decimal import Decimal
 from typing import List, Optional, Union
 
 from loguru import logger
-from pluginlib.plugin2544.plugin.statistics import FinalStatistic
-from pluginlib.plugin2544.plugin.test_resource import ResourceManager
+from .statistics import FinalStatistic
+from .test_resource import ResourceManager
 
 from .structure import PortStruct
 from ..model import ThroughputTest

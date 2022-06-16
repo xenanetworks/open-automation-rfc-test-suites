@@ -1,15 +1,15 @@
 import os, re
 from pydantic import BaseModel, Field, validator
-from pluginlib.plugin2544.plugin.common import copy_to, is_byte_values_zero
+from ..plugin.common import copy_to, is_byte_values_zero
 
-from pluginlib.plugin2544.utils import exceptions, constants as const, field
+from . import exceptions, constants as const, field
 from typing import List, Dict, Optional
 
 from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ..model import FieldValueRange, HeaderSegment
-    from pluginlib.plugin2544.plugin.stream_struct import AddressCollection
+    from ..plugin.stream_struct import AddressCollection
 
 
 class FieldDefinition(BaseModel):

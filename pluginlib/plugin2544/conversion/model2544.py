@@ -1,7 +1,7 @@
 from typing import Dict, List
 from pydantic import BaseModel, Field, NonNegativeInt, validator
 from ..utils.field import MacAddress
-from pluginlib.plugin2544.utils import constants as const
+from ..utils import constants as const
 
 from .enums import (
     ODurationFrameUnit,

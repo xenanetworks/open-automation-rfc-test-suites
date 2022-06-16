@@ -1,14 +1,14 @@
 import asyncio
 from typing import Dict, List, Tuple
-from pluginlib.plugin2544.model.m_test_config import (
+from ..model.m_test_config import (
     MultiStreamConfig,
     TestConfiguration,
 )
-from pluginlib.plugin2544.plugin.arp_request import set_arp_request
-from pluginlib.plugin2544.plugin.common import TPLDControl
-from pluginlib.plugin2544.plugin.data_model import StreamOffset
-from pluginlib.plugin2544.plugin.structure import PortStruct
-from pluginlib.plugin2544.utils import exceptions
+from .arp_request import set_arp_request
+from .common import TPLDControl
+from .data_model import StreamOffset
+from .structure import PortStruct
+from ..utils import exceptions
 
 
 async def setup_streams(port_structs: List["PortStruct"], test_conf: TestConfiguration):
