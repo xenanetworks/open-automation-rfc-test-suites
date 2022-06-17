@@ -1,7 +1,7 @@
-from dataclasses import dataclass, fields
 import functools
-from typing import Optional, Union
+from dataclasses import dataclass, fields
 from pydantic import BaseModel
+from typing import Optional, Union
 from ..utils.field import IPv4Address, IPv6Address, MacAddress
 
 

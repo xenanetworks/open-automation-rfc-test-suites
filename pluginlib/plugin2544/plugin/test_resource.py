@@ -53,7 +53,7 @@ class ResourceManager:
         return [
             port_struct
             for port_struct in self.port_structs
-            if port_struct.port_conf.is_tx_port
+            if port_struct._port_conf.is_tx_port
         ]
 
     @property
@@ -61,7 +61,7 @@ class ResourceManager:
         return [
             port_struct
             for port_struct in self.port_structs
-            if port_struct.port_conf.is_rx_port
+            if port_struct._port_conf.is_rx_port
         ]
 
     async def init_resource(self, latency_mode: const.LatencyModeStr):
@@ -71,12 +71,12 @@ class ResourceManager:
             list(self.__testers.values()), self.port_structs, self.test_conf
         )
         for port_struct in self.tx_ports:
-            tester_id = port_struct.port_identity.tester_id
+            tester_id = port_struct._port_identity.tester_id
             if tester_id not in self.mapping:
                 self.mapping[tester_id] = []
             self.mapping[tester_id] += [
-                port_struct.port_identity.module_index,
-                port_struct.port_identity.port_index,
+                port_struct._port_identity.module_index,
+                port_struct._port_identity.port_index,
             ]
         await self.stop_traffic()
         await asyncio.sleep(self.test_conf.delay_after_port_reset_second)
@@ -158,7 +158,7 @@ class ResourceManager:
                 await asyncio.sleep(1)
                 if time.time() - start_time > 30:
                     raise TimeoutError(
-                        f"Waiting for {port_struct.port_identity.name} sync timeout!"
+                        f"Waiting for {port_struct._port_identity.name} sync timeout!"
                     )
         await asyncio.sleep(toggle_conf.delay_after_sync_on_second)
 
@@ -173,12 +173,12 @@ class ResourceManager:
             east_ports = [
                 port_struct
                 for port_struct in self.port_structs
-                if port_struct.port_conf.port_group.is_east
+                if port_struct._port_conf.port_group.is_east
             ]
             west_ports = [
                 port_struct
                 for port_struct in self.port_structs
-                if port_struct.port_conf.port_group.is_west
+                if port_struct._port_conf.port_group.is_west
             ]
             for port_struct in east_ports:
                 port_struct.properties.test_port_index = test_port_index
@@ -188,7 +188,7 @@ class ResourceManager:
                 test_port_index += 1
 
         for port_struct in self.tx_ports:
-            port_config = port_struct.port_conf
+            port_config = port_struct._port_conf
             dest_ports = get_peers_for_source(topology, port_config, self.port_structs)
             for peer_struct in dest_ports:
                 port_struct.properties.register_peer(peer_struct)
@@ -266,7 +266,7 @@ class ResourceManager:
 
     def set_rate(self, rate: Decimal) -> None:
         for port_struct in self.tx_ports:
-            port_struct.rate = rate
+            port_struct._rate = rate
 
     async def set_tx_time_limit(self, tx_timelimit: int) -> None:
         await asyncio.gather(
@@ -281,7 +281,7 @@ class ResourceManager:
             *[
                 stream_struct.set_frame_limit(frame_count)
                 for port_struct in self.tx_ports
-                for stream_struct in port_struct.stream_structs
+                for stream_struct in port_struct._stream_structs
             ]
         )
 
@@ -342,7 +342,7 @@ class ResourceManager:
             *[
                 stream.query()
                 for port_struct in self.port_structs
-                for stream in port_struct.stream_structs
+                for stream in port_struct._stream_structs
             ]
         )
         [port_struct.statistic.calculate_rate() for port_struct in self.port_structs]

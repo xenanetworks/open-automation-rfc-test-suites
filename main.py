@@ -51,7 +51,6 @@ async def playground():
     asyncio.create_task(subscribe_executions(c))
     try:
         id = c.start_test_suite("RFC-2544", data2)
-
     except Exception as err:
         logger.debug(err)
     else:

@@ -1,13 +1,11 @@
 import os, sys
 import hashlib
 from decimal import Decimal
-from typing import Dict, List, Tuple, Union
-
-
+from typing import Dict, List, Tuple, Union, TYPE_CHECKING
+from xoa_core.core.test_suites.datasets import TestParameters, PortIdentity
 from .enums import (
     OSegmentType,
 )
-from xoa_core.core.test_suites.datasets import TestParameters, PortIdentity
 from ..dataset import PluginModel2544
 from ..model import (
     IPV4AddressProperties,
@@ -30,21 +28,19 @@ from ..model import (
     TestTypesConfiguration,
     ThroughputTest,
 )
-
 from ..utils.protocol_segments import get_segment_definition
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from .model2544 import (
-    Back2Back,
-    Latency,
-    Loss,
-    Model2544 as old_model,
-    OFrameSizesOptions,
-    ORateIterationOptions,
-    ORateSweepOptions,
-    PortEntity,
-    Throughput,
-)
+# sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from .model2544 import Model2544 as old_model, OFrameSizesOptions
+if TYPE_CHECKING:
+    from .model2544 import (
+        Back2Back,
+        Latency,
+        Loss,
+        ORateIterationOptions,
+        ORateSweepOptions,
+        PortEntity,
+        Throughput,
+    )
 
 
 def get_field_bit_length(protocol: OSegmentType, field_name) -> Tuple[int, int]:
@@ -169,10 +165,11 @@ class Converter:
     def __gen_common_option(
         self, test_type_conf: Union["Throughput", "Latency", "Loss", "Back2Back"]
     ) -> "CommonOptions":
+
         return CommonOptions(
             duration_type=test_type_conf.duration_type.core,
             duration=test_type_conf.duration,
-            duration_time_unit=test_type_conf.duration_time_unit,
+            duration_unit=test_type_conf.duration_time_unit if test_type_conf.duration_type.core.is_time_duration else test_type_conf.duration_frame_unit.core, 
             # duration_frames=test_type_conf.duration_frames,
             # duration_frame_unit=test_type_conf.duration_frame_unit.core,
             iterations=test_type_conf.iterations,
@@ -396,9 +393,10 @@ class Converter:
 
     def gen(self) -> "TestParameters":
         port_identities=self.__gen_port_identity()
+        test_conf = self.__gen_test_config()
         config = PluginModel2544(
             protocol_segments=self.__gen_profile(),
-            test_configuration=self.__gen_test_config(),
+            test_configuration=test_conf,
             test_types_configuration=self.__gen_test_type_config(),
             ports_configuration=self.__generate_port_config(),
         )

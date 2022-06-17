@@ -9,6 +9,7 @@ from pydantic import (
 )
 
 from ..utils.constants import (
+    DurationFrameUnit,
     DurationType,
     DurationTimeUnit,
     SearchType,
@@ -24,12 +25,12 @@ from ..utils import exceptions
 class CommonOptions(BaseModel):
     duration_type: DurationType
     duration: Decimal
-    duration_time_unit: DurationTimeUnit
+    duration_unit: Union[DurationFrameUnit, DurationTimeUnit]
     iterations: PositiveInt
 
     @property
     def actual_duration(self) -> int:
-        return int(self.duration * self.duration_time_unit.scale)
+        return int(self.duration * self.duration_unit.scale) if self.duration_type.is_time_duration else 0
 
 
 class RateIterationOptions(BaseModel):

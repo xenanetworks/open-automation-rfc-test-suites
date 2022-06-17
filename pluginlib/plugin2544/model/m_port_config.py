@@ -83,7 +83,7 @@ class PortConfiguration(BaseModel):
     port_rate_cap_unit: const.PortRateCapUnit
 
     # PhysicalPortProperties
-    inter_frame_gap: NonNegativeInt
+    inter_frame_gap: Decimal
     speed_reduction_ppm: NonNegativeInt
     pause_mode_enabled: bool
     latency_offset_ms: int  # QUESTION: can be negative?

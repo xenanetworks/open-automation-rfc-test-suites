@@ -82,7 +82,7 @@ async def get_initial_boundaries(
                 Decimal("8")
                 * (
                     Decimal(str(current_packet_size))
-                    + Decimal(str(port_struct.port_conf.inter_frame_gap))
+                    + Decimal(str(port_struct._port_conf.inter_frame_gap))
                 )
             )
         )
@@ -113,82 +113,82 @@ async def run_back_to_back_test(
     result_handler: "ResultHandler",
     xoa_out: "TestSuitPipe",
 ) -> None:
-    if not back_to_back_conf.enabled:
-        return
-    state_checker = await StateChecker(control_ports, test_conf.should_stop_on_los)
-    source_port_structs = filter_port_structs(control_ports)
-    address_refresh_handler = await add_L3_learning_preamble_steps(
-        control_ports,
-        stream_lists,
-        has_l3,
-        test_conf,
-        current_packet_size,
-        state_checker,
-    )
-    await add_L2_trial_learning_steps(
-        control_ports,
-        test_conf.mac_learning_mode,
-        test_conf.mac_learning_frame_count,
-    )  # AddL2TrialLearningSteps
-    await add_flow_based_learning_preamble_steps(
-        stream_lists,
-        source_port_structs,
-        test_conf,
-        current_packet_size,
-        state_checker,
-    )
+    # if not back_to_back_conf.enabled:
+    #     return
+    # state_checker = await StateChecker(control_ports, test_conf.should_stop_on_los)
+    # source_port_structs = filter_port_structs(control_ports)
+    # address_refresh_handler = await add_L3_learning_preamble_steps(
+    #     control_ports,
+    #     stream_lists,
+    #     has_l3,
+    #     test_conf,
+    #     current_packet_size,
+    #     state_checker,
+    # )
+    # await add_L2_trial_learning_steps(
+    #     control_ports,
+    #     test_conf.mac_learning_mode,
+    #     test_conf.mac_learning_frame_count,
+    # )  # AddL2TrialLearningSteps
+    # await add_flow_based_learning_preamble_steps(
+    #     stream_lists,
+    #     source_port_structs,
+    #     test_conf,
+    #     current_packet_size,
+    #     state_checker,
+    # )
 
-    await back_to_back_sweep(
-        stream_lists,
-        control_ports,
-        test_conf,
-        back_to_back_conf,
-        current_packet_size,
-        iteration,
-        result_handler,
-        source_port_structs,
-        address_refresh_handler,
-        state_checker,
-        xoa_out,
-    )
+    # await back_to_back_sweep(
+    #     stream_lists,
+    #     control_ports,
+    #     test_conf,
+    #     back_to_back_conf,
+    #     current_packet_size,
+    #     iteration,
+    #     result_handler,
+    #     source_port_structs,
+    #     address_refresh_handler,
+    #     state_checker,
+    #     xoa_out,
+    # )
 
 
-async def back_to_back_sweep(
-    stream_lists: List["StreamInfo"],
-    control_ports: List["PortStruct"],
-    test_conf: "TestConfiguration",
-    back_to_back_conf: "BackToBackTest",
-    current_packet_size: NonNegativeDecimal,
-    iteration: int,
-    result_handler: "ResultHandler",
-    source_port_structs: List["PortStruct"],
-    address_refresh_handler: Optional["AddressRefreshHandler"],
-    state_checker: "StateChecker",
-    xoa_out: "TestSuitPipe",
-):
-    rate_sweep_list = back_to_back_conf.rate_sweep_options.rate_sweep_list
-    for k, rate_percent in enumerate(rate_sweep_list):
-        rate_percent_dic = {
-            port_struct.properties.identity: BackToBackBoutEntry(
-                port_struct.properties.identity, rate=rate_percent
-            )
-            for port_struct in control_ports
-        }
-        await schedule_arp_refresh(state_checker, address_refresh_handler)
-        await back_to_back_binary_search(
-            stream_lists,
-            control_ports,
-            test_conf,
-            back_to_back_conf,
-            current_packet_size,
-            iteration,
-            result_handler,
-            source_port_structs,
-            address_refresh_handler,
-            rate_percent_dic,
-            state_checker,
-            xoa_out,
-        )
+# async def back_to_back_sweep(
+#     stream_lists: List["StreamInfo"],
+#     control_ports: List["PortStruct"],
+#     test_conf: "TestConfiguration",
+#     back_to_back_conf: "BackToBackTest",
+#     current_packet_size: NonNegativeDecimal,
+#     iteration: int,
+#     result_handler: "ResultHandler",
+#     source_port_structs: List["PortStruct"],
+#     address_refresh_handler: Optional["AddressRefreshHandler"],
+#     state_checker: "StateChecker",
+#     xoa_out: "TestSuitPipe",
+# ):
+#     rate_sweep_list = back_to_back_conf.rate_sweep_options.rate_sweep_list
+#     for k, rate_percent in enumerate(rate_sweep_list):
+#         rate_percent_dic = {
+#             port_struct.properties.identity: BackToBackBoutEntry(
+#                 port_struct.properties.identity, rate=rate_percent
+#             )
+#             for port_struct in control_ports
+#         }
+#         # await schedule_arp_refresh(state_checker, address_refresh_handler)
+#         await back_to_back_binary_search(
+#             stream_lists,
+#             control_ports,
+#             test_conf,
+#             back_to_back_conf,
+#             current_packet_size,
+#             iteration,
+#             result_handler,
+#             source_port_structs,
+#             address_refresh_handler,
+#             rate_percent_dic,
+#             state_checker,
+#             xoa_out,
+#         )
 
 
 async def setup_source_port_burst_for_streams(
@@ -206,7 +206,7 @@ async def setup_source_port_burst_for_streams(
     for port_struct in source_port_structs:
         src_port_speed = await get_use_port_speed(port_struct)
         dest_port_list = port_struct.properties.peers
-        inter_frame_gap = port_struct.port_conf.inter_frame_gap
+        inter_frame_gap = port_struct._port_conf.inter_frame_gap
         total_frame_count = boundaries[port_struct.properties.identity].current
         rate_percent = get_port_rate(port_struct, rate_percent_dic)
 

@@ -1,22 +1,19 @@
 from decimal import getcontext
-from typing import Dict, Tuple
-from pydantic import (
-    BaseModel,
-    validator,
+from typing import Dict, Tuple, TYPE_CHECKING
+from pydantic import BaseModel, validator
+from .utils import exceptions, constants as const
+from .model import (
+    TestConfiguration,
+    TestTypesConfiguration,
+    PortConfiguration,
+    ProtocolSegmentProfileConfig,
 )
 
-from .utils import exceptions, constants as const
-
-
-from .model.m_test_config import TestConfiguration
-from .model.m_port_config import PortConfiguration
-from .model.m_protocol_segment import ProtocolSegmentProfileConfig
-from .model.m_test_type_config import TestTypesConfiguration
 
 getcontext().prec = 6
 
-ProtoSegType = Dict[str, "ProtocolSegmentProfileConfig"]
-PortConfType = Dict[str, "PortConfiguration"]
+ProtoSegType = Dict[str, ProtocolSegmentProfileConfig]
+PortConfType = Dict[str, PortConfiguration]
 
 
 class PluginModel2544(BaseModel):  # Main Model

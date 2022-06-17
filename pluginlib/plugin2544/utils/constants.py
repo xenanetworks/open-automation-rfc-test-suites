@@ -239,15 +239,15 @@ class DurationFrameUnit(Enum):
     G_FRAME = "10e9_frames"
 
     @property
-    def scale(self):
+    def scale(self) -> int:
         if self == type(self).FRAME:
             return 1
         elif self == type(self).K_FRAME:
-            return 1e3
+            return 1_000
         elif self == type(self).M_FRAME:
-            return 1e6
+            return 1_000_000
         elif self == type(self).G_FRAME:
-            return 1e9
+            return 1_000_000_000
         raise ValueError("No scale!")
 
 
@@ -258,7 +258,7 @@ class TestType(Enum):
     BACK_TO_BACK = "back_to_back"
 
     @property
-    def is_latency(self):
+    def is_latency(self) -> bool:
         return self == type(self).LATENCY_JITTER
 
 

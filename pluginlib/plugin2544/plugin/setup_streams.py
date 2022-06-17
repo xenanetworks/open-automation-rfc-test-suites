@@ -1,17 +1,18 @@
 import asyncio
-from typing import Dict, List, Tuple
-from ..model.m_test_config import (
-    MultiStreamConfig,
-    TestConfiguration,
-)
+from typing import Dict, List, Tuple, TYPE_CHECKING
 from .arp_request import set_arp_request
 from .common import TPLDControl
 from .data_model import StreamOffset
-from .structure import PortStruct
 from ..utils import exceptions
+if TYPE_CHECKING:
+    from .structure import PortStruct
+    from ..model import (
+        MultiStreamConfig,
+        TestConfiguration,
+    )
 
 
-async def setup_streams(port_structs: List["PortStruct"], test_conf: TestConfiguration):
+async def setup_streams(port_structs: List["PortStruct"], test_conf: "TestConfiguration"):
     if not test_conf.flow_creation_type.is_stream_based:
         test_port_index_map = {
             port_struct.properties.test_port_index: port_struct
@@ -61,7 +62,7 @@ def setup_offset_table(
                 or (peer_name, port_name) in offset_table
             ):
                 offsets = []
-                for i in range(multi_stream_config.per_port_stream_count):
+                for _ in range(multi_stream_config.per_port_stream_count):
                     offsets.append(
                         StreamOffset(tx_offset=offset, rx_offset=offset + inc)
                     )
@@ -71,12 +72,12 @@ def setup_offset_table(
 
 
 async def create_modifier_based_stream(
-    port_struct: PortStruct, test_port_index_map
+    port_struct: "PortStruct", test_port_index_map
 ) -> None:
     if not port_struct.port_conf.is_tx_port:
         return
     stream_id_counter = 0
-    for i in range(port_struct.properties.num_modifiersL2):
+    for _ in range(port_struct.properties.num_modifiersL2):
         tpldid = 2 * port_struct.properties.test_port_index + stream_id_counter
         modifier_range = port_struct.properties.get_modifier_range(stream_id_counter)
         rx_ports = [
@@ -87,7 +88,7 @@ async def create_modifier_based_stream(
 
 
 async def create_multi_streams(
-    port_structs: List["PortStruct"], test_conf: TestConfiguration
+    port_structs: List["PortStruct"], test_conf: "TestConfiguration"
 ):
     offset_table = setup_offset_table(port_structs, test_conf.multi_stream_config)
     tpld_controller = TPLDControl(test_conf.tid_allocation_scope)
@@ -120,7 +121,7 @@ async def create_multi_streams(
 
 
 async def create_standard_streams(
-    port_structs: List["PortStruct"], test_conf: TestConfiguration
+    port_structs: List["PortStruct"], test_conf: "TestConfiguration"
 ):
     tpld_controller = TPLDControl(test_conf.tid_allocation_scope)
     for port_struct in port_structs:

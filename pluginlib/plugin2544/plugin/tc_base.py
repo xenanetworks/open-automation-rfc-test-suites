@@ -1,8 +1,13 @@
 import asyncio, time
-from typing import Optional, TYPE_CHECKING
+import math
+from decimal import Decimal
+from typing import List, Optional, TYPE_CHECKING
 
 from loguru import logger
+
+from pluginlib.plugin2544.plugin.tc_back_to_back import BackToBackBoutEntry
 from ..model.m_test_type_config import (
+    BackToBackTest,
     FrameLossRateTest,
     LatencyTest,
     ThroughputTest,
@@ -44,7 +49,7 @@ class TestCaseProcessor:
             return None
         self.address_refresh_handler = await setup_address_arp_refresh(self.resources)
 
-    async def add_learning_steps(self, current_packet_size) -> None:
+    async def add_learning_steps(self, current_packet_size: Decimal) -> None:
         await self.resources.stop_traffic()
         await add_L3_learning_preamble_steps(self.resources, current_packet_size)
         await add_mac_learning_steps(self.resources, const.MACLearningMode.EVERYTRIAL)
@@ -52,11 +57,13 @@ class TestCaseProcessor:
             self.resources, current_packet_size
         )
 
-    async def start_test(self, test_type_conf, current_packet_size):
+    async def start_test(self, test_type_conf, current_packet_size: Decimal):
         await setup_source_port_rates(self.resources, current_packet_size)
-        await self.resources.set_tx_time_limit(
-            test_type_conf.common_options.actual_duration * 1_000_000
-        )
+        if test_type_conf.common_options.duration_type.is_time_duration:
+            await self.resources.set_tx_time_limit(
+                test_type_conf.common_options.actual_duration * 1_000_000
+            )
+            
         await self.resources.clear_statistic()
         await self.resources.start_traffic(self.resources.test_conf.use_port_sync_start)
         await schedule_arp_refresh(self.resources, self.address_refresh_handler)
@@ -153,21 +160,14 @@ class TestCaseProcessor:
         if not test_type_conf.rate_iteration_options.result_scope.is_per_source_port:
             final = boundaries[0].best_final_result
         else:
-            [
+            for port_struct in self.resources.port_structs:
                 port_struct.init_counter(
                     params.frame_size, params.duration, is_final=True
                 )
-                for port_struct in self.resources.port_structs
-            ]
-            [
-                stream_struct.aggregate()
-                for port_struct in self.resources.port_structs
-                for stream_struct in port_struct.stream_structs
-            ]
-            [
+            for port_struct in self.resources.port_structs:
+                for stream_struct in port_struct.stream_structs:
+                    stream_struct.aggregate()
                 port_struct.statistic.calculate_rate()
-                for port_struct in self.resources.port_structs
-            ]
             final = FinalStatistic(
                 test_case_type=params.test_case_type,
                 is_final=True,
@@ -183,6 +183,56 @@ class TestCaseProcessor:
             const.ResultState.SUCCESS if test_passed else const.ResultState.FAIL
         )
         logger.info(final)
+
+    async def back_to_back(
+        self, test_type_conf: BackToBackTest, current_packet_size, repetition
+    ) -> None:
+        await self.add_learning_steps(current_packet_size)
+        for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
+            params = StatisticParams(
+                test_case_type=const.TestType.BACK_TO_BACK,
+                rate_percent=rate_percent,
+                frame_size=current_packet_size,
+                repetition=repetition,
+                duration=test_type_conf.common_options.actual_duration,
+            )
+            self.resources.set_rate(rate_percent)
+            boundaries = [
+                BackToBackBoutEntry(test_type_conf, port_struct, current_packet_size)
+                for port_struct in self.resources.port_structs
+            ]
+            while True:
+                [boundary.check_boundaries() for boundary in boundaries]
+                should_continue = any(
+                    [boundary.port_should_continue for boundary in boundaries]
+                )
+                if not should_continue:
+                    break
+                await self.setup_packet_limit(boundaries)
+                await self.start_test(test_type_conf, current_packet_size)
+                result = await self.collect(params)
+
+    async def setup_packet_limit(self, boundaries: List[BackToBackBoutEntry]):
+        for port_index, port_struct in enumerate(self.resources.port_structs):
+            for peer_struct in port_struct.properties.peers:
+                stream_info_list = [
+                    stream_info
+                    for stream_info in port_struct.stream_structs
+                    if stream_info.is_rx_port(peer_struct)
+                ]   # select same tx and rx port stream
+                port_stream_count = len(port_struct.properties.peers) * len(
+                    stream_info_list
+                )
+                total_frame_count = boundaries[port_index].current
+                stream_burst = Decimal(str(total_frame_count)) / Decimal(
+                    str(port_stream_count)
+                )
+                await asyncio.gather(
+                    *[
+                        stream_struct.set_frame_limit(math.floor(stream_burst))
+                        for stream_struct in stream_info_list
+                    ]
+                )
 
 
 def check_if_frame_loss_success(

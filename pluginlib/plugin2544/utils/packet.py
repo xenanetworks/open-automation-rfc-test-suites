@@ -1,8 +1,7 @@
+import struct
 from typing import Union
 from dataclasses import dataclass
 from enum import Enum
-import struct
-
 from .field import MacAddress, IPv4Address, IPv6Address
 from .traffic_definitions import EtherType, NextHeaderOption
 

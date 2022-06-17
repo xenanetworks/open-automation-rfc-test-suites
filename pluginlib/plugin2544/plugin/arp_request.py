@@ -1,19 +1,21 @@
 import asyncio
-from typing import Optional
-
+from typing import Optional, TYPE_CHECKING
+from xoa_driver import utils, enums
 from .common import is_same_ipnetwork
-from ..utils.field import IPv4Address, IPv6Address, MacAddress, IPAddress
+from ..utils.field import IPv4Address, IPv6Address, MacAddress
 from ..utils.packet import Ether, IPV4Packet, IPV6Packet
 from ..utils.traffic_definitions import EtherType
-from .structure import PortStruct
-from xoa_driver import utils, enums
+
+if TYPE_CHECKING:
+    from .structure import PortStruct
+    from ..utils.field import IPAddress
 
 
 async def set_arp_request(
     port_struct: "PortStruct",
     peer_struct: "PortStruct",
     use_gateway_mac_as_dmac: bool,
-) -> Optional[MacAddress]:
+) -> Optional["MacAddress"]:
 
     if (
         not use_gateway_mac_as_dmac
@@ -37,9 +39,9 @@ async def set_arp_request(
 
 
 async def get_packet_header(
-    port_struct: "PortStruct", source_ip: IPAddress, destination_ip: IPAddress
+    port_struct: "PortStruct", source_ip: "IPAddress", destination_ip: "IPAddress"
 ) -> str:
-    if port_struct.port_conf.profile.protocol_version.is_ipv4:
+    if port_struct.protocol_version.is_ipv4:
         packet_cls = IPV4Packet
         addr_type = IPv4Address
         ether_type = EtherType.IPV4
@@ -59,7 +61,7 @@ async def get_packet_header(
 
 async def send_arp_request(
     port_struct: "PortStruct", source_ip, destination_ip
-) -> MacAddress:
+) -> "MacAddress":
     packet_header = await get_packet_header(port_struct, source_ip, destination_ip)
     stream = await port_struct.create_stream()
     await utils.apply(

@@ -1,11 +1,8 @@
 import os, re
 from pydantic import BaseModel, Field, validator
 from ..plugin.common import copy_to, is_byte_values_zero
-
-from . import exceptions, constants as const, field
-from typing import List, Dict, Optional
-
-from typing import TYPE_CHECKING, List
+from . import exceptions, constants as const
+from typing import List, Dict, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..model import FieldValueRange, HeaderSegment
@@ -21,10 +18,10 @@ class FieldDefinition(BaseModel):
     is_reserved: Optional[bool] = Field(alias="IsReserved")
     # computed properties
     # TODO
-    bit_offset: int = 0 # bit offset from current segment start
+    bit_offset: int = 0  # bit offset from current segment start
     byte_offset: int = 0  # The offset from the segment start in whole bytes
-    byte_length: int = 0   # The total length of this field in bytes.
-    bit_padding: int = 0    # The number of MSB bits in the first byte that are unused
+    byte_length: int = 0  # The total length of this field in bytes.
+    bit_padding: int = 0  # The number of MSB bits in the first byte that are unused
 
     @validator("byte_length")
     def set_byte_length(cls, v):

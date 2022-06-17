@@ -1,10 +1,10 @@
 from xoa_core.types import PluginAbstract
 from typing import TYPE_CHECKING, Iterator, List, Tuple
 from decimal import getcontext
-from pluginlib.plugin2544.plugin.tc_base import TestCaseProcessor
-from pluginlib.plugin2544.plugin.test_resource import ResourceManager
-from pluginlib.plugin2544.utils import constants as const
-from pluginlib.plugin2544.utils.field import NonNegativeDecimal
+from .plugin.tc_base import TestCaseProcessor
+from .plugin.test_resource import ResourceManager
+from .utils import constants as const
+from .utils.field import NonNegativeDecimal
 
 if TYPE_CHECKING:
     from .dataset import PluginModel2544
@@ -76,7 +76,7 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
                             type_conf, current_packet_size, iteration
                         )  # type:ignore
                     elif type_conf.test_type == const.TestType.BACK_TO_BACK:
-                        pass
+                        await tc.back_to_back(type_conf, current_packet_size, iteration)
 
             if not self.cfg.test_configuration.repeat_test_until_stopped:
                 break

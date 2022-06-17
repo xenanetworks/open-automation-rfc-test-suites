@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Dict, List, Union, TYPE_CHECKING
+from typing import List, Union, TYPE_CHECKING
 from pydantic import BaseModel, validator
 from .data_model import AddressCollection
 from ..utils import constants as const
@@ -137,9 +137,24 @@ class Statistic(BaseModel):
     latency: DelayCounter = DelayCounter(counter_type=const.CounterType.LATENCY)
     jitter: DelayCounter = DelayCounter(counter_type=const.CounterType.JITTER)
     fcs_error_frames: int = 0
+    burst_frames: Decimal = Decimal(0)
     loss_frames: Decimal = Decimal(0)
     loss_ratio: Decimal = Decimal(0)
     actual_rate: Decimal = Decimal(0)
+    tx_rate_l1_bps_theor: Decimal = Decimal(0)
+    tx_rate_fps_theor: Decimal = Decimal(0)
+
+    @validator("tx_rate_l1_bps_theor", always=True)
+    def set_theor_l1_bps_rate(cls, v, values) -> Decimal:
+        return values["port_speed"]
+
+    @validator("tx_rate_fps_theor", always=True)
+    def set_theor_fps_rate(cls, v, values) -> Decimal:
+        return (
+            values["port_speed"]
+            / Decimal("8")
+            / (values["interframe_gap"] + values["frame_size"])
+        )
 
     def add_tx(self, tx_stream_counter: StreamCounter) -> None:
         tx_stream_counter.calculate_stream_rate(
@@ -159,6 +174,9 @@ class Statistic(BaseModel):
     def add_jitter(self, delay_data: DelayData) -> None:
         self.jitter.update(delay_data)
 
+    def add_burst_frames(self, frame_count: int) -> None:
+        self.burst_frames += frame_count
+
     def add_extra(self, fcs: int) -> None:
         self.fcs_error_frames += fcs
 
@@ -168,7 +186,7 @@ class Statistic(BaseModel):
         else:
             self.loss_frames += loss_frames
 
-    def calculate_rate(self):
+    def calculate_rate(self) -> None:
         self.loss_ratio = (
             self.loss_frames / self.tx_counter.frames
             if self.tx_counter.frames
@@ -180,7 +198,7 @@ class Statistic(BaseModel):
         self.rx_counter.calculate_port_rate(
             self.is_final, self.duration, self.frame_size, self.interframe_gap
         )
-        self.actual_rate = 100 * self.tx_counter.l1_bit_rate / self.port_speed
+        self.actual_rate = Decimal("100") * self.tx_counter.l1_bit_rate / self.port_speed
 
 
 class TotalCounter(BaseModel):
@@ -204,12 +222,16 @@ class TotalStatistic(BaseModel):
     fcs_error_frames: Decimal = Decimal(0)
     rx_loss_percent: Decimal = Decimal(0)
     rx_loss_frames: Decimal = Decimal(0)
+    tx_rate_l1_bps_theor: Decimal = Decimal(0)
+    tx_rate_fps_theor: Decimal = Decimal(0)
     ber: Decimal = Decimal(0)
 
-    def add(self, port_data: "Statistic"):
+    def add(self, port_data: "Statistic") -> None:
         self.tx_counter.add(port_data.tx_counter)
         self.rx_counter.add(port_data.rx_counter)
         self.fcs_error_frames += port_data.fcs_error_frames
+        self.tx_rate_l1_bps_theor += port_data.tx_rate_l1_bps_theor
+        self.tx_rate_fps_theor += port_data.tx_rate_fps_theor
         self.rx_loss_frames += port_data.loss_frames
         self.rx_loss_percent = (
             self.rx_loss_frames / self.tx_counter.frames
@@ -254,7 +276,9 @@ class StreamStatisticData(BaseModel):
     fcs: int
     loss_frames: int
 
-    def calculate(self, tx_port_struct: "PortStruct", rx_port_struct: "PortStruct"):
+    def calculate(
+        self, tx_port_struct: "PortStruct", rx_port_struct: "PortStruct"
+    ) -> None:
         tx_port_struct.statistic.add_tx(self.tx_counter)
         rx_port_struct.statistic.add_rx(self.rx_counter)
         rx_port_struct.statistic.add_latency(self.latency)
@@ -323,8 +347,8 @@ class FinalStatistic(BaseModel):
 class StatisticParams(BaseModel):
     test_case_type: const.TestType
     result_state: const.ResultState = const.ResultState.PENDING
-    frame_size: int
-    duration: int
+    frame_size: Decimal
+    duration: Decimal
     repetition: Union[int, str]
     rate_percent: Decimal = Decimal("0")
 
@@ -400,6 +424,8 @@ THROUGHPUT_PER_PORT = {
         "rx_loss_frames": ...,
         "rx_loss_percent": ...,
         "fcs_error_frames": ...,
+        "tx_rate_l1_bps_theor": ...,
+        "tx_rate_fps_theor": ...,
         "ber": ...,
     },
 }
@@ -425,6 +451,8 @@ THROUGHPUT_COMMON = {
         "rx_loss_frames": ...,
         "rx_loss_percent": ...,
         "fcs_error_frames": ...,
+        "tx_rate_l1_bps_theor": ...,
+        "tx_rate_fps_theor": ...,
         "ber": ...,
     },
 }

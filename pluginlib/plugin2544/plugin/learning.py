@@ -1,16 +1,18 @@
+from decimal import Decimal
 import math
 import asyncio
-from xoa_driver import misc, utils
+from xoa_driver import utils
 from typing import TYPE_CHECKING, Iterator, List, Optional, Tuple, Union
 from .data_model import ArpRefreshData
 from .setup_source_port_rates import setup_source_port_rates
 from ..utils import exceptions, constants as const
 from ..utils.scheduler import schedule
-from ..utils.field import IPv4Address, IPv6Address, NonNegativeDecimal
+from ..utils.field import IPv4Address, IPv6Address
 from ..utils.packet import ARPPacket, MacAddress, NDPPacket
 
 
 if TYPE_CHECKING:
+    from xoa_driver import misc
     from .test_resource import ResourceManager
     from .structure import PortStruct
 
@@ -175,7 +177,7 @@ class AddressRefreshHandler:
     def __init__(
         self,
         address_refresh_tokens: List[Tuple["misc.Token", bool]],
-        refresh_period: "NonNegativeDecimal",
+        refresh_period: Decimal,
     ) -> None:
         self.index = 0
         self.refresh_burst_size = 1
@@ -265,7 +267,7 @@ async def schedule_arp_refresh(
 
 async def add_L3_learning_preamble_steps(
     resources: "ResourceManager",
-    current_packet_size: NonNegativeDecimal,
+    current_packet_size: Decimal,
     address_refresh_handler: Optional["AddressRefreshHandler"] = None,
 ) -> None:  # AddL3LearningPreambleSteps
     if not address_refresh_handler:
@@ -290,7 +292,7 @@ async def add_L3_learning_preamble_steps(
 
 async def add_flow_based_learning_preamble_steps(
     resources: "ResourceManager",
-    current_packet_size: NonNegativeDecimal,
+    current_packet_size: Decimal,
 ) -> None:  # AddFlowBasedLearningPreambleSteps
     if not resources.test_conf.use_flow_based_learning_preamble:
         return

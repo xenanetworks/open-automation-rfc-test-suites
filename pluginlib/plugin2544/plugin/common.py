@@ -1,11 +1,7 @@
 import re
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
-from ..utils.field import MacAddress, IPv4Address, IPv6Address
-from ..utils.constants import (
-    ARPSenarioType,
-    TidAllocationScope,
-    TestTopology,
-)
+from ..utils import constants as const, field
+
 
 
 if TYPE_CHECKING:
@@ -13,10 +9,10 @@ if TYPE_CHECKING:
     from ..model import PortConfiguration
 
 
-def gen_macaddress(first_three_bytes: str, index: int) -> "MacAddress":
+def gen_macaddress(first_three_bytes: str, index: int) -> "field.MacAddress":
     hex_num = hex(index)[2:].zfill(6)
     last_three_bytes = ":".join(re.findall(r".{2}", hex_num))
-    return MacAddress(f"{first_three_bytes}:{last_three_bytes}")
+    return field.MacAddress(f"{first_three_bytes}:{last_three_bytes}")
 
 
 def is_same_ipnetwork(port_struct: "PortStruct", peer_struct: "PortStruct") -> bool:
@@ -29,7 +25,7 @@ def is_same_ipnetwork(port_struct: "PortStruct", peer_struct: "PortStruct") -> b
 
 def get_pair_address(
     port_struct: "PortStruct", peer_struct: "PortStruct", use_gateway_mac_as_dmac: bool
-) -> Tuple[Union["IPv4Address", "IPv6Address"], "ARPSenarioType"]:
+) -> Tuple[Union["field.IPv4Address", "field.IPv6Address"], "const.ARPSenarioType"]:
     port_conf = port_struct.port_conf
     ip_properties = port_conf.ip_properties
 
@@ -39,7 +35,7 @@ def get_pair_address(
     peer_ip_properties = peer_conf.ip_properties
     if not peer_ip_properties:
         raise ValueError("Please check peer IP properties")
-    senario_type = ARPSenarioType.DEFAULT
+    senario_type = const.ARPSenarioType.DEFAULT
     destination_ip = peer_ip_properties.address
     peer_conf = peer_struct.port_conf
     if use_gateway_mac_as_dmac and port_conf.profile.protocol_version.is_l3:
@@ -48,13 +44,13 @@ def get_pair_address(
             and not ip_properties.gateway == peer_ip_properties.gateway
         ):
             destination_ip = ip_properties.gateway
-            senario_type = ARPSenarioType.GATEWAY
+            senario_type = const.ARPSenarioType.GATEWAY
         elif ip_properties.gateway.is_empty and ip_properties.remote_loop_address:
             destination_ip = ip_properties.remote_loop_address
-            senario_type = ARPSenarioType.REMOTE
+            senario_type = const.ARPSenarioType.REMOTE
         else:
             destination_ip = peer_ip_properties.public_address
-            senario_type = ARPSenarioType.PUBLIC
+            senario_type = const.ARPSenarioType.PUBLIC
     return destination_ip, senario_type
 
 
@@ -79,7 +75,7 @@ def copy_to(src: bytearray, dest: bytearray, start_from: int) -> None:
 
 class TPLDControl:
     # TPLD is relative to test port index
-    def __init__(self, tid_scope: "TidAllocationScope") -> None:
+    def __init__(self, tid_scope: "const.TidAllocationScope") -> None:
         self.curr_tpld_index = 0
         self.curr_tpld_map: Dict[int, int] = {}
         self.tid_scope = tid_scope
@@ -100,9 +96,9 @@ class TPLDControl:
         return port_index
 
     def get_tpldid(self, port_index: int, peer_index: int) -> int:
-        if self.tid_scope == TidAllocationScope.CONFIGURATION_SCOPE:
+        if self.tid_scope == const.TidAllocationScope.CONFIGURATION_SCOPE:
             return self.config_scope_add()
-        elif self.tid_scope == TidAllocationScope.RX_PORT_SCOPE:
+        elif self.tid_scope == const.TidAllocationScope.RX_PORT_SCOPE:
             return self.port_scope_add(peer_index)
         else:
             return self.src_port_id_add(port_index)
@@ -119,7 +115,7 @@ def is_port_pair(
 
 
 def is_peer_port(
-    topology: "TestTopology",
+    topology: "const.TestTopology",
     port_config: "PortConfiguration",
     peer_config: "PortConfiguration",
 ) -> bool:
@@ -132,7 +128,7 @@ def is_peer_port(
 
 
 def get_peers_for_source(
-    topology: "TestTopology",
+    topology: "const.TestTopology",
     port_config: "PortConfiguration",
     control_ports: List["PortStruct"],
 ) -> List["PortStruct"]:

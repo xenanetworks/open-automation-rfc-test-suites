@@ -12,15 +12,15 @@ from ..utils import constants as const
 def aggregate_stream_result(resource: "ResourceManager") -> List["StreamStatistic"]:
     res = []
     for port_struct in resource.port_structs:
-        for stream_struct in port_struct.stream_structs:
+        for stream_struct in port_struct._stream_structs:
             latency = stream_struct.latency
             jitter = stream_struct.jitter
             res.append(
                 StreamStatistic(
-                    src_port_id=stream_struct.tx_port.port_identity.name,
-                    dest_port_id=stream_struct.rx_port.port_identity.name,
-                    src_port_addr=stream_struct.addr_coll.smac,
-                    dest_port_addr=stream_struct.addr_coll.dmac,
+                    src_port_id=stream_struct._tx_port._port_identity.name,
+                    dest_port_id=stream_struct.rx_port._port_identity.name,
+                    src_port_addr=stream_struct._addr_coll.smac,
+                    dest_port_addr=stream_struct._addr_coll.dmac,
                     tx_frames=stream_struct.tx_frames.frames,
                     rx_frames=stream_struct.rx_frames.frames,
                     latency_ns_avg=latency.average,

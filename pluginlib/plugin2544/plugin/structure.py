@@ -1,12 +1,8 @@
 import asyncio
 from decimal import Decimal
-from typing import Dict, List, TYPE_CHECKING, Optional, Set, Tuple, Union
+from typing import List, TYPE_CHECKING, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
-from ..model.m_protocol_segment import HeaderSegment
-from ..model.m_test_config import (
-    FrameSizeConfiguration,
-    TestConfiguration,
-)
+from xoa_driver import enums, misc, utils
 from .common import gen_macaddress
 from .data_model import (
     ArpRefreshData,
@@ -15,27 +11,27 @@ from .data_model import (
 )
 from .statistics import Statistic
 from .stream_struct import StreamStruct
-
 from ..utils import exceptions, constants as const
-from ..utils.logger import TestSuitPipe
-
-from ..utils.field import MacAddress,  NonNegativeDecimal
-
-from xoa_core.core.test_suites.datasets import PortIdentity
-from xoa_driver import enums, misc, utils, ports as xoa_ports, testers as xoa_testers
+from ..utils.field import MacAddress, NonNegativeDecimal
 
 if TYPE_CHECKING:
+    from xoa_core.core.test_suites.datasets import PortIdentity
+    from xoa_driver import ports as xoa_ports, testers as xoa_testers
+    from xoa_driver.internals.core.commands import (
+        P_TRAFFIC,
+        P_RECEIVESYNC,
+        P_CAPABILITIES,
+    )
+    from ..utils.logger import TestSuitPipe
     from ..model import (
+        FrameSizeConfiguration,
+        TestConfiguration,
+        HeaderSegment,
         PortConfiguration,
         ThroughputTest,
         LatencyTest,
         FrameLossRateTest,
         BackToBackTest,
-    )
-    from xoa_driver.internals.core.commands import (
-        P_TRAFFIC,
-        P_RECEIVESYNC,
-        P_CAPABILITIES,
     )
 
 
@@ -44,7 +40,7 @@ class BasePort:
         self,
         tester: "xoa_testers.L23Tester",
         port: "xoa_ports.GenericL23Port",
-        port_identity: PortIdentity,
+        port_identity: "PortIdentity",
         xoa_out: "TestSuitPipe",
     ):
         self._sync_status: bool = True
@@ -52,7 +48,11 @@ class BasePort:
         self._tester = tester
         self._port = port
         self._xoa_out = xoa_out
-        self.port_identity = port_identity
+        self._port_identity = port_identity
+
+    @property
+    def port_identity(self):
+        return self._port_identity
 
     @property
     def capabilities(self) -> "P_CAPABILITIES.GetDataAttr":
@@ -89,7 +89,7 @@ class BasePort:
         raise exceptions.LossofPortOwnership(self._port)
 
     async def __on_disconnect_tester(self, *args) -> None:
-        raise exceptions.LossofTester(self._tester, self.port_identity.tester_id)
+        raise exceptions.LossofTester(self._tester, self._port_identity.tester_id)
 
     async def set_toggle_port_sync(self, state: enums.OnOff) -> None:
         await self._port.tx_config.enable.set(state)
@@ -103,7 +103,7 @@ class BasePort:
     async def set_broadr_reach_mode(self, broadr_reach_mode: const.BRRModeStr) -> None:
         if self._port.is_brr_mode_supported == enums.YesNo.NO:
             self._xoa_out.send_warning(
-                exceptions.BroadReachModeNotSupport(self.port_identity.name)
+                exceptions.BroadReachModeNotSupport(self._port_identity.name)
             )
         elif isinstance(self._port, const.BrrPorts):
             await self._port.brr_mode.set(broadr_reach_mode.to_xmp())
@@ -111,7 +111,7 @@ class BasePort:
     async def set_mdi_mdix_mode(self, mdi_mdix_mode: const.MdiMdixMode) -> None:
         if self._port.info.capabilities.can_mdi_mdix == enums.YesNo.NO:
             self._xoa_out.send_warning(
-                exceptions.MdiMdixModeNotSupport(self.port_identity.name)
+                exceptions.MdiMdixModeNotSupport(self._port_identity.name)
             )
         elif isinstance(self._port, const.MdixPorts):
             await self._port.mdix_mode.set(mdi_mdix_mode.to_xmp())
@@ -130,7 +130,7 @@ class BasePort:
             )
         else:
             self._xoa_out.send_warning(
-                exceptions.ANLTNotSupport(self.port_identity.name)
+                exceptions.ANLTNotSupport(self._port_identity.name)
             )
         if bool(self._port.info.capabilities.can_set_link_train):
             await self._port.pcs_pma.link_training.settings.set(
@@ -142,7 +142,7 @@ class BasePort:
             )
         else:
             self._xoa_out.send_warning(
-                exceptions.ANLTNotSupport(self.port_identity.name)
+                exceptions.ANLTNotSupport(self._port_identity.name)
             )
 
     async def set_sweep_reduction(self, ppm: int) -> None:
@@ -154,12 +154,11 @@ class BasePort:
         await self._port.tx_config.delay.set(port_stagger_steps)  # P_TXDELAY
 
     async def set_auto_negotiation(self) -> None:
-
         if not bool(self._port.info.capabilities.can_set_autoneg) or not isinstance(
             self._port, const.AutoNegPorts
         ):
             self._xoa_out.send_warning(
-                exceptions.AutoNegotiationNotSupport(self.port_identity.name)
+                exceptions.AutoNegotiationNotSupport(self._port_identity.name)
             )
             return
         await self._port.autonneg_selection.set(enums.OnOff.ON)  # type:ignore
@@ -170,7 +169,7 @@ class BasePort:
 
         if self._port.info.capabilities.can_fec == enums.FECMode.OFF:
             self._xoa_out.send_warning(
-                exceptions.FecModeNotSupport(self.port_identity.name)
+                exceptions.FecModeNotSupport(self._port_identity.name)
             )
             return
         await self._port.fec_mode.set(enums.FECMode.ON)
@@ -196,7 +195,7 @@ class BasePort:
                 position = int(k.split("_")[-1])
                 await self._port.mix.lengths[position].set(v)
 
-    async def get_mac_address(self) -> MacAddress:
+    async def get_mac_address(self) -> "MacAddress":
         return MacAddress((await self._port.net_config.mac_address.get()).mac_address)
 
     async def send_packet(self, packet: str) -> None:
@@ -229,7 +228,7 @@ class BasePort:
 
     async def set_gap_monitor(
         self, gap_monitor_start_microsec, gap_monitor_stop_frames
-    ):
+    ) -> None:
         await self._port.gap_monitor.set(
             gap_monitor_start_microsec, gap_monitor_stop_frames
         )
@@ -239,8 +238,8 @@ class BasePort:
         if not traffic_state:  # after stop traffic need to sleep 1 s
             await asyncio.sleep(1)
 
-    async def set_arp_trucks(self, arp_datas: Set[RXTableData]) -> None:
-        arp_chunk: List[misc.ArpChunk] = []
+    async def set_arp_trucks(self, arp_datas: Set["RXTableData"]) -> None:
+        arp_chunk: List["misc.ArpChunk"] = []
         for arp_data in arp_datas:
             arp_chunk.append(
                 misc.ArpChunk(
@@ -254,8 +253,8 @@ class BasePort:
             )
         await self._port.arp_rx_table.set(arp_chunk)
 
-    async def set_ndp_trucks(self, ndp_datas: Set[RXTableData]) -> None:
-        ndp_chunk: List[misc.NdpChunk] = []
+    async def set_ndp_trucks(self, ndp_datas: Set["RXTableData"]) -> None:
+        ndp_chunk: List["misc.NdpChunk"] = []
         for rx_data in ndp_datas:
             ndp_chunk.append(
                 misc.NdpChunk(
@@ -339,32 +338,56 @@ class PortStruct(BasePort):
         tester: "xoa_testers.L23Tester",
         port: "xoa_ports.GenericL23Port",
         port_conf: "PortConfiguration",
-        port_identity: PortIdentity,
+        port_identity: "PortIdentity",
         xoa_out: "TestSuitPipe",
     ) -> None:
         BasePort.__init__(self, tester, port, port_identity, xoa_out)
-        self.port_conf = port_conf
+        self._port_conf = port_conf
         self.properties = Properties()
-        self.stream_structs: List["StreamStruct"] = []
-        self.rate: Decimal
+        self._stream_structs: List["StreamStruct"] = []
+        self._rate: Decimal
         self._port_speed: Decimal
+        self._statistic: Statistic
+
+    @property
+    def port_speed(self) -> Decimal:
+        return self._port_speed
+
+    @property
+    def rate(self) -> Decimal:
+        return self._rate
+
+    @property
+    def stream_structs(self) -> List["StreamStruct"]:
+        return self._stream_structs
+
+    @property
+    def statistic(self) -> Statistic:
+        return self._statistic
+
+    @property
+    def port_conf(self):
+        return self._port_conf
+
+    def set_rate(self, rate: Decimal) -> None:
+        self._rate = rate
 
     def init_counter(
         self, packet_size: Decimal, duration: Decimal, is_final: bool = False
-    ):
-        self.statistic = Statistic(
-            port_id=self.port_identity.name,
+    ) -> None:
+        self._statistic = Statistic(
+            port_id=self._port_identity.name,
             frame_size=packet_size,
-            rate=self.rate,
+            rate=self._rate,
             duration=duration,
             is_final=is_final,
             port_speed=self._port_speed,
-            interframe_gap=self.port_conf.inter_frame_gap,
+            interframe_gap=self._port_conf.inter_frame_gap,
         )
 
     @property
     def protocol_version(self) -> const.PortProtocolVersion:
-        return self.port_conf.profile.protocol_version
+        return self._port_conf.profile.protocol_version
 
     async def add_stream(
         self,
@@ -377,23 +400,22 @@ class PortStruct(BasePort):
         stream_struct = StreamStruct(
             self, rx_ports, stream_id, tpldid, arp_mac, stream_offset
         )
-        self.stream_structs.append(stream_struct)
-
+        self._stream_structs.append(stream_struct)
 
     async def configure_streams(self, test_conf: "TestConfiguration") -> None:
-        for header_segment in self.port_conf.profile.header_segments:
+        for header_segment in self._port_conf.profile.header_segments:
             for field_value_range in header_segment.field_value_ranges:
                 if field_value_range.reset_for_each_port:
                     field_value_range.reset()
-        for stream_struct in self.stream_structs:
+        for stream_struct in self._stream_structs:
             await stream_struct.configure(test_conf)
 
     async def set_ip_address(self) -> None:
-        if self.port_conf.profile.protocol_version.is_ipv4:
+        if self._port_conf.profile.protocol_version.is_ipv4:
             # ip address, net mask, gateway
-            await self.set_ipv4_address(self.port_conf.ipv4_properties)
-        elif self.port_conf.profile.protocol_version.is_ipv6:
-            await self.set_ipv6_address(self.port_conf.ipv6_properties)
+            await self.set_ipv4_address(self._port_conf.ipv4_properties)
+        elif self._port_conf.profile.protocol_version.is_ipv6:
+            await self.set_ipv6_address(self._port_conf.ipv6_properties)
 
     async def set_streams_packet_size(
         self, packet_size_type: enums.LengthType, min_size: int, max_size: int
@@ -401,7 +423,7 @@ class PortStruct(BasePort):
         await asyncio.gather(
             *[
                 stream_struct.set_packet_size(packet_size_type, min_size, max_size)
-                for stream_struct in self.stream_structs
+                for stream_struct in self._stream_structs
             ]
         )
 
@@ -416,29 +438,30 @@ class PortStruct(BasePort):
                     )
                 )
             )
-        mode = self.port_conf.port_speed_mode.to_xmp()
+        mode = self._port_conf.port_speed_mode.to_xmp()
         if mode not in self.local_states.port_possible_speed_modes:
             self._xoa_out.send_warning(exceptions.PortSpeedWarning(mode))
-        await self.set_latency_offset(self.port_conf.latency_offset_ms)
-        await self.set_interframe_gap(self.port_conf.inter_frame_gap)
-        await self.set_pause_mode(self.port_conf.pause_mode_enabled)
+        await self.set_latency_offset(self._port_conf.latency_offset_ms)
+        await self.set_interframe_gap(int(self._port_conf.inter_frame_gap))
+        await self.set_pause_mode(self._port_conf.pause_mode_enabled)
         await self.set_latency_mode(latency_mode)
         # self.port.speed.mode.selection.set(mode),
         await self.set_tpld_mode(test_conf.use_micro_tpld_on_demand)
         await self.set_reply()
         await self.set_ip_address()
-        await self.set_broadr_reach_mode(self.port_conf.broadr_reach_mode)
-        await self.set_mdi_mdix_mode(self.port_conf.mdi_mdix_mode)
-        if self.port_conf.fec_mode:
+        await self.set_broadr_reach_mode(self._port_conf.broadr_reach_mode)
+        await self.set_mdi_mdix_mode(self._port_conf.mdi_mdix_mode)
+        if self._port_conf.fec_mode:
             await self.set_fec_mode()
-        if self.port_conf.anlt_enabled:
+        if self._port_conf.anlt_enabled:
             await self.set_anlt()
-        if not self.port_conf.auto_neg_enabled:
+        if not self._port_conf.auto_neg_enabled:
             await self.set_auto_negotiation()
-        await self.set_max_header(self.port_conf.profile.header_segments)
-        await self.set_sweep_reduction(self.port_conf.speed_reduction_ppm)
+        await self.set_max_header(self._port_conf.profile.header_segments)
+        await self.set_sweep_reduction(self._port_conf.speed_reduction_ppm)
         await self.set_stagger_step(test_conf.port_stagger_steps)
         await self.set_packet_size_if_mix(test_conf.frame_sizes)
+        await self._get_use_port_speed()
 
     async def set_rx_tables(self):
         await self.set_arp_trucks(self.properties.arp_trunks)
@@ -446,19 +469,19 @@ class PortStruct(BasePort):
 
     async def get_port_speed(self) -> Decimal:
         port_speed = await self.get_physics_speed()
-        if self.port_conf.port_rate_cap_profile.is_custom:
-            port_speed = min(self.port_conf.port_rate, port_speed)
+        if self._port_conf.port_rate_cap_profile.is_custom:
+            port_speed = min(self._port_conf.port_rate, port_speed)
         return Decimal(str(port_speed))
 
-    async def get_use_port_speed(self) -> NonNegativeDecimal:
+    async def _get_use_port_speed(self) -> NonNegativeDecimal:
         tx_speed = await self.get_port_speed()
-        if self.port_conf.peer_config_slot and len(self.properties.peers) == 1:
+        if self._port_conf.peer_config_slot and len(self.properties.peers) == 1:
             peer_struct = self.properties.peers[0]
             rx_speed = await peer_struct.get_port_speed()
             tx_speed = min(tx_speed, rx_speed)
         self._port_speed = (
             tx_speed
-            * Decimal(str(1e6 - self.port_conf.speed_reduction_ppm))
+            * Decimal(str(1e6 - self._port_conf.speed_reduction_ppm))
             / Decimal(str(1e6))
         )
         return NonNegativeDecimal(str(self._port_speed))

@@ -2,20 +2,18 @@ import asyncio
 from typing import TYPE_CHECKING, List, Union
 from xoa_driver.enums import ProtocolOption
 from ..utils import field, exceptions, constants as const
-from .common import (
-    filter_port_structs,
-)
+from .common import filter_port_structs
 
 if TYPE_CHECKING:
-    from .structure import PortStruct
     from xoa_driver import testers as xoa_testers
+    from xoa_driver.internals.core.commands import (
+        P_CAPABILITIES,
+    )
+    from .structure import PortStruct
     from ..model import (
         ProtocolSegmentProfileConfig,
         PortConfiguration,
         TestConfiguration,
-    )
-    from xoa_driver.internals.core.commands import (
-        P_CAPABILITIES,
     )
 
 
@@ -27,15 +25,9 @@ def check_port_config_profile(
         raise exceptions.ProtocolSegmentExceed(
             len(segment_id_list), capabilities.max_protocol_segments
         )
-    if (
-        ProtocolOption.TCPCHECK in segment_id_list
-        and not capabilities.can_tcp_checksum
-    ):
+    if ProtocolOption.TCPCHECK in segment_id_list and not capabilities.can_tcp_checksum:
         raise exceptions.ProtocolNotSupport("TCPCHECK")
-    if (
-        ProtocolOption.UDPCHECK in segment_id_list
-        and  not capabilities.can_udp_checksum
-    ):
+    if ProtocolOption.UDPCHECK in segment_id_list and not capabilities.can_udp_checksum:
         raise exceptions.ProtocolNotSupport("UDPCHECK")
 
     if profile.packet_header_length > capabilities.max_header_length:
@@ -72,7 +64,9 @@ async def check_custom_port_config(
 ) -> None:
 
     if port_conf.port_rate > capabilities.max_speed * 1_000_000:
-        raise exceptions.PortRateError(port_conf.port_rate, capabilities.max_speed * 1_000_000)
+        raise exceptions.PortRateError(
+            port_conf.port_rate, capabilities.max_speed * 1_000_000
+        )
     if port_conf.speed_reduction_ppm > capabilities.max_speed_reduction:
         raise exceptions.SpeedReductionError(
             port_conf.speed_reduction_ppm, capabilities.max_speed_reduction
@@ -82,7 +76,9 @@ async def check_custom_port_config(
         or port_conf.inter_frame_gap > capabilities.max_interframe_gap
     ):
         raise exceptions.InterFrameGapError(
-            port_conf.inter_frame_gap, capabilities.min_interframe_gap, capabilities.max_interframe_gap
+            int(port_conf.inter_frame_gap),
+            capabilities.min_interframe_gap,
+            capabilities.max_interframe_gap,
         )
     check_can_fec(capabilities.can_fec, port_conf.fec_mode)
     check_port_config_profile(capabilities, port_conf.profile)
@@ -108,9 +104,7 @@ async def check_port_modifiers(
     modifier_count = port_conf.profile.modifier_count
     if is_stream_based:
         if modifier_count > capabilities.max_modifiers:
-            raise exceptions.ModifierExceed(
-                modifier_count, capabilities.max_modifiers
-            )
+            raise exceptions.ModifierExceed(modifier_count, capabilities.max_modifiers)
     else:
         if modifier_count > 0:
             raise exceptions.ModifierBasedNotSupportDefineModifier()
@@ -121,7 +115,7 @@ async def check_stream_limitations(
 ) -> None:
     if not is_stream_based:
         return
-    if not port_struct.port_conf.is_tx_port:
+    if not port_struct._port_conf.is_tx_port:
         return
     stream_count = len(port_struct.properties.peers) * per_port_stream_count
     if stream_count > port_struct.capabilities.max_streams_per_port:
@@ -213,15 +207,17 @@ async def check_needed_packet_length(
         raise exceptions.PacketSizeTooSmall(int(min_packet_size), need_packet_length)
 
 
-async def check_payload_pattern(capabilities: "P_CAPABILITIES.GetDataAttr", payload_pattern: str) -> None:
+async def check_payload_pattern(
+    capabilities: "P_CAPABILITIES.GetDataAttr", payload_pattern: str
+) -> None:
     cur = len(payload_pattern) // 2
     if capabilities.max_pattern_length < cur:
-        raise exceptions.PayloadPatternExceed(
-            cur, capabilities.max_pattern_length
-        )
+        raise exceptions.PayloadPatternExceed(cur, capabilities.max_pattern_length)
 
 
-async def check_micro_tpld(capabilities: "P_CAPABILITIES.GetDataAttr", use_mocro_tpld: bool) -> None:
+async def check_micro_tpld(
+    capabilities: "P_CAPABILITIES.GetDataAttr", use_mocro_tpld: bool
+) -> None:
     if not use_mocro_tpld:
         return
     if not bool(capabilities.can_micro_tpld):
