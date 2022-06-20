@@ -20,6 +20,7 @@ from ..utils.constants import (
     AcceptableLossType,
 )
 from ..utils import exceptions
+from ..utils import constants
 
 
 class CommonOptions(BaseModel):
@@ -28,9 +29,17 @@ class CommonOptions(BaseModel):
     duration_unit: Union[DurationFrameUnit, DurationTimeUnit]
     iterations: PositiveInt
 
+    @validator("duration_unit", always=True)
+    def validate_duration(cls, v, values):
+        if not values["duration_type"].is_time_duration:
+            cur = values["duration"] * v.scale
+            if cur > constants.MAX_PACKET_LIMIT_VALUE:
+                raise exceptions.PacketLimitOverflow(cur)
+        return v
+
     @property
-    def actual_duration(self) -> int:
-        return int(self.duration * self.duration_unit.scale) if self.duration_type.is_time_duration else 0
+    def actual_duration(self) -> Decimal:
+        return self.duration * self.duration_unit.scale
 
 
 class RateIterationOptions(BaseModel):

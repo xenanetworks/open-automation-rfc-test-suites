@@ -36,7 +36,7 @@ class ResourceManager:
 
     @property
     def has_l3(self):
-        return any([conf.profile.protocol_version.is_l3 for conf in self.all_confs])
+        return any(conf.profile.protocol_version.is_l3 for conf in self.all_confs)
 
     @staticmethod
     def _validate_tester_type(testers, valid_type) -> None:
@@ -229,14 +229,14 @@ class ResourceManager:
             port_struct.monitor_traffic()
 
     def test_running(self) -> bool:
-        s = any([port_struct.traffic_status for port_struct in self.tx_ports])
+        s = any(port_struct.traffic_status for port_struct in self.tx_ports)
         if s:
             logger.info([port_struct.traffic_status for port_struct in self.tx_ports])
             logger.info("Test Start")
         return s
 
     def test_finished(self) -> bool:
-        s = all([not port_struct.traffic_status for port_struct in self.tx_ports])
+        s = all(not port_struct.traffic_status for port_struct in self.tx_ports)
         if s:
             logger.info([port_struct.traffic_status for port_struct in self.tx_ports])
             logger.info("Test Finish")
@@ -245,11 +245,11 @@ class ResourceManager:
     def los(self) -> bool:
         if self.test_conf.should_stop_on_los:
             return not all(
-                [port_struct.sync_status for port_struct in self.port_structs]
+                port_struct.sync_status for port_struct in self.port_structs
             )
         return False
 
-    def should_quit(self, start_time: float, actual_duration: int) -> bool:
+    def should_quit(self, start_time: float, actual_duration: Decimal) -> bool:
         test_finished = self.test_finished()
         elapsed = time.time() - start_time
         actual_duration_elapsed = elapsed >= actual_duration + 5
@@ -263,7 +263,7 @@ class ResourceManager:
         for port_struct in self.tx_ports:
             port_struct.set_rate(rate)
 
-    async def set_tx_time_limit(self, tx_timelimit: int) -> None:
+    async def set_tx_time_limit(self, tx_timelimit: Union[Decimal, int]) -> None:
         await asyncio.gather(
             *[
                 port_struct.set_tx_time_limit(int(tx_timelimit))

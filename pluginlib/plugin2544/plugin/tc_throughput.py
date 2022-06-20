@@ -83,36 +83,35 @@ class ThroughputBoutEntry:
             port_struct.set_rate(self.rate)
             logger.info(f"{port_struct.port_identity.name}  rate to {self.rate}")
 
-    def update_boundary(self, result: Optional[FinalStatistic]):
-        self._port_should_continue = False
-        self._port_test_passed = False
+    def update_boundary(self, result: Optional[FinalStatistic]) -> None:
+        self._port_should_continue =self._port_test_passed= False
         if not result:
             self._port_should_continue = True
+            return
+        if (
+            self._throughput_conf.rate_iteration_options.result_scope.is_per_source_port
+        ):
+            loss_ratio = self._port_structs[0].statistic.loss_ratio
         else:
+            loss_ratio = result.total.rx_loss_percent
+        loss_ratio_pct = loss_ratio * 100
+        if loss_ratio_pct <= self._throughput_conf.acceptable_loss_pct:
             if (
                 self._throughput_conf.rate_iteration_options.result_scope.is_per_source_port
             ):
-                loss_ratio = self._port_structs[0].statistic.loss_ratio
+                [
+                    stream_struct.set_best_result()
+                    for stream_struct in self._port_structs[0].stream_structs
+                ]
             else:
-                loss_ratio = result.total.rx_loss_percent
-            loss_ratio_pct = loss_ratio * 100
-            if loss_ratio_pct <= self._throughput_conf.acceptable_loss_pct:
-                if (
-                    self._throughput_conf.rate_iteration_options.result_scope.is_per_source_port
-                ):
-                    [
-                        stream_struct.set_best_result()
-                        for stream_struct in self._port_structs[0].stream_structs
-                    ]
-                else:
-                    self.best_final_result = result
-                self.update_left_bound()
-            else:
-                self.update_right_bound(loss_ratio)
-            if self.compare_search_pointer():
-                self._port_test_passed = self.pass_threshold()
-            else:
-                self._port_should_continue = True
+                self.best_final_result = result
+            self.update_left_bound()
+        else:
+            self.update_right_bound(loss_ratio)
+        if self.compare_search_pointer():
+            self._port_test_passed = self.pass_threshold()
+        else:
+            self._port_should_continue = True
 
 
 def get_initial_boundaries(throughput_conf: ThroughputTest, resources: ResourceManager):

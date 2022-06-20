@@ -168,7 +168,7 @@ class Converter:
 
         return CommonOptions(
             duration_type=test_type_conf.duration_type.core,
-            duration=test_type_conf.duration,
+            duration=test_type_conf.duration if test_type_conf.duration_type.core.is_time_duration else test_type_conf.duration_frames,
             duration_unit=test_type_conf.duration_time_unit if test_type_conf.duration_type.core.is_time_duration else test_type_conf.duration_frame_unit.core, 
             # duration_frames=test_type_conf.duration_frames,
             # duration_frame_unit=test_type_conf.duration_frame_unit.core,

@@ -345,9 +345,9 @@ class PortStruct(BasePort):
         self._port_conf = port_conf
         self.properties = Properties()
         self._stream_structs: List["StreamStruct"] = []
-        self._rate: Decimal
+        self._rate: Decimal = Decimal(0)
         self._port_speed: Decimal
-        self._statistic: Statistic
+        self._statistic: Statistic = None   # type ignore
 
     @property
     def port_speed(self) -> Decimal:
@@ -384,6 +384,9 @@ class PortStruct(BasePort):
             port_speed=self._port_speed,
             interframe_gap=self._port_conf.inter_frame_gap,
         )
+    
+    def clear_counter(self):
+        self._statistic = None
 
     @property
     def protocol_version(self) -> const.PortProtocolVersion:

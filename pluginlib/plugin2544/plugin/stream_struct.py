@@ -17,7 +17,7 @@ from .statistics import (
     StreamStatisticData,
 )
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
-from ..utils import constants as const, protocol_segments as ps
+from ..utils import constants as const, protocol_segments as ps, exceptions
 
 if TYPE_CHECKING:
     from .structure import PortStruct
@@ -82,7 +82,7 @@ class PRStream:
         self._rx_port.statistic.add_latency(self.statistic.latency)
         self._rx_port.statistic.add_jitter(self.statistic.jitter)
         self._rx_port.statistic.add_extra(self.statistic.fcs)
-        self._rx_port.statistic.add_burst_frames(burst_frames)
+        # self._rx_port.statistic.add_burst_frames(burst_frames)
 
 
 class StreamStruct:
@@ -261,6 +261,7 @@ class StreamStruct:
     def update_tx_port_statistic(self):
         self._tx_port.statistic.add_tx(self._tx_frames)
         self._tx_port.statistic.add_burst_frames(self._packet_limit)
+        self._tx_port.statistic.add_burst_bytes_count(self._rx_frames.bytes_count)
         self._tx_port.statistic.add_loss(
             self._tx_frames.frames, self.rx_frames.frames, self._loss_frames
         )
@@ -320,6 +321,8 @@ class StreamStruct:
 
     async def set_frame_limit(self, frame_count: int) -> None:
         self._packet_limit = frame_count
+        if frame_count > const.MAX_PACKET_LIMIT_VALUE:
+            raise exceptions.PacketLimitOverflow(frame_count)
         await self._stream.packet.limit.set(frame_count)
 
 

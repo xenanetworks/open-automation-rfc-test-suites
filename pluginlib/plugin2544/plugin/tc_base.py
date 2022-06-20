@@ -2,11 +2,10 @@ import asyncio, time
 import math
 from decimal import Decimal
 from typing import List, Optional, TYPE_CHECKING
-
 from loguru import logger
-
-from pluginlib.plugin2544.plugin.tc_back_to_back import BackToBackBoutEntry
+from .tc_back_to_back import BackToBackBoutEntry
 from ..model.m_test_type_config import (
+    AllTestType,
     BackToBackTest,
     FrameLossRateTest,
     LatencyTest,
@@ -22,6 +21,7 @@ from .learning import (
 )
 from .setup_source_port_rates import setup_source_port_rates
 from .statistics import (
+    BACKTOBACKOUTPUT,
     FRAME_LOSS_OUTPUT,
     LATENCY_OUTPUT,
     THROUGHPUT_COMMON,
@@ -57,7 +57,7 @@ class TestCaseProcessor:
             self.resources, current_packet_size
         )
 
-    async def start_test(self, test_type_conf, current_packet_size: Decimal):
+    async def start_test(self, test_type_conf: "AllTestType", current_packet_size: Decimal):
         await setup_source_port_rates(self.resources, current_packet_size)
         if test_type_conf.common_options.duration_type.is_time_duration:
             await self.resources.set_tx_time_limit(
@@ -82,7 +82,7 @@ class TestCaseProcessor:
             self.resources.set_rate(rate_percent)
             await self.add_learning_steps(current_packet_size)
             await self.start_test(test_type_conf, current_packet_size)
-            result = await self.collect(params, LATENCY_OUTPUT)
+            _ = await self.collect(params, LATENCY_OUTPUT)
             await self.resources.set_tx_time_limit(0)
 
     async def frame_loss(
@@ -99,7 +99,7 @@ class TestCaseProcessor:
                 repetition=repetition,
                 duration=test_type_conf.common_options.actual_duration,
             )
-            result = await self.collect(params, FRAME_LOSS_OUTPUT)
+            _ = await self.collect(params, FRAME_LOSS_OUTPUT)
             await self.resources.set_tx_time_limit(0)
 
     async def collect(
@@ -145,15 +145,17 @@ class TestCaseProcessor:
             else THROUGHPUT_COMMON
         )
         while True:
-            [boundary.update_boundary(result) for boundary in boundaries]
+            for boundary in boundaries:
+                boundary.update_boundary(result)
             should_continue = any(
-                [boundary.port_should_continue for boundary in boundaries]
+                boundary.port_should_continue for boundary in boundaries
             )
             if not should_continue:
                 break
-            [boundary.update_rate() for boundary in boundaries]
+            for boundary in boundaries:
+                boundary.update_rate()
             params.rate_percent = boundaries[0].rate
-            test_passed = all([boundary.port_test_passed for boundary in boundaries])
+            test_passed = all(boundary.port_test_passed for boundary in boundaries)
             await self.start_test(test_type_conf, current_packet_size)
             result = await self.collect(params, data_format)
             await self.resources.set_tx_time_limit(0)
@@ -198,19 +200,20 @@ class TestCaseProcessor:
             )
             self.resources.set_rate(rate_percent)
             boundaries = [
-                BackToBackBoutEntry(test_type_conf, port_struct, current_packet_size)
+                BackToBackBoutEntry(test_type_conf, port_struct, current_packet_size, rate_percent)
                 for port_struct in self.resources.port_structs
             ]
             while True:
-                [boundary.check_boundaries() for boundary in boundaries]
+                for boundary in boundaries:
+                    boundary.update_boundaries()
                 should_continue = any(
-                    [boundary.port_should_continue for boundary in boundaries]
+                    boundary.port_should_continue for boundary in boundaries
                 )
                 if not should_continue:
                     break
                 await self.setup_packet_limit(boundaries)
                 await self.start_test(test_type_conf, current_packet_size)
-                result = await self.collect(params)
+                _ = await self.collect(params, BACKTOBACKOUTPUT)
 
     async def setup_packet_limit(self, boundaries: List[BackToBackBoutEntry]):
         for port_index, port_struct in enumerate(self.resources.port_structs):

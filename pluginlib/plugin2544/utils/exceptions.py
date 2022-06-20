@@ -342,3 +342,10 @@ class TimeDurationRequire(Exception):
         self.msg = f"{test_type} Test requires Time Duration Type"
         logger.error(self.msg)
         super().__init__(self.msg)
+
+
+class PacketLimitOverflow(Exception):
+    def __init__(self, packet_count: int) -> None:
+        self.msg = f"{packet_count} can not bigger than 2,147,483,647"
+        logger.error(self.msg)
+        super().__init__(self.msg)

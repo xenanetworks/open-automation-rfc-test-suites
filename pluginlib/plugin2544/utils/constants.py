@@ -71,7 +71,7 @@ MIXED_PACKET_SIZE = [
 MIXED_DEFAULT_WEIGHTS = [0, 0, 0, 0, 57, 3, 5, 1, 2, 5, 1, 4, 4, 18, 0, 0]
 MIXED_PACKET_CONFIG_LENGTH_INDICES = [0, 1, 14, 15]
 IMIX_AVERAGE = 463.501953
-# MAX_PACKET_LIMIT_VALUE = 0x7FFFFFFF
+MAX_PACKET_LIMIT_VALUE = 0x7FFFFFFF
 MAX_MASK_BIT_LENGTH = 16
 UNREACH_BYTE_VALUE = 256
 DEFAULT_SEGMENT_PATH = os.path.abspath(
@@ -215,6 +215,32 @@ class DurationType(Enum):
     def is_time_duration(self) -> bool:
         return self == type(self).TIME
 
+class DurationUnit(Enum):
+    SECOND = "seconds"
+    MINUTE = "minutes"
+    HOUR = "hours"
+    FRAME = "frames"
+    K_FRAME = "10e3_frames"
+    M_FRAME = "10e6_frames"
+    G_FRAME = "10e9_frames"
+
+    @property
+    def scale(self) -> int:
+        if self == type(self).FRAME:
+            return 1
+        elif self == type(self).K_FRAME:
+            return 1_000
+        elif self == type(self).M_FRAME:
+            return 1_000_000
+        elif self == type(self).G_FRAME:
+            return 1_000_000_000
+        elif self == type(self).SECOND:
+            return 1
+        elif self == type(self).MINUTE:
+            return 60
+        elif self == type(self).HOUR:
+            return 3600
+        raise ValueError("No scale!")
 
 class DurationTimeUnit(Enum):
     SECOND = "seconds"

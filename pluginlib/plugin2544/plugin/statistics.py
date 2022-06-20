@@ -104,7 +104,7 @@ class PortCounter(StreamCounter):
         self.frames += counter.frames  # _cal_port_tx_frames  + _cal_port_rx_frames
         self.bps += counter.bps
         self.pps += counter.pps
-        self.bytes_count += counter.bytes_count  # _cal_port_rx_bytes
+        # self.bytes_count += counter.bytes_count  # _cal_port_rx_bytes
         self._tx_l1_bps += counter.tx_l1_bps
 
     def calculate_port_rate(
@@ -126,7 +126,7 @@ class PortCounter(StreamCounter):
 
 class Statistic(BaseModel):
     port_id: str
-    is_final: bool
+    is_final: bool = False
     frame_size: Decimal
     duration: Decimal
     rate: Decimal
@@ -138,6 +138,7 @@ class Statistic(BaseModel):
     jitter: DelayCounter = DelayCounter(counter_type=const.CounterType.JITTER)
     fcs_error_frames: int = 0
     burst_frames: Decimal = Decimal(0)
+    burst_bytes_count: Decimal = Decimal(0)
     loss_frames: Decimal = Decimal(0)
     loss_ratio: Decimal = Decimal(0)
     actual_rate: Decimal = Decimal(0)
@@ -177,6 +178,9 @@ class Statistic(BaseModel):
     def add_burst_frames(self, frame_count: int) -> None:
         self.burst_frames += frame_count
 
+    def add_burst_bytes_count(self, bytes_count: Union[int, Decimal]) -> None:
+        self.burst_bytes_count += bytes_count
+
     def add_extra(self, fcs: int) -> None:
         self.fcs_error_frames += fcs
 
@@ -198,7 +202,9 @@ class Statistic(BaseModel):
         self.rx_counter.calculate_port_rate(
             self.is_final, self.duration, self.frame_size, self.interframe_gap
         )
-        self.actual_rate = Decimal("100") * self.tx_counter.l1_bit_rate / self.port_speed
+        self.actual_rate = (
+            Decimal("100") * self.tx_counter.l1_bit_rate / self.port_speed
+        )
 
 
 class TotalCounter(BaseModel):
@@ -224,6 +230,8 @@ class TotalStatistic(BaseModel):
     rx_loss_frames: Decimal = Decimal(0)
     tx_rate_l1_bps_theor: Decimal = Decimal(0)
     tx_rate_fps_theor: Decimal = Decimal(0)
+    tx_burst_frames: Decimal = Decimal(0)
+    tx_burst_bytes: Decimal = Decimal(0)
     ber: Decimal = Decimal(0)
 
     def add(self, port_data: "Statistic") -> None:
@@ -233,6 +241,8 @@ class TotalStatistic(BaseModel):
         self.tx_rate_l1_bps_theor += port_data.tx_rate_l1_bps_theor
         self.tx_rate_fps_theor += port_data.tx_rate_fps_theor
         self.rx_loss_frames += port_data.loss_frames
+        self.tx_burst_bytes += port_data.burst_bytes_count
+        self.tx_burst_frames += port_data.burst_frames
         self.rx_loss_percent = (
             self.rx_loss_frames / self.tx_counter.frames
             if self.tx_counter.frames
@@ -454,5 +464,31 @@ THROUGHPUT_COMMON = {
         "tx_rate_l1_bps_theor": ...,
         "tx_rate_fps_theor": ...,
         "ber": ...,
+    },
+}
+
+
+BACKTOBACKOUTPUT = {
+    "test_suit_type": ...,
+    "test_case_type": ...,
+    "result_state": ...,
+    "tx_rate_percent": ...,
+    "is_final": ...,
+    "frame_size": ...,
+    "repetition": ...,
+    "port_data": {
+        "__all__": {
+            "burst_frames": ...,
+            "burst_bytes_count": ...,
+        }
+    },
+    "total": {
+        "tx_counter": {"frames"},
+        "rx_counter": {"frames"},
+        "tx_burst_frames": ...,
+        "tx_burst_bytes": ...,
+        "rx_loss_frames": ...,
+        "rx_loss_percent": ...,
+        "fcs_error_frames": ...,
     },
 }
