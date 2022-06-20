@@ -1,6 +1,8 @@
 import asyncio
 from typing import TYPE_CHECKING, List, Union
 from xoa_driver.enums import ProtocolOption
+
+from pluginlib.plugin2544.model.m_test_type_config import AllTestType
 from ..utils import field, exceptions, constants as const
 from .common import filter_port_structs
 
@@ -287,6 +289,17 @@ async def check_testers(
             for tester in testers
         ]
     )
+
+
+def check_test_type_config(test_types:List[AllTestType]):
+    for test_type_conf in test_types:
+        if test_type_conf.test_type.is_back_to_back:    # back to back require frame duration
+            if test_type_conf.common_options.duration_type.is_time_duration:
+                raise exceptions.FrameDurationRequire(test_type_conf.test_type.value)
+        else:   # other test type require time duration
+            if not test_type_conf.common_options.duration_type.is_time_duration:
+                raise exceptions.TimeDurationRequire(test_type_conf.test_type.value)
+
 
 
 async def check_config(

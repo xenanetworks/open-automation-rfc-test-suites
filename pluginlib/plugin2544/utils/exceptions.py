@@ -329,3 +329,16 @@ class LossofPortSignal(Exception):
         self.msg = f"Test is stopped due to the loss of signal of port <module_id: {port.kind.module_id}-port_id: {port.kind.port_id}>."
         logger.error(self.msg)
         super().__init__(self.msg)
+
+
+class FrameDurationRequire(Exception):
+    def __init__(self, test_type: str) -> None:
+        self.msg = f"{test_type} Test requires Frames Duration Type"
+        logger.error(self.msg)
+        super().__init__(self.msg)
+    
+class TimeDurationRequire(Exception):
+    def __init__(self, test_type: str) -> None:
+        self.msg = f"{test_type} Test requires Time Duration Type"
+        logger.error(self.msg)
+        super().__init__(self.msg)

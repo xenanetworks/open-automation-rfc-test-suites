@@ -1,24 +1,19 @@
 import asyncio, time
 from decimal import Decimal
 from typing import Dict, List, TYPE_CHECKING, Union
-
 from loguru import logger
-from pydantic import NonNegativeInt
+from xoa_driver import testers as xoa_testers, modules, enums
 from .learning import add_mac_learning_steps
-from xoa_driver import testers as xoa_testers, modules, enums, utils
-from ..model.m_test_config import (
-    TestConfiguration,
-)
 from .config_checkers import check_config
 from .common import get_peers_for_source
 from .setup_streams import setup_streams
 from .structure import PortStruct
 from ..utils import constants as const, exceptions
-from ..utils.logger import TestSuitPipe
 
 if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity
-    from ..model import PortConfiguration
+    from ..model import PortConfiguration, TestConfiguration
+    from ..utils.logger import TestSuitPipe
 
 
 class ResourceManager:
@@ -53,7 +48,7 @@ class ResourceManager:
         return [
             port_struct
             for port_struct in self.port_structs
-            if port_struct._port_conf.is_tx_port
+            if port_struct.port_conf.is_tx_port
         ]
 
     @property
@@ -61,7 +56,7 @@ class ResourceManager:
         return [
             port_struct
             for port_struct in self.port_structs
-            if port_struct._port_conf.is_rx_port
+            if port_struct.port_conf.is_rx_port
         ]
 
     async def init_resource(self, latency_mode: const.LatencyModeStr):
@@ -71,12 +66,12 @@ class ResourceManager:
             list(self.__testers.values()), self.port_structs, self.test_conf
         )
         for port_struct in self.tx_ports:
-            tester_id = port_struct._port_identity.tester_id
+            tester_id = port_struct.port_identity.tester_id
             if tester_id not in self.mapping:
                 self.mapping[tester_id] = []
             self.mapping[tester_id] += [
-                port_struct._port_identity.module_index,
-                port_struct._port_identity.port_index,
+                port_struct.port_identity.module_index,
+                port_struct.port_identity.port_index,
             ]
         await self.stop_traffic()
         await asyncio.sleep(self.test_conf.delay_after_port_reset_second)
@@ -158,7 +153,7 @@ class ResourceManager:
                 await asyncio.sleep(1)
                 if time.time() - start_time > 30:
                     raise TimeoutError(
-                        f"Waiting for {port_struct._port_identity.name} sync timeout!"
+                        f"Waiting for {port_struct.port_identity.name} sync timeout!"
                     )
         await asyncio.sleep(toggle_conf.delay_after_sync_on_second)
 
@@ -173,12 +168,12 @@ class ResourceManager:
             east_ports = [
                 port_struct
                 for port_struct in self.port_structs
-                if port_struct._port_conf.port_group.is_east
+                if port_struct.port_conf.port_group.is_east
             ]
             west_ports = [
                 port_struct
                 for port_struct in self.port_structs
-                if port_struct._port_conf.port_group.is_west
+                if port_struct.port_conf.port_group.is_west
             ]
             for port_struct in east_ports:
                 port_struct.properties.test_port_index = test_port_index
@@ -188,7 +183,7 @@ class ResourceManager:
                 test_port_index += 1
 
         for port_struct in self.tx_ports:
-            port_config = port_struct._port_conf
+            port_config = port_struct.port_conf
             dest_ports = get_peers_for_source(topology, port_config, self.port_structs)
             for peer_struct in dest_ports:
                 port_struct.properties.register_peer(peer_struct)
@@ -212,8 +207,8 @@ class ResourceManager:
     async def set_gap_monitor(
         self,
         use_gap_monitor: bool,
-        gap_monitor_start_microsec: NonNegativeInt,
-        gap_monitor_stop_frames: NonNegativeInt,
+        gap_monitor_start_microsec: int,
+        gap_monitor_stop_frames: int,
     ) -> None:
         if not use_gap_monitor:
             return
@@ -237,14 +232,14 @@ class ResourceManager:
         s = any([port_struct.traffic_status for port_struct in self.tx_ports])
         if s:
             logger.info([port_struct.traffic_status for port_struct in self.tx_ports])
-            logger.info('Test Start')
+            logger.info("Test Start")
         return s
-    
+
     def test_finished(self) -> bool:
         s = all([not port_struct.traffic_status for port_struct in self.tx_ports])
         if s:
             logger.info([port_struct.traffic_status for port_struct in self.tx_ports])
-            logger.info('Test Finish')
+            logger.info("Test Finish")
         return s
 
     def los(self) -> bool:
@@ -261,12 +256,12 @@ class ResourceManager:
         los = self.los()
         if los:
             logger.error("Test is stopped due to the loss of signal of ports.")
-        
+
         return test_finished or los or actual_duration_elapsed
 
     def set_rate(self, rate: Decimal) -> None:
         for port_struct in self.tx_ports:
-            port_struct._rate = rate
+            port_struct.set_rate(rate)
 
     async def set_tx_time_limit(self, tx_timelimit: int) -> None:
         await asyncio.gather(
@@ -281,7 +276,7 @@ class ResourceManager:
             *[
                 stream_struct.set_frame_limit(frame_count)
                 for port_struct in self.tx_ports
-                for stream_struct in port_struct._stream_structs
+                for stream_struct in port_struct.stream_structs
             ]
         )
 
@@ -334,15 +329,14 @@ class ResourceManager:
     async def collect(
         self, packet_size: Decimal, duration: Decimal, is_final: bool = False
     ):
-        [
+        for port_struct in self.port_structs:
             port_struct.init_counter(packet_size, duration, is_final)
-            for port_struct in self.port_structs
-        ]
         await asyncio.gather(
             *[
                 stream.query()
                 for port_struct in self.port_structs
-                for stream in port_struct._stream_structs
+                for stream in port_struct.stream_structs
             ]
         )
-        [port_struct.statistic.calculate_rate() for port_struct in self.port_structs]
+        for port_struct in self.port_structs:
+            port_struct.statistic.calculate_rate()

@@ -1,6 +1,8 @@
 from xoa_core.types import PluginAbstract
 from typing import TYPE_CHECKING, Iterator, List, Tuple
 from decimal import getcontext
+
+from pluginlib.plugin2544.plugin.config_checkers import check_test_type_config
 from .plugin.tc_base import TestCaseProcessor
 from .plugin.test_resource import ResourceManager
 from .utils import constants as const
@@ -31,6 +33,7 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
         return super().prepare()
 
     async def __prepare_data(self) -> None:
+        check_test_type_config(self.cfg.test_types_configuration.available_test)
         await self.resources.init_resource(
             self.cfg.test_types_configuration.latency_test.latency_mode,
         )

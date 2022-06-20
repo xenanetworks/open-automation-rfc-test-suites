@@ -63,7 +63,7 @@ class TestCaseProcessor:
             await self.resources.set_tx_time_limit(
                 test_type_conf.common_options.actual_duration * 1_000_000
             )
-            
+
         await self.resources.clear_statistic()
         await self.resources.start_traffic(self.resources.test_conf.use_port_sync_start)
         await schedule_arp_refresh(self.resources, self.address_refresh_handler)
@@ -219,7 +219,7 @@ class TestCaseProcessor:
                     stream_info
                     for stream_info in port_struct.stream_structs
                     if stream_info.is_rx_port(peer_struct)
-                ]   # select same tx and rx port stream
+                ]  # select same tx and rx port stream
                 port_stream_count = len(port_struct.properties.peers) * len(
                     stream_info_list
                 )

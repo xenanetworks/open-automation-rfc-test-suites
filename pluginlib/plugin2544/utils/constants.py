@@ -261,6 +261,10 @@ class TestType(Enum):
     def is_latency(self) -> bool:
         return self == type(self).LATENCY_JITTER
 
+    @property
+    def is_back_to_back(self) -> bool:
+        return self == type(self).BACK_TO_BACK
+
 
 class SearchType(Enum):
     BINARY_SEARCH = "binary_search"
