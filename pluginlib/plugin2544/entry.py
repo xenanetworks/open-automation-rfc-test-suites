@@ -60,7 +60,7 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
                 # )
 
     async def __do_test(self) -> None:
-        tc = TestCaseProcessor(self.resources)
+        tc = TestCaseProcessor(self.resources, self.xoa_out)
         self.resources.monitor_status()
         while True:
             for type_conf in self.cfg.test_types_configuration.available_test:

@@ -51,12 +51,12 @@ class BackToBackBoutEntry:
             self._port_should_continue = True
             return
         if self._left_bound <= self._right_bound:
-            res = self._test_type_conf.rate_sweep_options.burst_resolution
+            
             if self._port_struct.statistic and self._port_struct.statistic.loss_ratio == Decimal("0"):
                 self.update_left_bound()
             else:
                 self.update_right_bound()
-            if self.compare_search_pointer(res):
+            if self.compare_search_pointer():
                 self._port_test_passed = True
             else:
                 self._port_should_continue = True
@@ -78,7 +78,8 @@ class BackToBackBoutEntry:
 
         self._last_move = 1
 
-    def compare_search_pointer(self, res: Decimal) -> bool:
+    def compare_search_pointer(self) -> bool:
+        res = self._test_type_conf.rate_sweep_options.burst_resolution
         if abs(self.next - self.current) <= res:
             if self.next >= self.current:
                 # make sure we report the right boundary if we are so close to it.

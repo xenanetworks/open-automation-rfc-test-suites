@@ -35,11 +35,13 @@ from ..utils import constants as const
 
 if TYPE_CHECKING:
     from .test_resource import ResourceManager
+    from ..utils.logger import TestSuitPipe
 
 
 class TestCaseProcessor:
-    def __init__(self, resources: "ResourceManager"):
+    def __init__(self, resources: "ResourceManager", xoa_out: "TestSuitPipe"):
         self.resources: "ResourceManager" = resources
+        self.xoa_out = xoa_out
         self.address_refresh_handler: Optional[AddressRefreshHandler] = None
 
     async def prepare(self) -> None:
@@ -57,7 +59,9 @@ class TestCaseProcessor:
             self.resources, current_packet_size
         )
 
-    async def start_test(self, test_type_conf: "AllTestType", current_packet_size: Decimal):
+    async def start_test(
+        self, test_type_conf: "AllTestType", current_packet_size: Decimal
+    ):
         await setup_source_port_rates(self.resources, current_packet_size)
         if test_type_conf.common_options.duration_type.is_time_duration:
             await self.resources.set_tx_time_limit(
@@ -112,6 +116,7 @@ class TestCaseProcessor:
                 params,
                 is_final=False,
             )
+            self.xoa_out.send_statistics(data.json(include=data_format))
             # logger.info(data.json(include=data_format, indent=2))
             if self.resources.should_quit(start_time, params.duration):
                 break
@@ -123,7 +128,7 @@ class TestCaseProcessor:
             params,
             is_final=True,
         )
-        logger.info(data.json(include=data_format, indent=2))
+        # logger.info(data.json(include=data_format, indent=2))
         return data
 
     async def throughput(
@@ -189,6 +194,7 @@ class TestCaseProcessor:
     async def back_to_back(
         self, test_type_conf: BackToBackTest, current_packet_size, repetition
     ) -> None:
+        result = None
         await self.add_learning_steps(current_packet_size)
         for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
             params = StatisticParams(
@@ -200,20 +206,27 @@ class TestCaseProcessor:
             )
             self.resources.set_rate(rate_percent)
             boundaries = [
-                BackToBackBoutEntry(test_type_conf, port_struct, current_packet_size, rate_percent)
+                BackToBackBoutEntry(
+                    test_type_conf, port_struct, current_packet_size, rate_percent
+                )
                 for port_struct in self.resources.port_structs
             ]
             while True:
                 for boundary in boundaries:
                     boundary.update_boundaries()
-                should_continue = any(
-                    boundary.port_should_continue for boundary in boundaries
-                )
-                if not should_continue:
+                if not any(boundary.port_should_continue for boundary in boundaries):
+                    if result and result.is_final:
+                        if all(boundary.port_test_passed for boundary in boundaries):
+                            result.set_result_state(const.ResultState.SUCCESS)
+                        else:
+                            result.set_result_state(const.ResultState.FAIL)
+                        res = result.json(include=BACKTOBACKOUTPUT, indent=2)
+                        self.xoa_out.send_statistics(res)
+                        logger.info(res)
                     break
                 await self.setup_packet_limit(boundaries)
                 await self.start_test(test_type_conf, current_packet_size)
-                _ = await self.collect(params, BACKTOBACKOUTPUT)
+                result = await self.collect(params, BACKTOBACKOUTPUT)
 
     async def setup_packet_limit(self, boundaries: List[BackToBackBoutEntry]):
         for port_index, port_struct in enumerate(self.resources.port_structs):
