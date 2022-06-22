@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Iterable, List, Union
+from typing import Dict, Iterable, List, Union
 from pydantic import (
     BaseModel,
     Field,
@@ -7,6 +7,8 @@ from pydantic import (
     NonNegativeInt,
     PositiveInt,
 )
+
+from ..utils import output_format
 
 from ..utils.constants import (
     DurationFrameUnit,
@@ -68,6 +70,14 @@ class ThroughputTest(BaseModel):
     pass_threshold_pct: float
     acceptable_loss_pct: float
     additional_statisics: List[AdditionalStatisticsOption]
+    _output_format: Dict = output_format.THROUGHPUT_COMMON
+
+    @property
+    def format(self):
+        if self.rate_iteration_options.result_scope.is_per_source_port:
+            return output_format.THROUGHPUT_PER_PORT
+        else:
+            return output_format.THROUGHPUT_COMMON
 
 
 class RateSweepOptions(BaseModel):
@@ -123,6 +133,9 @@ class LatencyTest(BaseModel):
     use_relative_to_throughput: bool
     throughput: Decimal = Decimal("0")
 
+    @property
+    def format(self):
+        return output_format.LATENCY_OUTPUT
 
 class FrameLossRateTest(BaseModel):
     test_type: TestType
@@ -140,13 +153,18 @@ class FrameLossRateTest(BaseModel):
     acceptable_loss_pct: float
     acceptable_loss_type: AcceptableLossType
 
-
+    @property
+    def format(self):
+        return output_format.FRAME_LOSS_OUTPUT
 class BackToBackTest(BaseModel):
     test_type: TestType
     enabled: bool
     common_options: CommonOptions
     rate_sweep_options: RateSweepOptions
 
+    @property
+    def format(self):
+        return output_format.BACKTOBACKOUTPUT
 
 AllTestType = Union[ThroughputTest, LatencyTest, FrameLossRateTest, BackToBackTest]
 

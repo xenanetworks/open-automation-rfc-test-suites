@@ -2,7 +2,7 @@ from xoa_core.types import PluginAbstract
 from typing import TYPE_CHECKING, Iterator, List, Tuple
 from decimal import getcontext
 
-from pluginlib.plugin2544.plugin.config_checkers import check_test_type_config
+from .plugin.config_checkers import check_test_type_config
 from .plugin.tc_base import TestCaseProcessor
 from .plugin.test_resource import ResourceManager
 from .utils import constants as const
@@ -10,7 +10,6 @@ from .utils.field import NonNegativeDecimal
 
 if TYPE_CHECKING:
     from .dataset import PluginModel2544
-from .plugin.test_result_structure import TestCaseResult
 from .utils.logger import logger
 
 getcontext().prec = 12
@@ -22,7 +21,6 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
         self.mac_learned = False
         self.iteration: int = 1
         self.test_conf = self.cfg.test_configuration
-        self.test_case_result = TestCaseResult()
         self.resources = ResourceManager(
             self.testers,
             list(self.cfg.ports_configuration.values()),
@@ -48,16 +46,11 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
             for iteration in range(1, max_iteration + 1):
                 for current_packet_size in packet_size_list:
                     yield iteration, current_packet_size
-            # result_handler = test_case_result.get_result_handler(type_conf.test_type)
-            # avg_result(result_handler, max_iteration, type_conf, xoa_out)
         else:
             for current_packet_size in packet_size_list:
                 for iteration in range(1, max_iteration + 1):
                     yield iteration, current_packet_size
-                # result_handler = test_case_result.get_result_handler(type_conf.test_type)
-                # avg_result(
-                #     result_handler, max_iteration, type_conf, xoa_out, current_packet_size
-                # )
+
 
     async def __do_test(self) -> None:
         tc = TestCaseProcessor(self.resources, self.xoa_out)
@@ -68,18 +61,11 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
                     await self.state_conditions.wait_if_paused()
                     await self.state_conditions.stop_if_stopped()
                     await self.resources.setup_packet_size(current_packet_size)
-                    if type_conf.test_type == const.TestType.THROUGHPUT:
-                        await tc.throughput(type_conf, current_packet_size, iteration)
-                    elif type_conf.test_type == const.TestType.LATENCY_JITTER:
-                        await tc.latency(
-                            type_conf, current_packet_size, iteration
-                        )  # type:ignore
-                    elif type_conf.test_type == const.TestType.FRAME_LOSS_RATE:
-                        await tc.frame_loss(
-                            type_conf, current_packet_size, iteration
-                        )  # type:ignore
-                    elif type_conf.test_type == const.TestType.BACK_TO_BACK:
-                        await tc.back_to_back(type_conf, current_packet_size, iteration)
+                    await tc.run(type_conf, current_packet_size, iteration)
+                    if not self.test_conf.outer_loop_mode.is_iteration and type_conf.common_options.iterations > 1 and iteration == type_conf.common_options.iterations:
+                        tc.cal_average(type_conf, current_packet_size)
+                if self.test_conf.outer_loop_mode.is_iteration:
+                    tc.cal_average(type_conf)
 
             if not self.cfg.test_configuration.repeat_test_until_stopped:
                 break
