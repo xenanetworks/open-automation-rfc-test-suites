@@ -385,13 +385,14 @@ class FinalStatistic(BaseModel):
     test_case_type: const.TestType
     test_suit_type: str = "2544"
     result_state: const.ResultState = const.ResultState.PENDING
-    tx_rate_percent: float
+    tx_rate_percent: Decimal
     is_final: bool = True
-    frame_size: int
+    frame_size: Decimal
     repetition: Union[int, str] = "avg"
     port_data: List[Statistic] = []
     # stream_data: List[LatencyStreamStatistic]
 
+    tx_rate_nomial_percent: Decimal = Decimal(0)
     total: TotalStatistic = TotalStatistic()
 
     class Config:

@@ -6,6 +6,7 @@ LATENCY_OUTPUT = {
     "is_final": ...,
     "frame_size": ...,
     "repetition": ...,
+    "tx_rate_nomial_percent": ...,
     "port_data": {
         "__all__": {
             "port_id": ...,

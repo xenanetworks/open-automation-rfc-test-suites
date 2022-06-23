@@ -40,6 +40,7 @@ class TestCaseProcessor:
         self.xoa_out = xoa_out
         self.address_refresh_handler: Optional[AddressRefreshHandler] = None
         self.test_results = {}
+        self._throughput_map = {}
 
     async def prepare(self) -> None:
         if not self.resources.test_conf.arp_refresh_enabled:
@@ -108,9 +109,17 @@ class TestCaseProcessor:
         return data
 
     async def _latency(
-        self, test_type_conf: LatencyTest, current_packet_size, repetition
+        self, test_type_conf: LatencyTest, current_packet_size: Decimal, repetition: int
     ):
+        factor = Decimal(100)
+        if (
+            test_type_conf.use_relative_to_throughput
+            and self._throughput_map
+        ):
+            factor = self._throughput_map.get(current_packet_size)  or factor 
         for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
+            tx_rate_nomial_percent = rate_percent
+            rate_percent = rate_percent * factor / Decimal(100)
             params = StatisticParams(
                 test_case_type=test_type_conf.test_type,
                 rate_percent=rate_percent,
@@ -123,6 +132,7 @@ class TestCaseProcessor:
             await self.start_test(test_type_conf, current_packet_size)
             result = await self.collect(params, test_type_conf.format)
             await self.resources.set_tx_time_limit(0)
+            result.tx_rate_nomial_percent = tx_rate_nomial_percent
             self._add_result(True, test_type_conf.format, result)
 
     async def _frame_loss(
@@ -200,6 +210,7 @@ class TestCaseProcessor:
                 ],
                 # stream_data=aggregate_stream_result(resource),
             )
+        self._set_throughput_for_frame_size(final.frame_size, final.tx_rate_percent)
         self._add_result(test_passed, test_type_conf.format, final)
 
     async def _back_to_back(
@@ -236,9 +247,16 @@ class TestCaseProcessor:
                 result,
             )
 
-    def _average_per_frame_size(self, test_type_conf: AllTestType, frame_size: Decimal) -> None:
+    def _set_throughput_for_frame_size(self, frame_size: Decimal, rate: Decimal):
+        if frame_size not in self._throughput_map:
+            self._throughput_map[frame_size] = 0
+        self._throughput_map[frame_size] = max(rate, self._throughput_map[frame_size])
+
+    def _average_per_frame_size(
+        self, test_type_conf: AllTestType, frame_size: Decimal
+    ) -> None:
         result = self.test_results[test_type_conf.test_type][frame_size]
-        for _, statistic_lists in result.items():
+        for rate_percent, statistic_lists in result.items():
             final: Optional[FinalStatistic] = None
             for statistic in statistic_lists:
                 if not final:
@@ -249,9 +267,12 @@ class TestCaseProcessor:
             if final:
                 final.repetition = "avg"
                 final.avg(len(statistic_lists))
+                result[rate_percent].append(final)
                 logger.info(final.json(include=test_type_conf.format, indent=2))
 
-    def cal_average(self, test_type_conf: AllTestType, frame_size: Optional[Decimal]=None) -> None:
+    def cal_average(
+        self, test_type_conf: AllTestType, frame_size: Optional[Decimal] = None
+    ) -> None:
         if frame_size:
             result = self.test_results[test_type_conf.test_type][frame_size]
             self._average_per_frame_size(test_type_conf, frame_size)
