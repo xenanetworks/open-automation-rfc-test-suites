@@ -359,7 +359,7 @@ class Converter:
         return PortConfiguration(
             port_slot=self.id_map[entity.item_id][1],
             peer_config_slot=self.id_map[entity.pair_peer_id][0]
-            if entity.pair_peer_id
+            if entity.pair_peer_id and entity.pair_peer_id in self.id_map
             else "",
             port_group=entity.port_group,
             port_speed_mode=entity.port_speed,

@@ -111,13 +111,13 @@ class PortCounter(StreamCounter):
 
     def sum(self, other: "PortCounter"):
         for name, value in self:
-            if name == 'counter_type':
+            if name == "counter_type":
                 continue
             setattr(self, name, value + attrgetter(name)(other))
 
     def avg(self, count: int):
         for name, value in self:
-            if name == 'counter_type':
+            if name == "counter_type":
                 continue
             setattr(self, name, value / count)
 
@@ -282,6 +282,7 @@ class TotalCounter(BaseModel):
         for name, value in self:
             setattr(self, name, value / count)
 
+
 class TotalStatistic(BaseModel):
     tx_counter: TotalCounter = TotalCounter()
     rx_counter: TotalCounter = TotalCounter()
@@ -296,14 +297,14 @@ class TotalStatistic(BaseModel):
 
     def sum(self, other: "TotalStatistic") -> None:
         for name, value in self:
-            if name in ['tx_counter', 'rx_counter']:
+            if name in ["tx_counter", "rx_counter"]:
                 getattr(self, name).sum(attrgetter(name)(other))
             else:
                 setattr(self, name, value + attrgetter(name)(other))
 
     def avg(self, count: int):
         for name, value in self:
-            if name in ['tx_counter', 'rx_counter']:
+            if name in ["tx_counter", "rx_counter"]:
                 getattr(self, name).avg(count)
             else:
                 # value = value / count
@@ -426,6 +427,3 @@ class StatisticParams(BaseModel):
     duration: Decimal
     repetition: Union[int, str]
     rate_percent: Decimal = Decimal("0")
-
-
-

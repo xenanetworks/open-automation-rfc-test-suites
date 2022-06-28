@@ -78,10 +78,10 @@ class PRStream:
         )
 
     def update_rx_port_statistic(self, burst_frames:int=0):
-        self._rx_port.statistic.add_rx(self.statistic.rx_stream_counter)
-        self._rx_port.statistic.add_latency(self.statistic.latency)
-        self._rx_port.statistic.add_jitter(self.statistic.jitter)
-        self._rx_port.statistic.add_extra(self.statistic.fcs)
+        self._rx_port.statistic.add_rx(self._statistic.rx_stream_counter)
+        self._rx_port.statistic.add_latency(self._statistic.latency)
+        self._rx_port.statistic.add_jitter(self._statistic.jitter)
+        self._rx_port.statistic.add_extra(self._statistic.fcs)
         # self._rx_port.statistic.add_burst_frames(burst_frames)
 
 
@@ -112,7 +112,7 @@ class StreamStruct:
         self._pr_streams = [
             PRStream(self._tx_port, port, self._tpldid) for port in self._rx_ports
         ]
-        self._best_result: StreamStatisticData
+        self._best_result: Optional[StreamStatisticData] = None
 
     def is_rx_port(self, peer_struct: "PortStruct"):
         return True if peer_struct in self._rx_ports else False

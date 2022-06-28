@@ -87,6 +87,10 @@ class ResourceManager:
         await setup_streams(self.port_structs, self.test_conf)
         for port_struct in self.port_structs:
             await port_struct.configure_streams(self.test_conf)
+            # set should stop on los before start traffic, can monitor sync status when traffic start
+            port_struct.set_should_stop_on_los(self.test_conf.should_stop_on_los)
+        
+        
 
     async def stop_traffic(self):
         await asyncio.gather(
@@ -221,12 +225,6 @@ class ResourceManager:
             ]
         )
 
-    def monitor_status(self):
-        if self.test_conf.should_stop_on_los:
-            for port_struct in self.port_structs:
-                port_struct.monitor_status()
-        for port_struct in self.tx_ports:
-            port_struct.monitor_traffic()
 
     def test_running(self) -> bool:
         s = any(port_struct.traffic_status for port_struct in self.tx_ports)

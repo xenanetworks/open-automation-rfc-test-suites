@@ -49,6 +49,12 @@ class BasePort:
         self._port = port
         self._xoa_out = xoa_out
         self._port_identity = port_identity
+        self._should_stop_on_los = False
+
+
+
+    def set_should_stop_on_los(self, value:bool) -> None:
+        self._should_stop_on_los = value
 
     @property
     def port_identity(self):
@@ -76,7 +82,7 @@ class BasePort:
         before = self._sync_status
         after = self._sync_status = bool(get_attr.sync_status)
         # logger.warning(f"Change sync status from {before} to {after} ")
-        if before and not after:
+        if self._should_stop_on_los and before and not after:
             raise exceptions.LossofPortSignal(port)
 
     async def _change_traffic_status(
@@ -93,12 +99,6 @@ class BasePort:
 
     async def set_toggle_port_sync(self, state: enums.OnOff) -> None:
         await self._port.tx_config.enable.set(state)
-
-    def monitor_status(self) -> None:
-        self._port.on_receive_sync_change(self._change_sync_status)
-
-    def monitor_traffic(self) -> None:
-        self._port.on_traffic_change(self._change_traffic_status)
 
     async def set_broadr_reach_mode(self, broadr_reach_mode: const.BRRModeStr) -> None:
         if self._port.is_brr_mode_supported == enums.YesNo.NO:
@@ -216,6 +216,8 @@ class BasePort:
         self._sync_status = await self.get_sync_status()
         self._traffic_status = await self.get_traffic_status()
         self._port.on_reservation_change(self.__on_reservation_status)
+        self._port.on_receive_sync_change(self._change_sync_status)
+        self._port.on_traffic_change(self._change_traffic_status)
         self._tester.on_disconnected(self.__on_disconnect_tester)
 
     async def clear_statistic(self) -> None:
@@ -441,6 +443,7 @@ class PortStruct(BasePort):
                     )
                 )
             )
+        
         mode = self._port_conf.port_speed_mode.to_xmp()
         if mode not in self.local_states.port_possible_speed_modes:
             self._xoa_out.send_warning(exceptions.PortSpeedWarning(mode))

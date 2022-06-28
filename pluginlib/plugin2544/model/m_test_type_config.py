@@ -73,7 +73,7 @@ class ThroughputTest(BaseModel):
     _output_format: Dict = output_format.THROUGHPUT_COMMON
 
     @property
-    def format(self):
+    def format(self) -> Dict:
         if self.rate_iteration_options.result_scope.is_per_source_port:
             return output_format.THROUGHPUT_PER_PORT
         else:
@@ -137,6 +137,7 @@ class LatencyTest(BaseModel):
     def format(self):
         return output_format.LATENCY_OUTPUT
 
+
 class FrameLossRateTest(BaseModel):
     test_type: TestType
     enabled: bool
@@ -154,8 +155,10 @@ class FrameLossRateTest(BaseModel):
     acceptable_loss_type: AcceptableLossType
 
     @property
-    def format(self):
+    def format(self) -> Dict:
         return output_format.FRAME_LOSS_OUTPUT
+
+
 class BackToBackTest(BaseModel):
     test_type: TestType
     enabled: bool
@@ -163,8 +166,9 @@ class BackToBackTest(BaseModel):
     rate_sweep_options: RateSweepOptions
 
     @property
-    def format(self):
+    def format(self) -> Dict:
         return output_format.BACKTOBACKOUTPUT
+
 
 AllTestType = Union[ThroughputTest, LatencyTest, FrameLossRateTest, BackToBackTest]
 

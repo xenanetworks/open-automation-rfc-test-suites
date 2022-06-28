@@ -87,7 +87,7 @@ class TestCaseProcessor:
         await schedule_arp_refresh(self.resources, self.address_refresh_handler)
 
     async def collect(
-        self, params: StatisticParams, data_format=None
+        self, params: StatisticParams, data_format:Dict
     ) -> FinalStatistic:
         while True:
             start_time = time.time()
@@ -278,8 +278,8 @@ class TestCaseProcessor:
             self._average_per_frame_size(test_type_conf, frame_size)
         else:
             result = self.test_results[test_type_conf.test_type]
-            for frame_size in result.keys():
-                self._average_per_frame_size(test_type_conf, frame_size)
+            for f in result.keys():
+                self._average_per_frame_size(test_type_conf, f)
 
     def _add_result(
         self, is_test_passed: bool, data_format: Dict, result: Optional[FinalStatistic]
