@@ -223,7 +223,7 @@ def setup_ethernet_segment(
     template = template_segment.copy()
     dmac = (
         address_collection.dmac
-        if address_collection.arp_mac.is_empty
+        if not address_collection.arp_mac or address_collection.arp_mac.is_empty
         else address_collection.arp_mac
     )
     if not dmac.is_empty and is_byte_values_zero(template, 0, 6):

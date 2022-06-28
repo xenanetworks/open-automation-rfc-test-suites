@@ -15,14 +15,15 @@ async def set_arp_request(
     port_struct: "PortStruct",
     peer_struct: "PortStruct",
     use_gateway_mac_as_dmac: bool,
-) -> Optional["MacAddress"]:
+) -> "MacAddress":
 
     if (
         not use_gateway_mac_as_dmac
         or not port_struct.port_conf.profile.protocol_version.is_l3
         or is_same_ipnetwork(port_struct, peer_struct)
     ):
-        return None
+        # return an empty Macaddress if no arp mac
+        return MacAddress()
     ip_properties = port_struct.port_conf.ip_properties
     peer_ip_properties = peer_struct.port_conf.ip_properties
     is_gateway_scenario = not ip_properties.gateway == peer_ip_properties.gateway

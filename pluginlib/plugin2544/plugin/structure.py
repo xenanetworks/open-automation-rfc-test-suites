@@ -399,7 +399,7 @@ class PortStruct(BasePort):
         rx_ports: List["PortStruct"],
         stream_id: int,
         tpldid: int,
-        arp_mac: Optional[MacAddress] = None,
+        arp_mac: MacAddress = MacAddress(),
         stream_offset: Optional["StreamOffset"] = None,
     ):
         stream_struct = StreamStruct(
