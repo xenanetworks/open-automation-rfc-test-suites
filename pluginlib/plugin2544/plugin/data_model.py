@@ -31,10 +31,12 @@ class StreamOffset(BaseModel):
 class AddressCollection:
     smac: MacAddress
     dmac: MacAddress
+    arp_mac: MacAddress
     src_ipv4_addr: IPv4Address
     dst_ipv4_addr: IPv4Address
     src_ipv6_addr: IPv6Address
     dst_ipv6_addr: IPv6Address
+
 
 
 @dataclass(init=False, repr=False)

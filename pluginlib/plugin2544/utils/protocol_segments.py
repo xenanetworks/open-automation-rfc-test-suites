@@ -221,9 +221,13 @@ def setup_ethernet_segment(
     template_segment: bytearray, address_collection: "AddressCollection"
 ) -> bytearray:
     template = template_segment.copy()
-
-    if not address_collection.dmac.is_empty and is_byte_values_zero(template, 0, 6):
-        copy_to(address_collection.dmac.to_bytearray(), template, 0)
+    dmac = (
+        address_collection.dmac
+        if address_collection.arp_mac.is_empty
+        else address_collection.arp_mac
+    )
+    if not dmac.is_empty and is_byte_values_zero(template, 0, 6):
+        copy_to(dmac.to_bytearray(), template, 0)
     if not address_collection.smac.is_empty and is_byte_values_zero(template, 6, 6):
         copy_to(address_collection.smac.to_bytearray(), template, 6)
     return template

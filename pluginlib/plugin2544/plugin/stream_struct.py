@@ -92,14 +92,14 @@ class StreamStruct:
         rx_ports: List["PortStruct"],
         stream_id: int,
         tpldid: int,
-        arp_mac: Optional[MacAddress] = None,
+        arp_mac: MacAddress = MacAddress(),
         stream_offset: Optional["StreamOffset"] = None,
     ):
         self._tx_port: "PortStruct" = tx_port
         self._rx_ports: List["PortStruct"] = rx_ports
         self._stream_id: int = stream_id
         self._tpldid: int = tpldid
-        self._arp_mac: Optional[MacAddress] = arp_mac
+        self._arp_mac: MacAddress = arp_mac
         self._stream: misc.GenuineStream
         self._flow_creation_type: const.FlowCreationType
         self._addr_coll: AddressCollection
@@ -184,6 +184,7 @@ class StreamStruct:
             self._tx_port,
             self.rx_port,
             test_conf.mac_base_address,
+            self._arp_mac,
             self._stream_offset,
         )
         await utils.apply(
@@ -330,10 +331,12 @@ async def get_address_collection(
     port_struct: "PortStruct",
     peer_struct: "PortStruct",
     mac_base_address: str,
+    arp_mac: MacAddress,
     stream_offset: Optional[StreamOffset] = None,
 ) -> "AddressCollection":
     if stream_offset:
         return AddressCollection(
+            arp_mac=arp_mac,
             smac=gen_macaddress(mac_base_address, stream_offset.tx_offset),
             dmac=gen_macaddress(mac_base_address, stream_offset.rx_offset),
             src_ipv4_addr=IPv4Address(
@@ -351,6 +354,7 @@ async def get_address_collection(
         )
     else:
         return AddressCollection(
+            arp_mac=arp_mac,
             smac=await port_struct.get_mac_address(),
             dmac=await peer_struct.get_mac_address(),
             src_ipv4_addr=port_struct.port_conf.ipv4_properties.address,
