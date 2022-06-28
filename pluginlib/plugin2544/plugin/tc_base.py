@@ -184,6 +184,8 @@ class TestCaseProcessor:
             await self.resources.set_tx_time_limit(0)
         if not test_type_conf.rate_iteration_options.result_scope.is_per_source_port:
             final = boundaries[0].best_final_result
+            # record the max throughput rate
+            self._set_throughput_for_frame_size(final.frame_size, final.tx_rate_percent)
         else:
             # Step 1: initial counter
             for port_struct in self.resources.port_structs:
@@ -210,7 +212,6 @@ class TestCaseProcessor:
                 ],
                 # stream_data=aggregate_stream_result(resource),
             )
-        self._set_throughput_for_frame_size(final.frame_size, final.tx_rate_percent)
         self._add_result(test_passed, test_type_conf.format, final)
 
     async def _back_to_back(
@@ -248,6 +249,7 @@ class TestCaseProcessor:
             )
 
     def _set_throughput_for_frame_size(self, frame_size: Decimal, rate: Decimal):
+        """ for latency relative to throughput use, use max throughput rate and only for throughput common result scope """
         if frame_size not in self._throughput_map:
             self._throughput_map[frame_size] = 0
         self._throughput_map[frame_size] = max(rate, self._throughput_map[frame_size])
@@ -261,7 +263,6 @@ class TestCaseProcessor:
             for statistic in statistic_lists:
                 if not final:
                     final = deepcopy(statistic)
-
                 else:
                     final.sum(statistic)
             if final:

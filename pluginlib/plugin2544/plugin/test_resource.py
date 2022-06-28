@@ -262,6 +262,7 @@ class ResourceManager:
             port_struct.set_rate(rate)
 
     async def set_tx_time_limit(self, tx_timelimit: Union[Decimal, int]) -> None:
+        """ throughput & latency & frame loss support txtimelimit """
         await asyncio.gather(
             *[
                 port_struct.set_tx_time_limit(int(tx_timelimit))
@@ -270,6 +271,7 @@ class ResourceManager:
         )
 
     async def set_frame_limit(self, frame_count: int) -> None:
+        """ back to back supoort packetlimit """
         await asyncio.gather(
             *[
                 stream_struct.set_frame_limit(frame_count)
@@ -300,6 +302,7 @@ class ResourceManager:
 
     async def start_traffic(self, port_sync=False) -> None:
         if not port_sync:
+            # send P_TRAFFIC every port
             await asyncio.gather(
                 *[
                     port_struct.set_traffic(enums.StartOrStop.START)
@@ -308,7 +311,7 @@ class ResourceManager:
             )
             return
         if len(self.mapping) == 1:
-            # same tester
+            # same tester send C_TRAFFIC 
             tester_id = list(self.mapping.keys())[0]
             tester = self.__testers[tester_id]
             await tester.traffic.set(

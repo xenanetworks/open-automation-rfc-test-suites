@@ -2,7 +2,7 @@ import asyncio
 from typing import TYPE_CHECKING, List, Union
 from xoa_driver.enums import ProtocolOption
 
-from pluginlib.plugin2544.model.m_test_type_config import AllTestType
+from ..model.m_test_type_config import AllTestType
 from ..utils import field, exceptions, constants as const
 from .common import filter_port_structs
 

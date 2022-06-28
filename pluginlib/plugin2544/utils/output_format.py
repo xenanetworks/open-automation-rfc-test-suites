@@ -40,6 +40,7 @@ FRAME_LOSS_OUTPUT = {
     },
     "port_data": {
         "__all__": {
+            "port_id": ...,
             "tx_counter": {"frames", "l1_bps", "fps"},
             "rx_counter": {"frames", "l1_bps", "fps"},
         }
@@ -67,6 +68,7 @@ THROUGHPUT_PER_PORT = {
     "port_data": {
         "__all__": {
             "rate": ...,
+            "port_id": ...,
             "actual_rate": ...,
             "tx_counter": {"frames", "l1_bps", "l2_bps", "fps"},
             "rx_counter": {"frames", "l1_bps", "l2_bps", "fps"},
@@ -83,6 +85,7 @@ THROUGHPUT_COMMON = {
     "is_final": ...,
     "frame_size": ...,
     "repetition": ...,
+    "tx_rate_percent": ...,
     "total": {
         "tx_counter": {"frames", "l1_bps", "fps"},
         "rx_counter": {"frames", "l1_bps", "fps"},
@@ -95,6 +98,7 @@ THROUGHPUT_COMMON = {
     },
     "port_data": {
         "__all__": {
+            "port_id": ...,
             "tx_counter": {"frames", "l1_bps", "l2_bps", "fps"},
             "rx_counter": {"frames", "l1_bps", "l2_bps", "fps"},
             "loss_frames": ...,
@@ -123,6 +127,7 @@ BACKTOBACKOUTPUT = {
     },
     "port_data": {
         "__all__": {
+            "port_id": ...,
             "burst_frames": ...,
             "burst_bytes_count": ...,
         }
