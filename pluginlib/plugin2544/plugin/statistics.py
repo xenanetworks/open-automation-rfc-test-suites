@@ -1,3 +1,4 @@
+import math
 from decimal import Decimal
 from typing import List, Union, TYPE_CHECKING
 from pydantic import BaseModel, validator
@@ -136,6 +137,7 @@ class PortCounter(StreamCounter):
         interframe_gap: Decimal,
     ):
         super().calculate_stream_rate(is_final, duration, frame_size, interframe_gap)
+
         self.l2_bps = self.l2_bit_rate if is_final else self.bps
         self.fps = self.frame_rate if is_final else self.pps
         self.l1_bps = (
@@ -148,9 +150,9 @@ class PortCounter(StreamCounter):
 class Statistic(BaseModel):
     port_id: str
     is_final: bool = False
-    frame_size: Decimal
-    duration: Decimal
-    rate: Decimal
+    frame_size: Decimal  # float       
+    duration: Decimal   
+    rate: Decimal   # float
     interframe_gap: Decimal
     port_speed: Decimal
     tx_counter: PortCounter = PortCounter()
@@ -163,16 +165,16 @@ class Statistic(BaseModel):
     loss_frames: Decimal = Decimal(0)
     loss_ratio: Decimal = Decimal(0)
     actual_rate: Decimal = Decimal(0)
-    tx_rate_l1_bps_theor: Decimal = Decimal(0)
-    tx_rate_fps_theor: Decimal = Decimal(0)
+    tx_rate_l1_bps_theor: int = 0
+    tx_rate_fps_theor: int = 0
 
     @validator("tx_rate_l1_bps_theor", always=True)
-    def set_theor_l1_bps_rate(cls, v, values) -> Decimal:
-        return values["port_speed"]
+    def set_theor_l1_bps_rate(cls, v, values) -> int:
+        return math.floor(values["port_speed"])
 
     @validator("tx_rate_fps_theor", always=True)
-    def set_theor_fps_rate(cls, v, values) -> Decimal:
-        return (
+    def set_theor_fps_rate(cls, v, values) -> int:
+        return math.floor(
             values["port_speed"]
             / Decimal("8")
             / (values["interframe_gap"] + values["frame_size"])
@@ -388,7 +390,7 @@ class FinalStatistic(BaseModel):
     result_state: const.ResultState = const.ResultState.PENDING
     tx_rate_percent: Decimal
     is_final: bool = True
-    frame_size: Decimal
+    frame_size: Decimal 
     repetition: Union[int, str] = "avg"
     port_data: List[Statistic] = []
     # stream_data: List[LatencyStreamStatistic]

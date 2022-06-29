@@ -2,7 +2,7 @@ import asyncio, time
 from decimal import Decimal
 from typing import Dict, List, TYPE_CHECKING, Union
 from loguru import logger
-from xoa_driver import testers as xoa_testers, modules, enums
+from xoa_driver import testers as xoa_testers, modules, enums, utils
 from .learning import add_mac_learning_steps
 from .config_checkers import check_config
 from .common import get_peers_for_source
@@ -89,16 +89,15 @@ class ResourceManager:
             await port_struct.configure_streams(self.test_conf)
             # set should stop on los before start traffic, can monitor sync status when traffic start
             port_struct.set_should_stop_on_los(self.test_conf.should_stop_on_los)
-        
-        
 
     async def stop_traffic(self):
-        await asyncio.gather(
+        await utils.apply(
             *[
                 port_struct.set_traffic(enums.StartOrStop.STOP)
                 for port_struct in self.port_structs
             ]
         )
+        await asyncio.sleep(1)
 
     async def setup_sweep_reduction(self):
         if (
@@ -225,26 +224,23 @@ class ResourceManager:
             ]
         )
 
-
     def test_running(self) -> bool:
         s = any(port_struct.traffic_status for port_struct in self.tx_ports)
-        if s:
-            logger.info([port_struct.traffic_status for port_struct in self.tx_ports])
-            logger.info("Test Start")
+        # if s:
+        #     logger.info([port_struct.traffic_status for port_struct in self.tx_ports])
+        # logger.info("Test Start")
         return s
 
     def test_finished(self) -> bool:
         s = all(not port_struct.traffic_status for port_struct in self.tx_ports)
-        if s:
-            logger.info([port_struct.traffic_status for port_struct in self.tx_ports])
-            logger.info("Test Finish")
+        # if s:
+        #     logger.info([port_struct.traffic_status for port_struct in self.tx_ports])
+        #     logger.info("Test Finish")
         return s
 
     def los(self) -> bool:
         if self.test_conf.should_stop_on_los:
-            return not all(
-                port_struct.sync_status for port_struct in self.port_structs
-            )
+            return not all(port_struct.sync_status for port_struct in self.port_structs)
         return False
 
     def should_quit(self, start_time: float, actual_duration: Decimal) -> bool:
@@ -262,7 +258,7 @@ class ResourceManager:
             port_struct.set_rate(rate)
 
     async def set_tx_time_limit(self, tx_timelimit: Union[Decimal, int]) -> None:
-        """ throughput & latency & frame loss support txtimelimit """
+        """throughput & latency & frame loss support txtimelimit"""
         await asyncio.gather(
             *[
                 port_struct.set_tx_time_limit(int(tx_timelimit))
@@ -271,7 +267,7 @@ class ResourceManager:
         )
 
     async def set_frame_limit(self, frame_count: int) -> None:
-        """ back to back supoort packetlimit """
+        """back to back supoort packetlimit"""
         await asyncio.gather(
             *[
                 stream_struct.set_frame_limit(frame_count)
@@ -303,15 +299,14 @@ class ResourceManager:
     async def start_traffic(self, port_sync=False) -> None:
         if not port_sync:
             # send P_TRAFFIC every port
-            await asyncio.gather(
+            await utils.apply(
                 *[
                     port_struct.set_traffic(enums.StartOrStop.START)
                     for port_struct in self.tx_ports
                 ]
             )
-            return
-        if len(self.mapping) == 1:
-            # same tester send C_TRAFFIC 
+        elif len(self.mapping) == 1:
+            # same tester send C_TRAFFIC
             tester_id = list(self.mapping.keys())[0]
             tester = self.__testers[tester_id]
             await tester.traffic.set(

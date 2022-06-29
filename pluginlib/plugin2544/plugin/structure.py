@@ -235,10 +235,10 @@ class BasePort:
             gap_monitor_start_microsec, gap_monitor_stop_frames
         )
 
-    async def set_traffic(self, traffic_state: enums.StartOrStop) -> None:
-        await self._port.traffic.state.set(traffic_state)
-        if not traffic_state:  # after stop traffic need to sleep 1 s
-            await asyncio.sleep(1)
+    def set_traffic(self, traffic_state: enums.StartOrStop):
+        return self._port.traffic.state.set(traffic_state)
+        # if not traffic_state:  # after stop traffic need to sleep 1 s
+        #     await asyncio.sleep(1)
 
     async def set_arp_trucks(self, arp_datas: Set["RXTableData"]) -> None:
         arp_chunk: List["misc.ArpChunk"] = []
