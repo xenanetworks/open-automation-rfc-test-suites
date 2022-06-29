@@ -199,7 +199,7 @@ class Converter:
             use_pass_threshold=rate_iteration_options.use_pass_threshold,
             pass_threshold_pct=rate_iteration_options.pass_threshold,
             acceptable_loss_pct=rate_iteration_options.acceptable_loss,
-            additional_statisics=throughput.report_property_options,
+            collect_latency_jitter="LatencyCounters" in throughput.report_property_options,
         )
 
     def __gen_latency(self, latency: "Latency") -> "LatencyTest":

@@ -69,15 +69,20 @@ class ThroughputTest(BaseModel):
     use_pass_threshold: bool
     pass_threshold_pct: float
     acceptable_loss_pct: float
-    additional_statisics: List[AdditionalStatisticsOption]
+    collect_latency_jitter: bool
+    # additional_statisics: List[AdditionalStatisticsOption]
     _output_format: Dict = output_format.THROUGHPUT_COMMON
 
     @property
     def format(self) -> Dict:
         if self.rate_iteration_options.result_scope.is_per_source_port:
-            return output_format.THROUGHPUT_PER_PORT
+            f = output_format.THROUGHPUT_PER_PORT
         else:
-            return output_format.THROUGHPUT_COMMON
+            f = output_format.THROUGHPUT_COMMON
+        if self.collect_latency_jitter:
+            f["port_data"]["__all__"]["latency"] = {"average", "minimum", "maximum"}
+            f["port_data"]["__all__"]["jitter"] = {"average", "minimum", "maximum"}
+        return f
 
 
 class RateSweepOptions(BaseModel):
