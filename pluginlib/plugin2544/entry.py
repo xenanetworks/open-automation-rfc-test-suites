@@ -51,7 +51,6 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
                 for iteration in range(1, max_iteration + 1):
                     yield iteration, current_packet_size
 
-
     async def __do_test(self) -> None:
         tc = TestCaseProcessor(self.resources, self.xoa_out)
         while True:
@@ -61,9 +60,16 @@ class TestSuit2544(PluginAbstract["PluginModel2544"]):
                     await self.state_conditions.stop_if_stopped()
                     await self.resources.setup_packet_size(current_packet_size)
                     await tc.run(type_conf, current_packet_size, iteration)
-                    if not self.test_conf.outer_loop_mode.is_iteration and type_conf.common_options.iterations > 1 and iteration == type_conf.common_options.iterations:
+                    if (
+                        not self.test_conf.outer_loop_mode.is_iteration
+                        and type_conf.common_options.iterations > 1
+                        and iteration == type_conf.common_options.iterations
+                    ):
                         tc.cal_average(type_conf, current_packet_size)
-                if self.test_conf.outer_loop_mode.is_iteration:
+                if (
+                    self.test_conf.outer_loop_mode.is_iteration
+                    and type_conf.common_options.iterations > 1
+                ):
                     tc.cal_average(type_conf)
 
             if not self.cfg.test_configuration.repeat_test_until_stopped:

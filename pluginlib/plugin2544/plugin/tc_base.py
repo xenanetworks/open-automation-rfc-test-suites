@@ -39,8 +39,8 @@ class TestCaseProcessor:
         self.resources: "ResourceManager" = resources
         self.xoa_out = xoa_out
         self.address_refresh_handler: Optional[AddressRefreshHandler] = None
-        self.test_results = {}
-        self._throughput_map = {}
+        self.test_results = {}  # save result to calculate average 
+        self._throughput_map = {}   # save throughput rate for latency relative to throughput use
 
     async def prepare(self) -> None:
         if not self.resources.test_conf.arp_refresh_enabled:
@@ -87,7 +87,7 @@ class TestCaseProcessor:
         await schedule_arp_refresh(self.resources, self.address_refresh_handler)
 
     async def collect(
-        self, params: StatisticParams, data_format:Dict
+        self, params: StatisticParams, data_format: Dict
     ) -> FinalStatistic:
         while True:
             start_time = time.time()
@@ -112,11 +112,8 @@ class TestCaseProcessor:
         self, test_type_conf: LatencyTest, current_packet_size: Decimal, repetition: int
     ):
         factor = Decimal(100)
-        if (
-            test_type_conf.use_relative_to_throughput
-            and self._throughput_map
-        ):
-            factor = self._throughput_map.get(current_packet_size)  or factor 
+        if test_type_conf.use_relative_to_throughput and self._throughput_map:
+            factor = self._throughput_map.get(current_packet_size) or factor
         for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
             tx_rate_nomial_percent = rate_percent
             rate_percent = rate_percent * factor / Decimal(100)
@@ -249,27 +246,40 @@ class TestCaseProcessor:
             )
 
     def _set_throughput_for_frame_size(self, frame_size: Decimal, rate: Decimal):
-        """ for latency relative to throughput use, use max throughput rate and only for throughput common result scope """
+        """for latency relative to throughput use, use max throughput rate and only for throughput common result scope"""
         if frame_size not in self._throughput_map:
             self._throughput_map[frame_size] = 0
         self._throughput_map[frame_size] = max(rate, self._throughput_map[frame_size])
+
+    def _average_statistic(
+        self, test_type_conf: AllTestType, statistic_lists: List[FinalStatistic]
+    ) -> Optional[FinalStatistic]:
+        final: Optional[FinalStatistic] = None
+        for statistic in statistic_lists:
+            if not final:
+                final = deepcopy(statistic)
+            else:
+                final.sum(statistic)
+        if final:
+            final.repetition = "avg"
+            final.avg(len(statistic_lists))
+            logger.info(final.json(include=test_type_conf.format, indent=2))
+        return final
 
     def _average_per_frame_size(
         self, test_type_conf: AllTestType, frame_size: Decimal
     ) -> None:
         result = self.test_results[test_type_conf.test_type][frame_size]
-        for rate_percent, statistic_lists in result.items():
-            final: Optional[FinalStatistic] = None
-            for statistic in statistic_lists:
-                if not final:
-                    final = deepcopy(statistic)
-                else:
-                    final.sum(statistic)
-            if final:
-                final.repetition = "avg"
-                final.avg(len(statistic_lists))
-                result[rate_percent].append(final)
-                logger.info(final.json(include=test_type_conf.format, indent=2))
+        if isinstance(test_type_conf, ThroughputTest):
+            """ throughput test calculate average based on same frame size"""
+            statistic_lists = []
+            for s in result.values():
+                statistic_lists.extend(s)
+            self._average_statistic(test_type_conf, statistic_lists)
+        else:
+            """ calculate average based on same frame size and same rate """
+            for statistic_lists in result.values():
+                self._average_statistic(test_type_conf, statistic_lists)
 
     def cal_average(
         self, test_type_conf: AllTestType, frame_size: Optional[Decimal] = None
