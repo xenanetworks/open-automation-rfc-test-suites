@@ -51,9 +51,7 @@ class BasePort:
         self._port_identity = port_identity
         self._should_stop_on_los = False
 
-
-
-    def set_should_stop_on_los(self, value:bool) -> None:
+    def set_should_stop_on_los(self, value: bool) -> None:
         self._should_stop_on_los = value
 
     @property
@@ -116,8 +114,9 @@ class BasePort:
         elif isinstance(self._port, const.MdixPorts):
             await self._port.mdix_mode.set(mdi_mdix_mode.to_xmp())
 
-    async def set_anlt(self) -> None:
-        if not isinstance(self._port, const.PCSPMAPorts):
+    async def set_anlt(self, on_off: bool) -> None:
+        """ Thor-400G-7S-1P support ANLT feature """
+        if not on_off or not isinstance(self._port, const.PCSPMAPorts):
             return
 
         if bool(self._port.info.capabilities.can_auto_neg_base_r):
@@ -145,6 +144,26 @@ class BasePort:
                 exceptions.ANLTNotSupport(self._port_identity.name)
             )
 
+    async def set_auto_negotiation(self, on_off: bool) -> None:
+        if not on_off:
+            return
+        if not bool(self._port.info.capabilities.can_set_autoneg) or not isinstance(
+            self._port, const.AutoNegPorts
+        ):
+            self._xoa_out.send_warning(
+                exceptions.AutoNegotiationNotSupport(self._port_identity.name)
+            )
+            return
+        # TODO: wait for bifrost to change autonneg_selection into autoneg_selection
+        await self._port.autonneg_selection.set(enums.OnOff.ON)  # type:ignore
+
+    async def set_speed_mode(self, port_speed_mode: const.PortSpeedStr) -> None:
+        mode = port_speed_mode.to_xmp()
+        if mode not in self.local_states.port_possible_speed_modes:
+            self._xoa_out.send_warning(exceptions.PortSpeedWarning(mode))
+        else:
+            await self._port.speed.mode.selection.set(mode)
+
     async def set_sweep_reduction(self, ppm: int) -> None:
         await self._port.speed.reduction.set(ppm=ppm)
 
@@ -153,26 +172,11 @@ class BasePort:
             return
         await self._port.tx_config.delay.set(port_stagger_steps)  # P_TXDELAY
 
-    async def set_auto_negotiation(self) -> None:
-        if not bool(self._port.info.capabilities.can_set_autoneg) or not isinstance(
-            self._port, const.AutoNegPorts
-        ):
-            self._xoa_out.send_warning(
-                exceptions.AutoNegotiationNotSupport(self._port_identity.name)
-            )
+    async def set_fec_mode(self, fec_mode: const.FECModeStr) -> None:
+        """ Loki-100G-5S-2P  module 4 * 25G support FC_FEC mode """
+        if fec_mode == const.FECModeStr.OFF:
             return
-        await self._port.autonneg_selection.set(enums.OnOff.ON)  # type:ignore
-
-    async def set_fec_mode(self) -> None:
-        # fec mode
-        # TODO: need to distinguish which mode to set
-
-        if self._port.info.capabilities.can_fec == enums.FECMode.OFF:
-            self._xoa_out.send_warning(
-                exceptions.FecModeNotSupport(self._port_identity.name)
-            )
-            return
-        await self._port.fec_mode.set(enums.FECMode.ON)
+        await self._port.fec_mode.set(fec_mode.to_xmp())
 
     async def set_max_header(self, header_segments: List["HeaderSegment"]) -> None:
         # calculate max header length
@@ -349,7 +353,7 @@ class PortStruct(BasePort):
         self._stream_structs: List["StreamStruct"] = []
         self._rate: Decimal = Decimal(0)
         self._port_speed: Decimal
-        self._statistic: Statistic = None   # type ignore
+        self._statistic: Statistic = None  # type ignore
 
     @property
     def port_speed(self) -> Decimal:
@@ -386,7 +390,7 @@ class PortStruct(BasePort):
             port_speed=self._port_speed,
             interframe_gap=self._port_conf.inter_frame_gap,
         )
-    
+
     def clear_counter(self):
         self._statistic = None
 
@@ -443,26 +447,20 @@ class PortStruct(BasePort):
                     )
                 )
             )
-        
-        mode = self._port_conf.port_speed_mode.to_xmp()
-        if mode not in self.local_states.port_possible_speed_modes:
-            self._xoa_out.send_warning(exceptions.PortSpeedWarning(mode))
+
+        await self.set_speed_mode(self._port_conf.port_speed_mode)
         await self.set_latency_offset(self._port_conf.latency_offset_ms)
         await self.set_interframe_gap(int(self._port_conf.inter_frame_gap))
         await self.set_pause_mode(self._port_conf.pause_mode_enabled)
         await self.set_latency_mode(latency_mode)
-        # self.port.speed.mode.selection.set(mode),
         await self.set_tpld_mode(test_conf.use_micro_tpld_on_demand)
         await self.set_reply()
         await self.set_ip_address()
         await self.set_broadr_reach_mode(self._port_conf.broadr_reach_mode)
         await self.set_mdi_mdix_mode(self._port_conf.mdi_mdix_mode)
-        if self._port_conf.fec_mode:
-            await self.set_fec_mode()
-        if self._port_conf.anlt_enabled:
-            await self.set_anlt()
-        if not self._port_conf.auto_neg_enabled:
-            await self.set_auto_negotiation()
+        await self.set_fec_mode(self._port_conf.fec_mode)
+        await self.set_anlt(self._port_conf.anlt_enabled)
+        await self.set_auto_negotiation(self._port_conf.auto_neg_enabled)
         await self.set_max_header(self._port_conf.profile.header_segments)
         await self.set_sweep_reduction(self._port_conf.speed_reduction_ppm)
         await self.set_stagger_step(test_conf.port_stagger_steps)

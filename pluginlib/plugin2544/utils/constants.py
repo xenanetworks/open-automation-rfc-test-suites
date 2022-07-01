@@ -1,16 +1,6 @@
 import os
 from enum import Enum as CaseSensitiveEnum
-from xoa_driver import ports
-from xoa_driver.enums import (
-    ProtocolOption,
-    LengthType,
-    ModifierAction,
-    LatencyMode,
-    PayloadType,
-    MDIXMode,
-    BRRMode,
-    PortSpeedMode,
-)
+from xoa_driver import ports, enums
 
 
 class Enum(CaseSensitiveEnum):
@@ -168,9 +158,9 @@ class PacketSizeType(Enum):
 
     def to_xmp(self):
         if self.is_fix:
-            return LengthType.FIXED
+            return enums.LengthType.FIXED
         else:
-            return LengthType[self.name]
+            return enums.LengthType[self.name]
 
 
 class PayloadTypeStr(Enum):
@@ -179,7 +169,7 @@ class PayloadTypeStr(Enum):
     PRBS = "prbs"
 
     def to_xmp(self):
-        return PayloadType[self.name]
+        return enums.PayloadType[self.name]
 
 
 class TidAllocationScope(Enum):
@@ -215,6 +205,7 @@ class DurationType(Enum):
     def is_time_duration(self) -> bool:
         return self == type(self).TIME
 
+
 class DurationUnit(Enum):
     SECOND = "seconds"
     MINUTE = "minutes"
@@ -241,6 +232,7 @@ class DurationUnit(Enum):
         elif self == type(self).HOUR:
             return 3600
         raise ValueError("No scale!")
+
 
 class DurationTimeUnit(Enum):
     SECOND = "seconds"
@@ -320,8 +312,8 @@ class LatencyModeStr(Enum):
     FIRST2FIRST = "first_to_first"
     LAST2FIRST = "last_to_first"
 
-    def to_xmp(self) -> "LatencyMode":
-        return LatencyMode[self.name]
+    def to_xmp(self) -> "enums.LatencyMode":
+        return enums.LatencyMode[self.name]
 
 
 class TestResultState(Enum):
@@ -364,22 +356,25 @@ class MdiMdixMode(Enum):
     MDI = "mdi"
     MDIX = "mdix"
 
-    def to_xmp(self) -> "MDIXMode":
-        return MDIXMode[self.name]
+    def to_xmp(self) -> "enums.MDIXMode":
+        return enums.MDIXMode[self.name]
 
 
 class BRRModeStr(Enum):
     MASTER = "master"
     SLAVE = "slave"
 
-    def to_xmp(self) -> "BRRMode":
-        return BRRMode[self.name]
+    def to_xmp(self) -> "enums.BRRMode":
+        return enums.BRRMode[self.name]
 
 
 class FECModeStr(Enum):
     ON = "on"
     OFF = "off"
     FC_FEC = "fc_fec"
+
+    def to_xmp(self) -> "enums.FECMode":
+        return enums.FECMode[self.name]
 
 
 class PortSpeedStr(Enum):
@@ -410,8 +405,8 @@ class PortSpeedStr(Enum):
     def is_auto(self):
         return self == PortSpeedStr.AUTO
 
-    def to_xmp(self) -> "PortSpeedMode":
-        return PortSpeedMode[self.name]
+    def to_xmp(self) -> "enums.PortSpeedMode":
+        return enums.PortSpeedMode[self.name]
 
 
 class PortGroup(Enum):
@@ -433,8 +428,8 @@ class ModifierActionOption(Enum):
     DEC = "decrement"
     RANDOM = "random"
 
-    def to_xmp(self) -> "ModifierAction":
-        return ModifierAction[self.name]
+    def to_xmp(self) -> "enums.ModifierAction":
+        return enums.ModifierAction[self.name]
 
 
 class FlowCreationType(Enum):
@@ -516,8 +511,8 @@ class SegmentType(Enum):
     for i in range(1, 65):
         SegmentType[f"RAW_{i}"] = f"raw_{i}"  # type: ignore
 
-    def to_xmp(self) -> "ProtocolOption":
-        return ProtocolOption[self.name]
+    def to_xmp(self) -> "enums.ProtocolOption":
+        return enums.ProtocolOption[self.name]
 
     @property
     def is_raw(self) -> bool:

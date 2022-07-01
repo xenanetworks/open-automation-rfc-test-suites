@@ -1,10 +1,9 @@
 from decimal import Decimal
-from typing import Any, List
+from typing import Any
 from loguru import logger
-
 from pydantic import NonNegativeInt
 from xoa_driver import ports as xoa_ports, testers as xoa_testers
-from .constants import MIXED_DEFAULT_WEIGHTS
+from . import constants as const
 
 
 class BXMPWarning(Warning):
@@ -146,7 +145,7 @@ class MacAddressNotValid(Exception):
 
 class MixWeightsNotEnough(Exception):
     def __init__(self) -> None:
-        self.msg = f"Not enough mixed weights; there should be {len(MIXED_DEFAULT_WEIGHTS)} number of mixed weights!"
+        self.msg = f"Not enough mixed weights; there should be {len(const.MIXED_DEFAULT_WEIGHTS)} number of mixed weights!"
         super().__init__(self.msg)
 
 
@@ -249,8 +248,8 @@ class FECModeRequired(Exception):
 
 
 class FECModeTypeNotSupport(Exception):
-    def __init__(self, support_mode: List) -> None:
-        self.msg = f"port support {support_mode} FECMode"
+    def __init__(self, support_mode: const.FECModeStr) -> None:
+        self.msg = f"port not support {support_mode} FECMode"
         super().__init__(self.msg)
 
 

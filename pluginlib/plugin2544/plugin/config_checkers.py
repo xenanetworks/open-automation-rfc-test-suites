@@ -48,17 +48,13 @@ def check_port_config_profile(
 def check_can_fec(can_fec: int, fec_mode: const.FECModeStr) -> None:
     bin_str = bin(can_fec)[2:].zfill(32)
     is_mandatory = int(bin_str[-32])
-    cap_mode = bin_str[-3:]
-    supported_mode = [] if is_mandatory else [const.FECModeStr.OFF]
-    if fec_mode == const.FECModeStr.OFF:
-        if is_mandatory:
-            raise exceptions.FECModeRequired()
-    elif cap_mode == "100" and fec_mode != const.FECModeStr.FC_FEC:
-        supported_mode.append(const.FECModeStr.FC_FEC)
-        raise exceptions.FECModeTypeNotSupport(supported_mode)
-    elif cap_mode in ["010", "001"] and fec_mode != const.FECModeStr.ON:
-        supported_mode.append(const.FECModeStr.ON)
-        raise exceptions.FECModeTypeNotSupport(supported_mode)
+    is_fc_fec_supported = int(bin_str[-3])
+    if is_mandatory and fec_mode == const.FECModeStr.OFF:
+        raise exceptions.FECModeRequired()
+    elif fec_mode == const.FECModeStr.FC_FEC and not is_fc_fec_supported:
+        raise exceptions.FECModeTypeNotSupport(const.FECModeStr.FC_FEC)
+    elif fec_mode == const.FECModeStr.ON and bin_str[-2:] in ["00", "11"]:
+        raise exceptions.FECModeTypeNotSupport(const.FECModeStr.ON)
 
 
 async def check_custom_port_config(
@@ -291,15 +287,16 @@ async def check_testers(
     )
 
 
-def check_test_type_config(test_types:List[AllTestType]):
+def check_test_type_config(test_types: List[AllTestType]):
     for test_type_conf in test_types:
-        if test_type_conf.test_type.is_back_to_back:    # back to back require frame duration
+        if (
+            test_type_conf.test_type.is_back_to_back
+        ):  # back to back require frame duration
             if test_type_conf.common_options.duration_type.is_time_duration:
                 raise exceptions.FrameDurationRequire(test_type_conf.test_type.value)
-        else:   # other test type require time duration
+        else:  # other test type require time duration
             if not test_type_conf.common_options.duration_type.is_time_duration:
                 raise exceptions.TimeDurationRequire(test_type_conf.test_type.value)
-
 
 
 async def check_config(

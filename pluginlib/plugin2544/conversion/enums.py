@@ -12,7 +12,7 @@ class Enum(CaseSensitiveEnum):
                     return member
 
 
-class ODurationType(Enum):
+class LegacyDurationType(Enum):
     TIME = "seconds"
     FRAME = "frames"
 
@@ -21,7 +21,17 @@ class ODurationType(Enum):
         return const.DurationType[self.name]
 
 
-class OSearchType(Enum):
+class LegacyFecMode(Enum):
+    ON = "on"
+    OFF = "off"
+    FC_FEC = "FIRECODE"
+
+    @property
+    def core(self):
+        return const.FECModeStr[self.name]
+
+
+class LegacySearchType(Enum):
     BINARY_SEARCH = "binarysearch"
     FAST_BINARY_SEARCH = "fastbinarysearc"
 
@@ -30,7 +40,7 @@ class OSearchType(Enum):
         return const.SearchType[self.name]
 
 
-class ODurationFrameUnit(Enum):
+class LegacyDurationFrameUnit(Enum):
     FRAME = "frames"
     K_FRAME = "kframes"
     M_FRAME = "mframes"
@@ -41,7 +51,7 @@ class ODurationFrameUnit(Enum):
         return const.DurationFrameUnit[self.name]
 
 
-class OTrafficDirection(Enum):
+class LegacyTrafficDirection(Enum):
     EAST_TO_WEST = "east_west"
     WEST_TO_EAST = "west_east"
     BIDIRECTION = "bidir"
@@ -51,7 +61,7 @@ class OTrafficDirection(Enum):
         return const.TrafficDirection[self.name]
 
 
-class OPacketSizeType(Enum):
+class LegacyPacketSizeType(Enum):
     IETF_DEFAULT = "ieeedefault"
     CUSTOM = "customsizes"
     RANGE = "specified"
@@ -65,7 +75,7 @@ class OPacketSizeType(Enum):
         return const.PacketSizeType[self.name]
 
 
-class OModifierActionOption(Enum):
+class LegacyModifierActionOption(Enum):
     INC = "inc"
     DEC = "dec"
     RANDOM = "rnd"
@@ -75,7 +85,7 @@ class OModifierActionOption(Enum):
         return const.ModifierActionOption[self.name]
 
 
-class OPortRateCapUnit(Enum):
+class LegacyPortRateCapUnit(Enum):
     GBPS = "gbps"
     MBPS = "mbps"
     KBPS = "kbps"
@@ -86,7 +96,7 @@ class OPortRateCapUnit(Enum):
         return const.PortRateCapUnit[self.name]
 
 
-class OPortRateCapProfile(Enum):
+class LegacyPortRateCapProfile(Enum):
     PHYSICAL = "Physical Port Rate"
     CUSTOM = "Custom Rate Cap"
 
@@ -95,7 +105,7 @@ class OPortRateCapProfile(Enum):
         return const.PortRateCapProfile[self.name]
 
 
-class OOuterLoopMode(Enum):
+class LegacyOuterLoopMode(Enum):
     ITERATION = "iterations"
     PACKET_SIZE = "packetsize"
 
@@ -104,7 +114,7 @@ class OOuterLoopMode(Enum):
         return const.OuterLoopMode[self.name]
 
 
-class OMACLearningMode(Enum):
+class LegacyMACLearningMode(Enum):
     NEVER = "never"
     ONCE = "once"
     EVERYTRIAL = "everytrial"
@@ -114,7 +124,7 @@ class OMACLearningMode(Enum):
         return const.MACLearningMode[self.name]
 
 
-class OFlowCreationType(Enum):
+class LegacyFlowCreationType(Enum):
     STREAM = "streambased"
     MODIFIER = "modifierbased"
 
@@ -123,7 +133,7 @@ class OFlowCreationType(Enum):
         return const.FlowCreationType[self.name]
 
 
-class OTidAllocationScope(Enum):
+class LegacyTidAllocationScope(Enum):
     CONFIGURATION_SCOPE = "configscope"
     RX_PORT_SCOPE = "portscope"
     SOURCE_PORT_ID = "srcportid"
@@ -133,7 +143,7 @@ class OTidAllocationScope(Enum):
         return const.TidAllocationScope[self.name]
 
 
-class ORateResultScopeType(Enum):
+class LegacyRateResultScopeType(Enum):
     COMMON = "commonresult"
     PER_SOURCE_PORT = "persrcportresult"
 
@@ -150,7 +160,7 @@ class ORateResultScopeType(Enum):
 # }
 
 
-class OTestType(Enum):
+class LegacyTestType(Enum):
     THROUGHPUT = "throughput"
     LATENCY_JITTER = "latency"
     FRAME_LOSS_RATE = "loss"
@@ -161,7 +171,7 @@ class OTestType(Enum):
         return const.TestType[self.name]
 
 
-class OSegmentType(Enum):
+class LegacySegmentType(Enum):
     ETHERNET = "ethernet"
     VLAN = "vlan"
     ARP = "arp"

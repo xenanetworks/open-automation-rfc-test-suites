@@ -1,10 +1,9 @@
-import os, sys
 import hashlib
 from decimal import Decimal
 from typing import Dict, List, Tuple, Union, TYPE_CHECKING
 from xoa_core.core.test_suites.datasets import TestParameters, PortIdentity
 from .enums import (
-    OSegmentType,
+    LegacySegmentType,
 )
 from ..dataset import PluginModel2544
 from ..model import (
@@ -29,21 +28,20 @@ from ..model import (
     ThroughputTest,
 )
 from ..utils.protocol_segments import get_segment_definition
-# sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from .model2544 import Model2544 as old_model, OFrameSizesOptions
+from .model2544 import LegacyModel2544 as old_model, LegacyFrameSizesOptions
 if TYPE_CHECKING:
     from .model2544 import (
-        Back2Back,
-        Latency,
-        Loss,
-        ORateIterationOptions,
-        ORateSweepOptions,
-        PortEntity,
-        Throughput,
+        LegacyBack2Back,
+        LegacyLatency,
+        LegacyLoss,
+        LegacyRateIterationOptions,
+        LegacyRateSweepOptions,
+        LegacyPortEntity,
+        LegacyThroughput,
     )
 
 
-def get_field_bit_length(protocol: OSegmentType, field_name) -> Tuple[int, int]:
+def get_field_bit_length(protocol: LegacySegmentType, field_name) -> Tuple[int, int]:
     if protocol.is_raw:
         return 0, protocol.raw_length * 8
     segment_def = get_segment_definition(protocol.core)
@@ -87,7 +85,7 @@ class Converter:
             varying_packet_min_size=packet_size.hw_packet_min_size,
             varying_packet_max_size=packet_size.hw_packet_max_size,
             mixed_sizes_weights=packet_size.mixed_sizes_weights,
-            mixed_length_config=OFrameSizesOptions(**fz),
+            mixed_length_config=LegacyFrameSizesOptions(**fz),
         )
 
     def __gen_multi_stream_config(self) -> "MultiStreamConfig":
@@ -152,7 +150,7 @@ class Converter:
 
     def __gen_rate_sweep_option(
         self,
-        rate_sweep_options: "ORateSweepOptions",
+        rate_sweep_options: "LegacyRateSweepOptions",
         burst_resolution: Decimal = Decimal("0"),
     ) -> "RateSweepOptions":
         return RateSweepOptions(
@@ -163,7 +161,7 @@ class Converter:
         )
 
     def __gen_common_option(
-        self, test_type_conf: Union["Throughput", "Latency", "Loss", "Back2Back"]
+        self, test_type_conf: Union["LegacyThroughput", "LegacyLatency", "LegacyLoss", "LegacyBack2Back"]
     ) -> "CommonOptions":
 
         return CommonOptions(
@@ -176,7 +174,7 @@ class Converter:
         )
 
     def __gen_rate_iteration_options(
-        self, rate_iteration_options: "ORateIterationOptions"
+        self, rate_iteration_options: "LegacyRateIterationOptions"
     ) -> "RateIterationOptions":
         return RateIterationOptions(
             search_type=rate_iteration_options.search_type.core,
@@ -187,7 +185,7 @@ class Converter:
             value_resolution_pct=rate_iteration_options.value_resolution,
         )
 
-    def __gen_throughput(self, throughput: "Throughput") -> "ThroughputTest":
+    def __gen_throughput(self, throughput: "LegacyThroughput") -> "ThroughputTest":
         rate_iteration_options = throughput.rate_iteration_options
         return ThroughputTest(
             test_type=throughput.test_type.core,
@@ -202,7 +200,7 @@ class Converter:
             collect_latency_jitter="LatencyCounters" in throughput.report_property_options,
         )
 
-    def __gen_latency(self, latency: "Latency") -> "LatencyTest":
+    def __gen_latency(self, latency: "LegacyLatency") -> "LatencyTest":
         return LatencyTest(
             test_type=latency.test_type.core,
             enabled=latency.enabled,
@@ -212,7 +210,7 @@ class Converter:
             use_relative_to_throughput=latency.rate_relative_tput_max_rate,
         )
 
-    def __gen_loss(self, loss: "Loss") -> "FrameLossRateTest":
+    def __gen_loss(self, loss: "LegacyLoss") -> "FrameLossRateTest":
         return FrameLossRateTest(
             test_type=loss.test_type.core,
             enabled=loss.enabled,
@@ -226,7 +224,7 @@ class Converter:
             gap_monitor_stop_frames=loss.gap_monitor_stop,
         )
 
-    def __gen_back_to_back(self, back_to_back: "Back2Back") -> "BackToBackTest":
+    def __gen_back_to_back(self, back_to_back: "LegacyBack2Back") -> "BackToBackTest":
         return BackToBackTest(
             test_type=back_to_back.test_type.core,
             enabled=back_to_back.enabled,
@@ -324,7 +322,7 @@ class Converter:
             )
         return protocol_segments_profile
 
-    def __gen_ipv4_addr(self, entity: "PortEntity") -> "IPV4AddressProperties":
+    def __gen_ipv4_addr(self, entity: "LegacyPortEntity") -> "IPV4AddressProperties":
         return IPV4AddressProperties(
             address=entity.ip_v4_address,
             routing_prefix=entity.ip_v4_routing_prefix,
@@ -338,7 +336,7 @@ class Converter:
             else "0.0.0.0",
         )
 
-    def __gen_ipv6_addr(self, entity: "PortEntity") -> "IPV6AddressProperties":
+    def __gen_ipv6_addr(self, entity: "LegacyPortEntity") -> "IPV6AddressProperties":
         return IPV6AddressProperties(
             address=entity.ip_v6_address,
             routing_prefix=entity.ip_v6_routing_prefix,
@@ -352,7 +350,7 @@ class Converter:
             else "::",
         )
 
-    def __gen_port_conf(self, entity: "PortEntity") -> "PortConfiguration":
+    def __gen_port_conf(self, entity: "LegacyPortEntity") -> "PortConfiguration":
         profile_id = self.data.stream_profile_handler.profile_assignment_map.get(
             f"guid_{entity.item_id}"
         )
@@ -373,7 +371,7 @@ class Converter:
             speed_reduction_ppm=entity.adjust_ppm,
             pause_mode_enabled=entity.pause_mode_on,
             latency_offset_ms=entity.latency_offset,
-            fec_mode=entity.fec_mode,
+            fec_mode=entity.fec_mode.core,
             port_rate_cap_enabled=bool(entity.enable_port_rate_cap),
             port_rate_cap_value=entity.port_rate_cap_value,
             port_rate_cap_profile=entity.port_rate_cap_profile.core,
