@@ -67,11 +67,11 @@ class BasePort:
         return self._port.statistics
 
     @property
-    def sync_status(self):
+    def sync_status(self) -> bool:
         return self._sync_status
 
     @property
-    def traffic_status(self):
+    def traffic_status(self) -> bool:
         return self._traffic_status
 
     async def _change_sync_status(
@@ -115,7 +115,7 @@ class BasePort:
             await self._port.mdix_mode.set(mdi_mdix_mode.to_xmp())
 
     async def set_anlt(self, on_off: bool) -> None:
-        """ Thor-400G-7S-1P support ANLT feature """
+        """Thor-400G-7S-1P support ANLT feature"""
         if not on_off or not isinstance(self._port, const.PCSPMAPorts):
             return
 
@@ -123,8 +123,8 @@ class BasePort:
             await self._port.pcs_pma.auto_neg.settings.set(
                 enums.AutoNegMode.ANEG_ON,
                 enums.AutoNegTecAbility.DEFAULT_TECH_MODE,
-                enums.AutoNegFECOption.NO_FEC,
-                enums.AutoNegFECOption.NO_FEC,
+                enums.AutoNegFECOption.DEFAULT_FEC,
+                enums.AutoNegFECOption.DEFAULT_FEC,
                 enums.PauseMode.NO_PAUSE,
             )
         else:
@@ -145,17 +145,18 @@ class BasePort:
             )
 
     async def set_auto_negotiation(self, on_off: bool) -> None:
+        """P_AUTONEGSELECTION"""
         if not on_off:
             return
-        if not bool(self._port.info.capabilities.can_set_autoneg) or not isinstance(
-            self._port, const.AutoNegPorts
-        ):
+        if not bool(self._port.info.capabilities.can_set_autoneg):
             self._xoa_out.send_warning(
                 exceptions.AutoNegotiationNotSupport(self._port_identity.name)
             )
-            return
         # TODO: wait for bifrost to change autonneg_selection into autoneg_selection
-        await self._port.autonneg_selection.set(enums.OnOff.ON)  # type:ignore
+        elif isinstance(self._port, const.AutoNegPortsE):
+            await self._port.autonneg_selection.set_on()  # type:ignore
+        elif isinstance(self._port, const.AutoNegPortsD):
+            await self._port.autoneg_selection.set_on()
 
     async def set_speed_mode(self, port_speed_mode: const.PortSpeedStr) -> None:
         mode = port_speed_mode.to_xmp()
@@ -173,10 +174,10 @@ class BasePort:
         await self._port.tx_config.delay.set(port_stagger_steps)  # P_TXDELAY
 
     async def set_fec_mode(self, fec_mode: const.FECModeStr) -> None:
-        """ Loki-100G-5S-2P  module 4 * 25G support FC_FEC mode """
+        """Loki-100G-5S-2P  module 4 * 25G support FC_FEC mode"""
         if fec_mode == const.FECModeStr.OFF:
             return
-        await self._port.fec_mode.set(fec_mode.to_xmp())
+        await self._port.fec_mode.set(fec_mode.to_xmp())  # PP_FECMODE
 
     async def set_max_header(self, header_segments: List["HeaderSegment"]) -> None:
         # calculate max header length
@@ -206,15 +207,15 @@ class BasePort:
         await self._port.tx_single_pkt.send.set(packet)
 
     async def free(self) -> None:
-        await self._port.reservation.set(enums.ReservedAction.RELEASE)
+        await self._port.reservation.set_release()
 
     async def reserve(self) -> None:
         if self._port.is_reserved_by_me():
             await self.free()
         elif self._port.is_reserved_by_others():
-            await self._port.reservation.set(enums.ReservedAction.RELINQUISH)
+            await self._port.reservation.set_relinquish()
         await utils.apply(
-            self._port.reservation.set(enums.ReservedAction.RESERVE),
+            self._port.reservation.set_reserve(),
             self._port.reset.set(),
         )
         self._sync_status = await self.get_sync_status()
@@ -276,10 +277,10 @@ class BasePort:
 
     async def set_reply(self) -> None:
         await utils.apply(
-            self._port.net_config.ipv4.arp_reply.set(enums.OnOff.ON),  # P_ARPREPLY
-            self._port.net_config.ipv6.arp_reply.set(enums.OnOff.ON),  # P_ARPV6REPLY
-            self._port.net_config.ipv4.ping_reply.set(enums.OnOff.ON),  # P_PINGREPLY
-            self._port.net_config.ipv6.ping_reply.set(enums.OnOff.ON),  # P_PINGV6REPLY
+            self._port.net_config.ipv4.arp_reply.set_on(),  # P_ARPREPLY
+            self._port.net_config.ipv6.arp_reply.set_on(),  # P_ARPV6REPLY
+            self._port.net_config.ipv4.ping_reply.set_on(),  # P_PINGREPLY
+            self._port.net_config.ipv6.ping_reply.set_on(),  # P_PINGV6REPLY
         )
 
     async def set_tpld_mode(self, use_micro_tpld: bool) -> None:
@@ -351,7 +352,7 @@ class PortStruct(BasePort):
         self._port_conf = port_conf
         self.properties = Properties()
         self._stream_structs: List["StreamStruct"] = []
-        self._rate: Decimal = Decimal(0)
+        self._rate: Decimal = Decimal("0")
         self._port_speed: Decimal
         self._statistic: Statistic = None  # type ignore
 
@@ -368,11 +369,11 @@ class PortStruct(BasePort):
         return self._stream_structs
 
     @property
-    def statistic(self) -> Statistic:
+    def statistic(self) -> "Statistic":
         return self._statistic
 
     @property
-    def port_conf(self):
+    def port_conf(self) -> "PortConfiguration":
         return self._port_conf
 
     def set_rate(self, rate: Decimal) -> None:
@@ -391,7 +392,7 @@ class PortStruct(BasePort):
             interframe_gap=self._port_conf.inter_frame_gap,
         )
 
-    def clear_counter(self):
+    def clear_counter(self) -> None:
         self._statistic = None
 
     @property
@@ -428,7 +429,7 @@ class PortStruct(BasePort):
 
     async def set_streams_packet_size(
         self, packet_size_type: enums.LengthType, min_size: int, max_size: int
-    ):
+    ) -> None:
         await asyncio.gather(
             *[
                 stream_struct.set_packet_size(packet_size_type, min_size, max_size)
@@ -467,7 +468,7 @@ class PortStruct(BasePort):
         await self.set_packet_size_if_mix(test_conf.frame_sizes)
         await self._get_use_port_speed()
 
-    async def set_rx_tables(self):
+    async def set_rx_tables(self) -> None:
         await self.set_arp_trucks(self.properties.arp_trunks)
         await self.set_ndp_trucks(self.properties.ndp_trunks)
 

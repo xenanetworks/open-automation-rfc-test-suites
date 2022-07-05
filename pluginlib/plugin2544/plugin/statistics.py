@@ -1,7 +1,7 @@
 import math
 from decimal import Decimal
 from typing import List, Union, TYPE_CHECKING
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field, validator
 from operator import attrgetter
 from .data_model import AddressCollection
 from ..utils import constants as const
@@ -67,10 +67,10 @@ class StreamCounter(BaseModel):
     bps: int = 0  # bit_count_last_sec
     pps: int = 0  # packet_count_last_sec
     bytes_count: int = 0  # byte_count_since_cleared
-    frame_rate: Decimal = Decimal(0)
-    l2_bit_rate: Decimal = Decimal(0)
-    l1_bit_rate: Decimal = Decimal(0)
-    tx_l1_bps: Decimal = Decimal(0)
+    frame_rate: Decimal = Decimal('0')
+    l2_bit_rate: Decimal = Decimal('0')
+    l1_bit_rate: Decimal = Decimal('0')
+    tx_l1_bps: Decimal = Decimal('0')
 
     def update(self, counter: "StreamCounter"):
         self.frames += counter.frames  # _cal_port_tx_frames  + _cal_port_rx_frames
@@ -163,8 +163,8 @@ class Statistic(BaseModel):
     burst_frames: int = 0
     burst_bytes_count: int = 0
     loss_frames: int = 0
-    loss_ratio: Decimal = Decimal(0)
-    actual_rate: Decimal = Decimal(0)
+    loss_ratio: Decimal = Decimal('0')
+    actual_rate: Decimal = Decimal('0')
     tx_rate_l1_bps_theor: int = 0
     tx_rate_fps_theor: int = 0
 
@@ -249,7 +249,7 @@ class Statistic(BaseModel):
         self.loss_ratio = (
             Decimal(str(self.loss_frames)) / Decimal(str(self.tx_counter.frames))
             if self.tx_counter.frames
-            else Decimal(0)
+            else Decimal('0')
         )
         self.tx_counter.calculate_port_rate(
             self.is_final, self.duration, self.frame_size, self.interframe_gap
@@ -289,13 +289,13 @@ class TotalStatistic(BaseModel):
     tx_counter: TotalCounter = TotalCounter()
     rx_counter: TotalCounter = TotalCounter()
     fcs_error_frames: int = 0
-    rx_loss_percent: Decimal = Decimal(0)
+    rx_loss_percent: Decimal = Decimal("0.0")
     rx_loss_frames: int = 0
     tx_rate_l1_bps_theor: int = 0
     tx_rate_fps_theor: int = 0
     tx_burst_frames: int = 0
     tx_burst_bytes: int = 0
-    ber_percent: Decimal = Decimal(0)
+    ber_percent: Decimal = Decimal('0')
 
     def sum(self, other: "TotalStatistic") -> None:
         for name, value in self:
@@ -326,7 +326,7 @@ class TotalStatistic(BaseModel):
         self.rx_loss_percent = (
             Decimal(str(self.rx_loss_frames)) / Decimal(str(self.tx_counter.frames))
             if self.tx_counter.frames
-            else Decimal(0)
+            else Decimal("0.0")
         )
 
         if (
@@ -334,7 +334,7 @@ class TotalStatistic(BaseModel):
             or self.rx_counter.frames == 0
             or self.rx_loss_frames <= 0
         ):
-            self.ber_percent = Decimal(0)
+            self.ber_percent = Decimal('0')
         else:
             divisor = Decimal("8.0") * Decimal(
                 str(self.rx_counter.bytes_count)
@@ -388,7 +388,7 @@ class StreamStatistic(BaseStatistic):
 
 class FinalStatistic(BaseModel):
     test_case_type: const.TestType
-    test_suit_type: str = "2544"
+    test_suite_type: str = "2544"
     result_state: const.ResultState = const.ResultState.PENDING
     tx_rate_percent: Decimal
     is_final: bool = True
@@ -397,11 +397,12 @@ class FinalStatistic(BaseModel):
     port_data: List[Statistic] = []
     # stream_data: List[LatencyStreamStatistic]
 
-    tx_rate_nomial_percent: Decimal = Decimal(0)
+    tx_rate_nominal_percent: Decimal = Decimal('0')
     total: TotalStatistic = TotalStatistic()
 
     class Config:
         arbitrary_types_allowed = True
+        json_encoders = {Decimal: lambda x: float('{:.3f}'.format(x).rstrip('0'))}
 
     @validator("total", always=True)
     def calculate_total(cls, v, values) -> TotalStatistic:

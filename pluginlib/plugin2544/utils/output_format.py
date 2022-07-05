@@ -1,9 +1,9 @@
 LATENCY_OUTPUT = {
-    "test_suit_type": ...,
+    "test_suite_type": ...,
     "result_state": ...,
     "test_case_type": ...,
     "tx_rate_percent": ...,
-    "tx_rate_nomial_percent": ...,
+    "tx_rate_nominal_percent": ...,
     "is_final": ...,
     "frame_size": ...,
     "repetition": ...,
@@ -24,7 +24,7 @@ LATENCY_OUTPUT = {
 }
 
 FRAME_LOSS_OUTPUT = {
-    "test_suit_type": ...,
+    "test_suite_type": ...,
     "test_case_type": ...,
     "result_state": ...,
     "tx_rate_percent": ...,
@@ -49,7 +49,7 @@ FRAME_LOSS_OUTPUT = {
 
 
 THROUGHPUT_PER_PORT = {
-    "test_suit_type": ...,
+    "test_suite_type": ...,
     "test_case_type": ...,
     "result_state": ...,
     "is_final": ...,
@@ -79,7 +79,7 @@ THROUGHPUT_PER_PORT = {
 }
 
 THROUGHPUT_COMMON = {
-    "test_suit_type": ...,
+    "test_suite_type": ...,
     "test_case_type": ...,
     "result_state": ...,
     "is_final": ...,
@@ -109,7 +109,7 @@ THROUGHPUT_COMMON = {
 
 
 BACKTOBACKOUTPUT = {
-    "test_suit_type": ...,
+    "test_suite_type": ...,
     "test_case_type": ...,
     "result_state": ...,
     "tx_rate_percent": ...,

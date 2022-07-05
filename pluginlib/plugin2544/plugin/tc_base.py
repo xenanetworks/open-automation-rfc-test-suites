@@ -115,7 +115,7 @@ class TestCaseProcessor:
         if test_type_conf.use_relative_to_throughput and self._throughput_map:
             factor = self._throughput_map.get(current_packet_size) or factor
         for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
-            tx_rate_nomial_percent = rate_percent
+            tx_rate_nominal_percent = rate_percent
             rate_percent = rate_percent * factor / Decimal(100)
             params = StatisticParams(
                 test_case_type=test_type_conf.test_type,
@@ -129,7 +129,7 @@ class TestCaseProcessor:
             await self.start_test(test_type_conf, current_packet_size)
             result = await self.collect(params, test_type_conf.format)
             await self.resources.set_tx_time_limit(0)
-            result.tx_rate_nomial_percent = tx_rate_nomial_percent
+            result.tx_rate_nominal_percent = tx_rate_nominal_percent
             self._add_result(True, test_type_conf.format, result)
 
     async def _frame_loss(
