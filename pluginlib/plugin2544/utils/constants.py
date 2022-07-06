@@ -299,15 +299,11 @@ class SearchType(Enum):
 
 class RateResultScopeType(Enum):
     COMMON = "common_result"
-    PER_SOURCE_PORT = "per_sourc_port_result"
+    PER_SOURCE_PORT = "per_source_port_result"
 
     @property
     def is_per_source_port(self) -> bool:
         return self == RateResultScopeType.PER_SOURCE_PORT
-
-
-class AdditionalStatisticsOption(Enum):
-    LATENCY_AND_JITTER = "latency_and_jitter"
 
 
 class LatencyModeStr(Enum):

@@ -55,6 +55,7 @@ THROUGHPUT_PER_PORT = {
     "is_final": ...,
     "frame_size": ...,
     "repetition": ...,
+    "rate_result_scope": ...,
     "total": {
         "tx_counter": {"frames", "l1_bps", "l2_bps", "fps"},
         "rx_counter": {"frames"},
@@ -86,6 +87,7 @@ THROUGHPUT_COMMON = {
     "frame_size": ...,
     "repetition": ...,
     "tx_rate_percent": ...,
+    "rate_result_scope": ...,
     "total": {
         "tx_counter": {"frames", "l1_bps", "fps"},
         "rx_counter": {"frames", "l1_bps", "fps"},

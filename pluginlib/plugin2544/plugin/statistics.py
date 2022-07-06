@@ -388,12 +388,13 @@ class StreamStatistic(BaseStatistic):
 
 class FinalStatistic(BaseModel):
     test_case_type: const.TestType
-    test_suite_type: str = "2544"
+    test_suite_type: str = "xoa2544"
     result_state: const.ResultState = const.ResultState.PENDING
     tx_rate_percent: Decimal
     is_final: bool = True
     frame_size: Decimal
     repetition: Union[int, str] = "avg"
+    rate_result_scope: const.RateResultScopeType = const.RateResultScopeType.COMMON
     port_data: List[Statistic] = []
     # stream_data: List[LatencyStreamStatistic]
 

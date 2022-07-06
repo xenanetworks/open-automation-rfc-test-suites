@@ -17,7 +17,6 @@ from ..utils.constants import (
     SearchType,
     RateResultScopeType,
     TestType,
-    AdditionalStatisticsOption,
     LatencyModeStr,
     AcceptableLossType,
 )

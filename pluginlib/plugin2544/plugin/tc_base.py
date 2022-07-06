@@ -204,6 +204,7 @@ class TestCaseProcessor:
                 frame_size=params.frame_size,
                 repetition=params.repetition,
                 tx_rate_percent=params.rate_percent,
+                rate_result_scope=test_type_conf.rate_iteration_options.result_scope,
                 port_data=[
                     port_struct.statistic for port_struct in self.resources.port_structs
                 ],
