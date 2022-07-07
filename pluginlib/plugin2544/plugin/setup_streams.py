@@ -104,7 +104,7 @@ async def create_multi_streams(
                     offset_table, port_struct.port_identity.name, peer_index
                 )
                 if not offsets_list:
-                    raise exceptions.OffsetNotExsits()
+                    raise exceptions.OffsetNotExist()
                 for offsets in offsets_list:
                     tpldid = tpld_controller.get_tpldid(
                         port_struct.properties.test_port_index,
