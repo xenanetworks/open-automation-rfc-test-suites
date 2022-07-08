@@ -70,7 +70,7 @@ THROUGHPUT_PER_PORT = {
         "__all__": {
             "rate": ...,
             "port_id": ...,
-            "actual_rate": ...,
+            "actual_rate_percent": ...,
             "tx_counter": {"frames", "l1_bps", "l2_bps", "fps"},
             "rx_counter": {"frames", "l1_bps", "l2_bps", "fps"},
             "loss_frames": ...,

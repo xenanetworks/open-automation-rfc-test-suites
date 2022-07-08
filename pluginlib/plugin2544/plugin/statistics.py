@@ -164,7 +164,7 @@ class Statistic(BaseModel):
     burst_bytes_count: int = 0
     loss_frames: int = 0
     loss_ratio: Decimal = Decimal('0')
-    actual_rate: Decimal = Decimal('0')
+    actual_rate_percent: Decimal = Decimal('0')
     tx_rate_l1_bps_theor: int = 0
     tx_rate_fps_theor: int = 0
 
@@ -257,7 +257,7 @@ class Statistic(BaseModel):
         self.rx_counter.calculate_port_rate(
             self.is_final, self.duration, self.frame_size, self.interframe_gap
         )
-        self.actual_rate = (
+        self.actual_rate_percent = (
             Decimal("100") * self.tx_counter.l1_bit_rate / self.port_speed
         )
 
@@ -396,8 +396,6 @@ class FinalStatistic(BaseModel):
     repetition: Union[int, str] = "avg"
     rate_result_scope: const.RateResultScopeType = const.RateResultScopeType.COMMON
     port_data: List[Statistic] = []
-    # stream_data: List[LatencyStreamStatistic]
-
     tx_rate_nominal_percent: Decimal = Decimal('0')
     total: TotalStatistic = TotalStatistic()
 
