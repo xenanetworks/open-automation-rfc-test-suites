@@ -1,7 +1,8 @@
-import functools
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 from pydantic import BaseModel
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
+
+from ..utils.constants import PortProtocolVersion
 from ..utils.field import IPv4Address, IPv6Address, MacAddress
 
 
@@ -37,20 +38,10 @@ class AddressCollection:
     src_ipv6_addr: IPv6Address
     dst_ipv6_addr: IPv6Address
 
-
-
-@dataclass(init=False, repr=False)
-class PortMax:
-    bps: int = 0
-    pps: int = 0
-
-    def reset(self) -> None:
-        for field in fields(self):
-            setattr(self, field.name, 0)
-
-    def __update_value(self, name: str, value: int) -> None:
-        current = getattr(self, name)
-        setattr(self, name, max(current, value))
-
-    update_bps = functools.partialmethod(__update_value, "bps")
-    update_pps = functools.partialmethod(__update_value, "pps")
+    def get_addr_pair_by_protocol(self, protocol: PortProtocolVersion) -> Tuple:
+        if protocol.is_ipv4:
+            return self.src_ipv4_addr, self.dst_ipv4_addr
+        elif protocol.is_ipv6:
+            return self.src_ipv6_addr, self.dst_ipv6_addr
+        else:
+            return self.smac, self.dmac

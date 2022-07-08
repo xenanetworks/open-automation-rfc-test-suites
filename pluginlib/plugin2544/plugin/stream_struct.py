@@ -1,6 +1,6 @@
 import asyncio
+from copy import deepcopy
 from typing import List, Optional, TYPE_CHECKING
-from pydantic import BaseModel
 from xoa_driver import utils, misc, enums
 from ..model import TestConfiguration, HwModifier
 from .common import gen_macaddress
@@ -11,8 +11,8 @@ from .data_model import (
 )
 from .learning import add_address_refresh_entry
 from .statistics import (
-    DelayCounter,
     DelayData,
+    PRStatistic,
     StreamCounter,
     StreamStatisticData,
 )
@@ -23,31 +23,23 @@ if TYPE_CHECKING:
     from .structure import PortStruct
 
 
-class PRStatistic(BaseModel):
-    rx_stream_counter: StreamCounter
-    latency: DelayData
-    jitter: DelayData
-    fcs: int
-    loss_frames: int
-
-
 class PRStream:
     def __init__(self, tx_port: "PortStruct", rx_port: "PortStruct", tpld_id):
         self._tx_port = tx_port
         self._tpldid = tpld_id
         self._rx_port = rx_port
         self._rx = self._rx_port.port_statistic.rx.access_tpld(tpld_id)
-        self._statistic: PRStatistic
-        
+        self._statistic: "PRStatistic"
+
     @property
     def rx_port(self) -> "PortStruct":
         return self._rx_port
 
     @property
-    def statistic(self) -> PRStatistic:
+    def statistic(self) -> "PRStatistic":
         return self._statistic
 
-    async def query(self):
+    async def query(self) -> None:
         rx_frames, error, ji, latency, fcs = await utils.apply(
             self._rx.traffic.get(),
             self._rx.errors.get(),
@@ -77,12 +69,9 @@ class PRStream:
             ),
         )
 
-    def update_rx_port_statistic(self, burst_frames:int=0):
-        self._rx_port.statistic.add_rx(self._statistic.rx_stream_counter)
-        self._rx_port.statistic.add_latency(self._statistic.latency)
-        self._rx_port.statistic.add_jitter(self._statistic.jitter)
-        self._rx_port.statistic.add_extra(self._statistic.fcs)
-        # self._rx_port.statistic.add_burst_frames(burst_frames)
+    def update_rx_port_statistic(self):
+        self._rx_port.statistic.aggregate_rx_statistic(self._statistic)
+
 
 
 class StreamStruct:
@@ -105,14 +94,14 @@ class StreamStruct:
         self._addr_coll: AddressCollection
         self._packet_header: bytearray
         self._stream_offset = stream_offset
-        self._tx_frames: StreamCounter
-        self._rx_frames: StreamCounter
-        self._loss_frames: int = 0
         self._packet_limit: int = 0
         self._pr_streams = [
             PRStream(self._tx_port, port, self._tpldid) for port in self._rx_ports
         ]
-        self._best_result: Optional[StreamStatisticData] = None
+        self._stream_statistic: StreamStatisticData  # record the latest statistic
+        self._best_result: Optional[
+            StreamStatisticData
+        ] = None  # store best result for throughput per_port_result_scope, only for stream based
 
     def is_rx_port(self, peer_struct: "PortStruct"):
         return True if peer_struct in self._rx_ports else False
@@ -125,20 +114,6 @@ class StreamStruct:
             return self._tx_port
 
     @property
-    def latency(self) -> DelayCounter:
-        la = DelayCounter()
-        for pr_stream in self._pr_streams:
-            la.update(pr_stream.statistic.latency)
-        return la
-
-    @property
-    def jitter(self) -> DelayCounter:
-        ji = DelayCounter(counter_type=const.CounterType.JITTER)
-        for pr_stream in self._pr_streams:
-            ji.update(pr_stream.statistic.jitter)
-        return ji
-
-    @property
     def hw_modifiers(self) -> List["HwModifier"]:
         if self._flow_creation_type.is_stream_based:
             return [
@@ -147,7 +122,9 @@ class StreamStruct:
                 for modifier in header_segment.hw_modifiers
             ]
         else:
-            modifier_range = self._tx_port.properties.get_modifier_range(self._stream_id)
+            modifier_range = self._tx_port.properties.get_modifier_range(
+                self._stream_id
+            )
             return [
                 HwModifier(
                     field_name="Dst MAC addr",
@@ -159,22 +136,15 @@ class StreamStruct:
             ]
 
     @property
-    def best_result(self) -> StreamStatisticData:
+    def best_result(self) -> Optional["StreamStatisticData"]:
         return self._best_result
 
-    def set_best_result(self):  # Only for stream based used
-        self._best_result = StreamStatisticData(
-            tx_counter=self.tx_frames,
-            rx_counter=self.rx_frames,
-            latency=self._pr_streams[0].statistic.latency,
-            jitter=self._pr_streams[0].statistic.jitter,
-            addr_coll=self._addr_coll,
-            fcs=self._pr_streams[0].statistic.fcs,
-            loss_frames=self._pr_streams[0].statistic.loss_frames,
-        )
+    def set_best_result(self) -> None:
+        self._best_result = deepcopy(self._stream_statistic)
 
-    def aggregate(self):
-        self._best_result.calculate(self._tx_port, self.rx_port)
+    def aggregate(self) -> None:
+        if self._best_result:
+            self._best_result.calculate(self._tx_port, self.rx_port)
 
     async def configure(self, test_conf: "TestConfiguration") -> None:
         stream = await self._tx_port.create_stream()
@@ -233,39 +203,29 @@ class StreamStruct:
                 None,
             )
 
-    @property
-    def tx_frames(self) -> StreamCounter:
-        return self._tx_frames
-
-    @property
-    def rx_frames(self) -> StreamCounter:
-        return self._rx_frames
-
     async def query(self):
-        tx_frames = await self._tx_port._port.statistics.tx.obtain_from_stream(
+        tx_frames = await self._tx_port.port_statistic.tx.obtain_from_stream(
             self._stream_id
         ).get()
         await asyncio.gather(*[pr_stream.query() for pr_stream in self._pr_streams])
-        self._tx_frames = StreamCounter(
-            frames=tx_frames.packet_count_since_cleared,
-            bps=tx_frames.bit_count_last_sec,
-            pps=tx_frames.packet_count_last_sec,
+        src_addr, dst_addr = self._addr_coll.get_addr_pair_by_protocol(self._tx_port.protocol_version)
+        self._stream_statistic = StreamStatisticData(
+            src_port_id=self._tx_port.port_identity.name,
+            dest_port_id=self.rx_port.port_identity.name,
+            src_port_addr=str(src_addr),
+            dest_port_addr=str(dst_addr),
+            tx_counter=StreamCounter(
+                frames=tx_frames.packet_count_since_cleared,
+                bps=tx_frames.bit_count_last_sec,
+                pps=tx_frames.packet_count_last_sec,
+            ),
+            burst_frames=self._packet_limit,
         )
-        self._rx_frames = StreamCounter()
-        self._loss_frames = 0
         for pr_stream in self._pr_streams:
-            self._rx_frames.update(pr_stream.statistic.rx_stream_counter)
-            self._loss_frames += pr_stream.statistic.loss_frames
-            pr_stream.update_rx_port_statistic(self._packet_limit)
-        self.update_tx_port_statistic()
-
-    def update_tx_port_statistic(self):
-        self._tx_port.statistic.add_tx(self._tx_frames)
-        self._tx_port.statistic.add_burst_frames(self._packet_limit)
-        self._tx_port.statistic.add_burst_bytes_count(self._rx_frames.bytes_count)
-        self._tx_port.statistic.add_loss(
-            self._tx_frames.frames, self.rx_frames.frames, self._loss_frames
-        )
+            self._stream_statistic.add_pr_stream_statistic(pr_stream.statistic)
+            pr_stream.update_rx_port_statistic()
+        self._tx_port.statistic.aggregate_tx_statistic(self._stream_statistic)
+        
 
     async def set_packet_header(self):
         packet_header_list = bytearray()
@@ -278,7 +238,9 @@ class StreamStruct:
                 and self._tx_port.capabilities.can_tcp_checksum
             ):
                 segment_type = const.SegmentType.TCPCHECK
-            patched_value = ps.get_segment_value(segment, segment_index, self._addr_coll)
+            patched_value = ps.get_segment_value(
+                segment, segment_index, self._addr_coll
+            )
             real_value = ps.calculate_checksum(
                 segment, ps.DEFAULT_SEGMENT_DIC, patched_value
             )
@@ -287,7 +249,9 @@ class StreamStruct:
             segment_index += 1
 
         self._packet_header = packet_header_list
-        await self._stream.packet.header.data.set(f"0x{bytes(self._packet_header).hex()}")
+        await self._stream.packet.header.data.set(
+            f"0x{bytes(self._packet_header).hex()}"
+        )
 
     async def setup_modifier(self) -> None:
         tokens = []

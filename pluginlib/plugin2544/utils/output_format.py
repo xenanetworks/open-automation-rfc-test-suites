@@ -19,6 +19,16 @@ LATENCY_OUTPUT = {
             "rx_counter": {"frames"},
             "latency": {"average", "minimum", "maximum"},
             "jitter": {"average", "minimum", "maximum"},
+            "stream_statistic": {
+                "__all__": {
+                    "src_port_id": ...,
+                    "dest_port_id": ...,
+                    "src_port_addr": ...,
+                    "dest_port_addr": ...,
+                    "latency": {"average", "minimum", "maximum"},
+                    "jitter": {"average", "minimum", "maximum"},
+                }
+            },
         }
     },
 }
@@ -43,6 +53,17 @@ FRAME_LOSS_OUTPUT = {
             "port_id": ...,
             "tx_counter": {"frames", "l1_bps", "fps"},
             "rx_counter": {"frames", "l1_bps", "fps"},
+            "stream_statistic": {
+                "__all__": {
+                    "src_port_id": ...,
+                    "dest_port_id": ...,
+                    "src_port_addr": ...,
+                    "dest_port_addr": ...,
+                    "tx_counter": {"frames"},
+                    "rx_counter": {"frames"},
+                    "loss_frames": ...,
+                }
+            },
         }
     },
 }
@@ -75,6 +96,17 @@ THROUGHPUT_PER_PORT = {
             "rx_counter": {"frames", "l1_bps", "l2_bps", "fps"},
             "loss_frames": ...,
             "loss_ratio": ...,
+            "stream_statistic": {
+                "__all__": {
+                    "src_port_id": ...,
+                    "dest_port_id": ...,
+                    "src_port_addr": ...,
+                    "dest_port_addr": ...,
+                    "tx_counter": {"frames"},
+                    "rx_counter": {"frames"},
+                    "loss_frames": ...,
+                }
+            },
         }
     },
 }
@@ -105,6 +137,17 @@ THROUGHPUT_COMMON = {
             "rx_counter": {"frames", "l1_bps", "l2_bps", "fps"},
             "loss_frames": ...,
             "loss_ratio": ...,
+            "stream_statistic": {
+                "__all__": {
+                    "src_port_id": ...,
+                    "dest_port_id": ...,
+                    "src_port_addr": ...,
+                    "dest_port_addr": ...,
+                    "tx_counter": {"frames"},
+                    "rx_counter": {"frames"},
+                    "loss_frames": ...,
+                }
+            },
         }
     },
 }
@@ -132,6 +175,17 @@ BACKTOBACKOUTPUT = {
             "port_id": ...,
             "burst_frames": ...,
             "burst_bytes_count": ...,
+            "stream_statistic": {
+                "__all__": {
+                    "src_port_id": ...,
+                    "dest_port_id": ...,
+                    "src_port_addr": ...,
+                    "dest_port_addr": ...,
+                    "tx_counter": {"frames"},
+                    "rx_counter": {"frames"},
+                    "loss_frames": ...,
+                }
+            },
         }
     },
 }
