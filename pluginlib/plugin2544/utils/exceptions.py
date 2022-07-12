@@ -365,5 +365,5 @@ class PacketLimitOverflow(Exception):
 
 class ModifierRangeError(Exception):
     def __init__(self, start:int, stop:int, step:int) -> None:
-        self.msg = f"Modifier range should follow this rules: min({start}) <= max({stop}), (max({stop}) - min({start})) % step({step}) = 0"
+        self.msg = f"Modifier range configuration must meet these rules: min <= max, and (max - min) % step = 0. Your input was min = {start}, max = {stop}, and step = {step}."
         super().__init__(self.msg)
