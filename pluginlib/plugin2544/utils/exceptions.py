@@ -17,6 +17,12 @@ class BXMPWarning(Warning):
         return self.str
 
 
+class StopTestByLossSignal(Warning):
+    def __init__(self) -> None:
+        self.msg = f"Test is stopped due to the loss of signal of ports."
+        super().__init__(self.msg)
+
+
 class BroadReachModeNotSupport(Warning):
     def __init__(self, port_name: str) -> None:
         self.msg = f"<BroadR-Reach Mode> can only be set to False since Port {port_name} doesn't support 'BroadR-Reach' feature."
@@ -183,13 +189,17 @@ class RateRestriction(Exception):
 
 class PacketLengthExceed(Exception):
     def __init__(self, cur: int, max: int) -> None:
-        self.msg = f"Packet length ({cur}) is larger than what the port allows (max: {max})."
+        self.msg = (
+            f"Packet length ({cur}) is larger than what the port allows (max: {max})."
+        )
         super().__init__(self.msg)
 
 
 class TPLDIDExceed(Exception):
     def __init__(self, cur: int, max: int) -> None:
-        self.msg = f"Current TPLD ID ({cur}) is larger than what the port allows (max: {max})."
+        self.msg = (
+            f"Current TPLD ID ({cur}) is larger than what the port allows (max: {max})."
+        )
         super().__init__(self.msg)
 
 
@@ -207,13 +217,17 @@ class ProtocolNotSupport(Exception):
 
 class InterFrameGapError(Exception):
     def __init__(self, curr: int, min: int, max: int) -> None:
-        self.msg = f"Custom inter-frame gap ({curr} bytes) must stay between {min} and {max}."
+        self.msg = (
+            f"Custom inter-frame gap ({curr} bytes) must stay between {min} and {max}."
+        )
         super().__init__(self.msg)
 
 
 class PortRateError(Exception):
     def __init__(self, curr: Decimal, max: int) -> None:
-        self.msg = f"Custom port rate ({curr}) must not exceed physical port rate ({max})."
+        self.msg = (
+            f"Custom port rate ({curr}) must not exceed physical port rate ({max})."
+        )
         super().__init__(self.msg)
 
 
@@ -319,32 +333,37 @@ class LossofPortOwnership(Exception):
 
 class LossofTester(Exception):
     def __init__(self, tester: xoa_testers.L23Tester, chassis_id: str) -> None:
-        self.msg = f"Test is stopped due to the loss of connection to Tester <{chassis_id}>."
+        self.msg = (
+            f"Test is stopped due to the loss of connection to Tester <{chassis_id}>."
+        )
         super().__init__(self.msg)
 
 
 class LossofPortSignal(Exception):
     def __init__(self, port: xoa_ports.GenericL23Port) -> None:
         self.msg = f"Test is stopped due to the loss of signal (LOS) of Port <module_id: {port.kind.module_id}-port_id: {port.kind.port_id}>."
-        logger.error(self.msg)
         super().__init__(self.msg)
 
 
 class FrameDurationRequire(Exception):
     def __init__(self, test_type: str) -> None:
         self.msg = f"{test_type} Test requires Frames Duration Type."
-        logger.error(self.msg)
         super().__init__(self.msg)
-    
+
+
 class TimeDurationRequire(Exception):
     def __init__(self, test_type: str) -> None:
         self.msg = f"{test_type} Test requires Time Duration Type."
-        logger.error(self.msg)
         super().__init__(self.msg)
 
 
 class PacketLimitOverflow(Exception):
     def __init__(self, packet_count: int) -> None:
         self.msg = f"{packet_count} must not exceed 2,147,483,647."
-        logger.error(self.msg)
+        super().__init__(self.msg)
+
+
+class ModifierRangeError(Exception):
+    def __init__(self, start:int, stop:int, step:int) -> None:
+        self.msg = f"Modifier range should follow this rules: min({start}) <= max({stop}), (max({stop}) - min({start})) % step({step}) = 0"
         super().__init__(self.msg)

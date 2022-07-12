@@ -86,6 +86,5 @@ async def send_arp_request(
     await asyncio.sleep(1)
     result, *_ = await utils.apply(stream.request.arp.get())
     peer_mac_address = MacAddress(result.mac_address)
-    # logger.debug(f"[Set_arp_request] Successfully get mac address {peer_mac_address}")
     await stream.delete()
     return peer_mac_address

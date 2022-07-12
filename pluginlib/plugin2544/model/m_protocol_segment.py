@@ -2,6 +2,7 @@ from random import randint
 from typing import List
 from pydantic import (
     BaseModel,
+    Field,
     validator,
     NonNegativeInt,
 )
@@ -17,9 +18,9 @@ class HwModifier(BaseModel):
     field_name: str
     mask: str
     action: const.ModifierActionOption = const.ModifierActionOption.INC
-    start_value: int
-    stop_value: int
-    step_value: int = 1
+    start_value: int = Field(ge=0, le=65535)
+    stop_value: int = Field(ge=0, le=65535)
+    step_value: int = Field(1, ge=0, le=15)
     repeat_count: NonNegativeInt = 1
     offset: int
 
@@ -29,6 +30,13 @@ class HwModifier(BaseModel):
 
     class Config:
         underscore_attrs_are_private = True
+
+    @validator("step_value", pre=True, always=True)
+    def validate_step(cls, step_value:int, values) -> int:
+        if values['start_value'] > values['stop_value'] or (values['stop_value'] - values['start_value']) % step_value != 0:
+            raise exceptions.ModifierRangeError(values['start_value'], values['stop_value'], step_value)
+        return step_value
+
 
     @validator("mask", pre=True, always=True)
     def set_mask(cls, v) -> str:
@@ -120,12 +128,11 @@ class HeaderSegment(BaseModel):
     field_value_ranges: List[FieldValueRange]
     segment_byte_offset: int = 0  # byte offset since
 
-    @validator("hw_modifiers", pre=True, always=True)
+    @validator("hw_modifiers")
     def set_modifiers(cls, hw_modifiers: List[HwModifier], values) -> List[HwModifier]:
         if hw_modifiers:
             segment_type = values["segment_type"]
             if not segment_type.is_raw:
-
                 segment_def = get_segment_definition(segment_type)
                 for modifier in hw_modifiers:
                     field_def = get_field_definition(segment_def, modifier.field_name)
@@ -133,7 +140,7 @@ class HeaderSegment(BaseModel):
 
         return hw_modifiers
 
-    @validator("field_value_ranges", pre=True, always=True)
+    @validator("field_value_ranges")
     def set_field_value_ranges(
         cls, field_value_ranges: List[FieldValueRange], values
     ) -> List[FieldValueRange]:

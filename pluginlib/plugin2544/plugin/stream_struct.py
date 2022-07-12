@@ -69,7 +69,7 @@ class PRStream:
             ),
         )
 
-    def update_rx_port_statistic(self):
+    def update_rx_port_statistic(self) -> None:
         self._rx_port.statistic.aggregate_rx_statistic(self._statistic)
 
 
@@ -174,7 +174,7 @@ class StreamStruct:
             test_conf.arp_refresh_enabled, test_conf.use_gateway_mac_as_dmac
         )
 
-    def init_rx_tables(self, arp_refresh_enabled: bool, use_gateway_mac_as_dmac: bool):
+    def init_rx_tables(self, arp_refresh_enabled: bool, use_gateway_mac_as_dmac: bool) -> None:
         if not arp_refresh_enabled or not self._tx_port.protocol_version.is_l3:
             return
         if self._stream_offset:
@@ -203,11 +203,12 @@ class StreamStruct:
                 None,
             )
 
-    async def query(self):
+    async def query(self) -> None:
         tx_frames = await self._tx_port.port_statistic.tx.obtain_from_stream(
             self._stream_id
         ).get()
         await asyncio.gather(*[pr_stream.query() for pr_stream in self._pr_streams])
+        # polling TX and RX statistic not at the same time, may cause the rx statistic larger than tx statistic
         src_addr, dst_addr = self._addr_coll.get_addr_pair_by_protocol(self._tx_port.protocol_version)
         self._stream_statistic = StreamStatisticData(
             src_port_id=self._tx_port.port_identity.name,
@@ -227,7 +228,7 @@ class StreamStruct:
         self._tx_port.statistic.aggregate_tx_statistic(self._stream_statistic)
         
 
-    async def set_packet_header(self):
+    async def set_packet_header(self) -> None:
         packet_header_list = bytearray()
         # Insert all configured header segments in order
         segment_index = 0
@@ -281,7 +282,7 @@ class StreamStruct:
     ) -> None:
         await self._stream.packet.length.set(packet_size_type, min_size, max_size)
 
-    async def set_l2bps_rate(self, rate: int):
+    async def set_l2bps_rate(self, rate: int) -> None:
         await self._stream.rate.l2bps.set(rate)
 
     async def set_frame_limit(self, frame_count: int) -> None:

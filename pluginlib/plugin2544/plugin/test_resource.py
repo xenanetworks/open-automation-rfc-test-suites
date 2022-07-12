@@ -225,18 +225,11 @@ class ResourceManager:
         )
 
     def test_running(self) -> bool:
-        s = any(port_struct.traffic_status for port_struct in self.tx_ports)
-        # if s:
-        #     logger.info([port_struct.traffic_status for port_struct in self.tx_ports])
-        # logger.info("Test Start")
-        return s
+        return any(port_struct.traffic_status for port_struct in self.tx_ports)
 
     def test_finished(self) -> bool:
-        s = all(not port_struct.traffic_status for port_struct in self.tx_ports)
-        # if s:
-        #     logger.info([port_struct.traffic_status for port_struct in self.tx_ports])
-        #     logger.info("Test Finish")
-        return s
+        return all(not port_struct.traffic_status for port_struct in self.tx_ports)
+        
 
     def los(self) -> bool:
         if self.test_conf.should_stop_on_los:
@@ -249,7 +242,7 @@ class ResourceManager:
         actual_duration_elapsed = elapsed >= actual_duration + 5
         los = self.los()
         if los:
-            logger.error("Test is stopped due to the loss of signal of ports.")
+            self.xoa_out.send_warning(exceptions.StopTestByLossSignal())
 
         return test_finished or los or actual_duration_elapsed
 
