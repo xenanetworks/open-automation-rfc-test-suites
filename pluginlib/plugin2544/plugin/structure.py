@@ -153,10 +153,8 @@ class BasePort:
                 exceptions.AutoNegotiationNotSupport(self._port_identity.name)
             )
         # TODO: wait for bifrost to change autonneg_selection into autoneg_selection
-        elif isinstance(self._port, const.AutoNegPortsE):
-            await self._port.autonneg_selection.set_on()  # type:ignore
-        elif isinstance(self._port, const.AutoNegPortsD):
-            await self._port.autoneg_selection.set_on()
+        elif isinstance(self._port, const.AutoNegPorts):
+            await self._port.autoneg_selection.set_on()  # type:ignore
 
     async def set_speed_mode(self, port_speed_mode: const.PortSpeedStr) -> None:
         mode = port_speed_mode.to_xmp()

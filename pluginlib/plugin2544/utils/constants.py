@@ -83,14 +83,11 @@ MdixPorts = (
 )
 
 BrrPorts = (ports.POdin1G3S6PT1RJ45,)
-AutoNegPortsD = (
+AutoNegPorts = (
     ports.POdin1G3S6P,
     ports.POdin1G3S6P_b,
     ports.POdin1G3S6PE,
     ports.POdin1G3S2PT,
-
-)
-AutoNegPortsE = (
     ports.POdin5G4S6PCU,
     ports.POdin10G5S6PCU,
     ports.POdin10G5S6PCU_b,
@@ -98,6 +95,7 @@ AutoNegPortsE = (
     ports.POdin10G3S2PCU,
 
 )
+
 
 PCSPMAPorts = (ports.PThor400G7S1P_c, ports.PThor400G7S1P_b)
 
