@@ -32,7 +32,8 @@ class CommonOptions(BaseModel):
 
     @validator("duration_unit", always=True)
     def validate_duration(cls, v, values):
-        if not values["duration_type"].is_time_duration:
+        
+        if "duration_type" in values and not values["duration_type"].is_time_duration:
             cur = values["duration"] * v.scale
             if cur > constants.MAX_PACKET_LIMIT_VALUE:
                 raise exceptions.PacketLimitOverflow(cur)
