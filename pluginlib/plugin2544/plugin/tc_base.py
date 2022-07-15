@@ -100,7 +100,8 @@ class TestCaseProcessor:
             if self.resources.should_quit(start_time, params.duration):
                 break
             await asyncio.sleep(1)
-        await asyncio.sleep(3)
+        await asyncio.sleep(5)
+        logger.debug('-' * 50)
         data = await aggregate_data(
             self.resources,
             params,
@@ -192,7 +193,7 @@ class TestCaseProcessor:
             # Step 2: aggregate counter
             for port_struct in self.resources.port_structs:
                 for stream_struct in port_struct.stream_structs:
-                    stream_struct.aggregate()
+                    stream_struct.aggregate_best_result()
             # Step 3: calculate rate
             for port_struct in self.resources.port_structs:
                 port_struct.statistic.calculate_rate()

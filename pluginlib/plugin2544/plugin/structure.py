@@ -152,7 +152,6 @@ class BasePort:
             self._xoa_out.send_warning(
                 exceptions.AutoNegotiationNotSupport(self._port_identity.name)
             )
-        # TODO: wait for bifrost to change autonneg_selection into autoneg_selection
         elif isinstance(self._port, const.AutoNegPorts):
             await self._port.autoneg_selection.set_on()  # type:ignore
 
@@ -479,6 +478,7 @@ class PortStruct(BasePort):
     async def _get_use_port_speed(self) -> NonNegativeDecimal:
         tx_speed = await self.get_port_speed()
         if self._port_conf.peer_config_slot and len(self.properties.peers) == 1:
+            # Only Pair Topology Need to query peer speed
             peer_struct = self.properties.peers[0]
             rx_speed = await peer_struct.get_port_speed()
             tx_speed = min(tx_speed, rx_speed)

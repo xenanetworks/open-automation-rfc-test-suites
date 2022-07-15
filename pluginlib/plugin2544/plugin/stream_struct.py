@@ -17,11 +17,14 @@ from .statistics import (
     StreamStatisticData,
 )
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
+from ..utils.logger import logger
 from ..utils import constants as const, protocol_segments as ps, exceptions
 
 if TYPE_CHECKING:
     from .structure import PortStruct
-
+    from xoa_driver.internals.core.commands import (
+        PT_STREAM
+    )
 
 class PRStream:
     def __init__(self, tx_port: "PortStruct", rx_port: "PortStruct", tpld_id):
@@ -70,7 +73,9 @@ class PRStream:
         )
 
     def update_rx_port_statistic(self) -> None:
+        before = self._rx_port.statistic.rx_counter.frames
         self._rx_port.statistic.aggregate_rx_statistic(self._statistic)
+        logger.info(f"{before} -> {self._rx_port.statistic.rx_counter.frames} current: {self._statistic.rx_stream_counter.frames}")
 
 
 
@@ -132,6 +137,7 @@ class StreamStruct:
                     mask="0x00FF0000",
                     start_value=modifier_range[0],
                     stop_value=modifier_range[1],
+                    step_value=1,
                 )
             ]
 
@@ -142,7 +148,7 @@ class StreamStruct:
     def set_best_result(self) -> None:
         self._best_result = deepcopy(self._stream_statistic)
 
-    def aggregate(self) -> None:
+    def aggregate_best_result(self) -> None:
         if self._best_result:
             self._best_result.calculate(self._tx_port, self.rx_port)
 
@@ -208,7 +214,6 @@ class StreamStruct:
             self._stream_id
         ).get()
         await asyncio.gather(*[pr_stream.query() for pr_stream in self._pr_streams])
-        # polling TX and RX statistic not at the same time, may cause the rx statistic larger than tx statistic
         src_addr, dst_addr = self._addr_coll.get_addr_pair_by_protocol(self._tx_port.protocol_version)
         self._stream_statistic = StreamStatisticData(
             src_port_id=self._tx_port.port_identity.name,
@@ -222,9 +227,14 @@ class StreamStruct:
             ),
             burst_frames=self._packet_limit,
         )
+
+    def aggregate(self) -> None:
+        # polling TX and RX statistic not at the same time, may cause the rx statistic larger than tx statistic
+        logger.info(f"handling: {self._tx_port.port_identity.name} -> {self.rx_port.port_identity.name}")
         for pr_stream in self._pr_streams:
             self._stream_statistic.add_pr_stream_statistic(pr_stream.statistic)
             pr_stream.update_rx_port_statistic()
+
         self._tx_port.statistic.aggregate_tx_statistic(self._stream_statistic)
         
 

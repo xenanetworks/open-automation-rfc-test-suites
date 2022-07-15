@@ -328,4 +328,7 @@ class ResourceManager:
             ]
         )
         for port_struct in self.port_structs:
+            for stream in port_struct.stream_structs:
+                stream.aggregate()
+        for port_struct in self.port_structs:
             port_struct.statistic.calculate_rate()
