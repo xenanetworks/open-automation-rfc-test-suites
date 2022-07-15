@@ -15,7 +15,7 @@ from .utils.logger import logger
 getcontext().prec = 12
 
 
-class TestSuit2544(PluginAbstract["PluginModel2544"]):
+class TestSuite2544(PluginAbstract["PluginModel2544"]):
     def prepare(self) -> None:
         self.tpld_id = 0
         self.mac_learned = False

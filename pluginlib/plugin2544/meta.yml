@@ -3,5 +3,5 @@ version: "1.0"
 core_version: ">=1.0.0" 
 author: 
   - "MC"
-entry_object: "TestSuit2544"
+entry_object: "TestSuite2544"
 data_model: "PluginModel2544"

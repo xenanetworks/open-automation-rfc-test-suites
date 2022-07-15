@@ -22,7 +22,7 @@ if TYPE_CHECKING:
         P_RECEIVESYNC,
         P_CAPABILITIES,
     )
-    from ..utils.logger import TestSuitPipe
+    from ..utils.logger import TestSuitePipe
     from ..model import (
         FrameSizeConfiguration,
         TestConfiguration,
@@ -41,7 +41,7 @@ class BasePort:
         tester: "xoa_testers.L23Tester",
         port: "xoa_ports.GenericL23Port",
         port_identity: "PortIdentity",
-        xoa_out: "TestSuitPipe",
+        xoa_out: "TestSuitePipe",
     ):
         self._sync_status: bool = True
         self._traffic_status: bool = False
@@ -346,7 +346,7 @@ class PortStruct(BasePort):
         port: "xoa_ports.GenericL23Port",
         port_conf: "PortConfiguration",
         port_identity: "PortIdentity",
-        xoa_out: "TestSuitPipe",
+        xoa_out: "TestSuitePipe",
     ) -> None:
         BasePort.__init__(self, tester, port, port_identity, xoa_out)
         self._port_conf = port_conf

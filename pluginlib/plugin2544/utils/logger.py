@@ -9,7 +9,7 @@ FILE_PATH_FORMAT = "{time:HH:mm:ss.SSS} | <level>{level: <8}</level> | <cyan>{fi
 __all__ = ("logger",)
 
 
-class TestSuitPipe(typing.Protocol):
+class TestSuitePipe(typing.Protocol):
     # def send_data(self, data: typing.Union[typing.Dict, "BaseModel"]) -> None: ...
     def send_statistics(self, data) -> None:
         ...

@@ -31,11 +31,11 @@ from ..utils import constants as const
 
 if TYPE_CHECKING:
     from .test_resource import ResourceManager
-    from ..utils.logger import TestSuitPipe
+    from ..utils.logger import TestSuitePipe
 
 
 class TestCaseProcessor:
-    def __init__(self, resources: "ResourceManager", xoa_out: "TestSuitPipe"):
+    def __init__(self, resources: "ResourceManager", xoa_out: "TestSuitePipe"):
         self.resources: "ResourceManager" = resources
         self.xoa_out = xoa_out
         self.address_refresh_handler: Optional[AddressRefreshHandler] = None

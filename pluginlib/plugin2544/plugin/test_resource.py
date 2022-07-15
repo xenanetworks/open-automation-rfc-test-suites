@@ -13,7 +13,7 @@ from ..utils import constants as const, exceptions
 if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity
     from ..model import PortConfiguration, TestConfiguration
-    from ..utils.logger import TestSuitPipe
+    from ..utils.logger import TestSuitePipe
 
 
 class ResourceManager:
@@ -23,14 +23,14 @@ class ResourceManager:
         all_confs: List["PortConfiguration"],
         port_identities: Dict[str, "PortIdentity"],
         test_conf: "TestConfiguration",
-        xoa_out: "TestSuitPipe",
+        xoa_out: "TestSuitePipe",
     ):
         self.all_confs = all_confs
         self.__port_identities = port_identities
         self._validate_tester_type(testers.values(), xoa_testers.L23Tester)
         self.__testers: Dict[str, "xoa_testers.L23Tester"] = testers  # type: ignore
         self.port_structs: List["PortStruct"] = []
-        self.xoa_out: "TestSuitPipe" = xoa_out
+        self.xoa_out: "TestSuitePipe" = xoa_out
         self.test_conf: "TestConfiguration" = test_conf
         self.mapping: Dict[str, List[int]] = {}
 
