@@ -73,7 +73,7 @@ class StreamCounter(BaseModel):
     tx_l1_bps: Decimal = Decimal("0.0")
 
     def add_pr_stream_counter(self, counter: "StreamCounter"):
-        """ update stream counter by pr stream"""
+        """update stream counter by pr stream"""
         self.frames += counter.frames  # _cal_port_tx_frames  + _cal_port_rx_frames
         self.bps += counter.bps
         self.pps += counter.pps
@@ -98,7 +98,8 @@ class StreamCounter(BaseModel):
 
 
 class PRStatistic(BaseModel):
-    """ pr stream statistic """
+    """pr stream statistic"""
+
     rx_stream_counter: StreamCounter
     latency: DelayData
     jitter: DelayData
@@ -107,7 +108,8 @@ class PRStatistic(BaseModel):
 
 
 class StreamStatisticData(BaseModel):
-    """ stream statistic """
+    """stream statistic"""
+
     src_port_id: str
     dest_port_id: str
     src_port_addr: str
@@ -121,7 +123,7 @@ class StreamStatisticData(BaseModel):
     burst_frames: int = 0
 
     def add_pr_stream_statistic(self, pr_stream_statistic: "PRStatistic") -> None:
-        """ aggregate pr stream statistic """
+        """aggregate pr stream statistic"""
         self.rx_counter.add_pr_stream_counter(pr_stream_statistic.rx_stream_counter)
         self.latency.update(pr_stream_statistic.latency)
         self.jitter.update(pr_stream_statistic.jitter)
@@ -162,7 +164,7 @@ class PortCounter(StreamCounter):
             setattr(self, name, math.floor(Decimal(str(value)) / Decimal(str(count))))
 
     def add_stream_counter(self, counter: "StreamCounter"):
-        """ aggregate stream statistic """
+        """aggregate stream statistic"""
         self.frames += counter.frames  # _cal_port_tx_frames  + _cal_port_rx_frames
         self.bps += counter.bps
         self.pps += counter.pps
@@ -253,12 +255,10 @@ class Statistic(BaseModel):
             setattr(self, f, math.floor(Decimal(str(value)) / Decimal(str(count))))
 
     def aggregate_tx_statistic(self, stream_statistic: "StreamStatisticData"):
-        """ aggregate tx port statistic based on stream statistic """
+        """aggregate tx port statistic based on stream statistic"""
         self.add_tx(stream_statistic.tx_counter)
         self.add_burst_frames(stream_statistic.burst_frames)
-        self.add_burst_bytes_count(
-            stream_statistic.rx_counter.bytes_count
-        )
+        self.add_burst_bytes_count(stream_statistic.rx_counter.bytes_count)
         self.add_loss(
             stream_statistic.tx_counter.frames,
             stream_statistic.rx_counter.frames,
@@ -267,7 +267,7 @@ class Statistic(BaseModel):
         self.stream_statistic.append(stream_statistic)
 
     def aggregate_rx_statistic(self, pr_statistic: "PRStatistic"):
-        """ aggregate rx port statistic based on pr statistic """
+        """aggregate rx port statistic based on pr statistic"""
         self.add_rx(pr_statistic.rx_stream_counter)
         self.add_latency(pr_statistic.latency)
         self.add_jitter(pr_statistic.jitter)
@@ -397,9 +397,14 @@ class TotalStatistic(BaseModel):
         ):
             self.ber_percent = Decimal("0.0")
         else:
-            divisor = Decimal("8.0") * Decimal(
-                str(self.rx_counter.bytes_count)
-            ) * Decimal(str(self.rx_counter.frames)) + Decimal(str(self.rx_loss_frames))
+            divisor = (
+                Decimal("8.0")
+                * Decimal(str(self.rx_counter.bytes_count))
+                * (
+                    Decimal(str(self.rx_counter.frames))
+                    + Decimal(str(self.rx_loss_frames))
+                )
+            )
             self.ber_percent = (
                 Decimal(str(self.rx_loss_frames))
                 * Decimal(str(self.rx_counter.frames))
