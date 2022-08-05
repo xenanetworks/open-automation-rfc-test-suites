@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 from ..utils import constants as const, field
 
 
-
 if TYPE_CHECKING:
     from .structure import PortStruct
     from ..model import PortConfiguration
@@ -80,38 +79,28 @@ class TPLDControl:
         self.curr_tpld_map: Dict[int, int] = {}
         self.tid_scope = tid_scope
 
-    def config_scope_add(self) -> int:
+    def _config_scope_add(self) -> int:
         next_index = self.curr_tpld_index
         self.curr_tpld_index += 1
         return next_index
 
-    def port_scope_add(self, peer_index: int) -> int:
+    def _port_scope_add(self, peer_index: int) -> int:
         if peer_index not in self.curr_tpld_map:
             self.curr_tpld_map[peer_index] = 0
         next_index = self.curr_tpld_map[peer_index]
         self.curr_tpld_map[peer_index] += 1
         return next_index
 
-    def src_port_id_add(self, port_index: int) -> int:
+    def _src_port_id_add(self, port_index: int) -> int:
         return port_index
 
     def get_tpldid(self, port_index: int, peer_index: int) -> int:
         if self.tid_scope == const.TidAllocationScope.CONFIGURATION_SCOPE:
-            return self.config_scope_add()
+            return self._config_scope_add()
         elif self.tid_scope == const.TidAllocationScope.RX_PORT_SCOPE:
-            return self.port_scope_add(peer_index)
+            return self._port_scope_add(peer_index)
         else:
-            return self.src_port_id_add(port_index)
-
-
-def is_port_pair(
-    port_config: "PortConfiguration", peer_config: "PortConfiguration"
-) -> bool:
-    return (
-        True
-        if port_config.is_pair(peer_config) and peer_config.is_pair(port_config)
-        else False
-    )
+            return self._src_port_id_add(port_index)
 
 
 def is_peer_port(
@@ -120,7 +109,7 @@ def is_peer_port(
     peer_config: "PortConfiguration",
 ) -> bool:
     if topology.is_pair_topology:
-        return is_port_pair(port_config, peer_config)
+        return port_config.is_pair(peer_config) and peer_config.is_pair(port_config)
     elif topology.is_mesh_topology:
         return port_config != peer_config
     else:
@@ -142,14 +131,7 @@ def get_peers_for_source(
     return dest_ports
 
 
-def filter_port_structs(
-    control_ports: List["PortStruct"], is_source_port: bool = True
-) -> List["PortStruct"]:
+def find_dest_port_structs(control_ports: List["PortStruct"]) -> List["PortStruct"]:
     return [
-        port_struct
-        for port_struct in control_ports
-        if (is_source_port and port_struct.port_conf.is_tx_port)
-        or (not is_source_port and port_struct.port_conf.is_rx_port)
+        port_struct for port_struct in control_ports if port_struct.port_conf.is_rx_port
     ]
-
-

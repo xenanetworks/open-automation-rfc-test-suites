@@ -86,8 +86,7 @@ class BasePort:
     async def _change_traffic_status(
         self, port: "xoa_ports.GenericL23Port", get_attr: "P_TRAFFIC.GetDataAttr"
     ) -> None:
-        before = self._traffic_status
-        after = self._traffic_status = bool(get_attr.on_off)
+        self._traffic_status = bool(get_attr.on_off)
 
     async def __on_reservation_status(self, port: "xoa_ports.GenericL23Port", v):
         raise exceptions.LossofPortOwnership(self._port)
@@ -99,7 +98,7 @@ class BasePort:
         await self._port.tx_config.enable.set(state)
 
     async def set_broadr_reach_mode(self, broadr_reach_mode: const.BRRModeStr) -> None:
-        if self._port.is_brr_mode_supported == enums.YesNo.NO:
+        if self._port.info.is_brr_mode_supported == enums.YesNo.NO:
             self._xoa_out.send_warning(
                 exceptions.BroadReachModeNotSupport(self._port_identity.name)
             )
@@ -157,7 +156,7 @@ class BasePort:
 
     async def set_speed_mode(self, port_speed_mode: const.PortSpeedStr) -> None:
         mode = port_speed_mode.to_xmp()
-        if mode not in self.local_states.port_possible_speed_modes:
+        if mode not in self._port.info.port_possible_speed_modes:
             self._xoa_out.send_warning(exceptions.PortSpeedWarning(mode))
         else:
             await self._port.speed.mode.selection.set(mode)
@@ -349,24 +348,25 @@ class PortStruct(BasePort):
         self._port_conf = port_conf
         self.properties = Properties()
         self._stream_structs: List["StreamStruct"] = []
-        self._rate: Decimal = Decimal("0")
-        self._port_speed: Decimal
-        self._statistic: Statistic = None  # type ignore
+        self._statistic: Optional[Statistic] = None  # type ignore
 
     @property
-    def port_speed(self) -> Decimal:
-        return self._port_speed
+    def send_port_speed(self) -> Decimal:
+        return self.properties.send_port_speed
+
+    def set_send_port_speed(self, speed: Decimal) -> None:
+        self.properties.send_port_speed = speed
 
     @property
     def rate(self) -> Decimal:
-        return self._rate
+        return self.properties.rate
 
     @property
     def stream_structs(self) -> List["StreamStruct"]:
         return self._stream_structs
 
     @property
-    def statistic(self) -> "Statistic":
+    def statistic(self) -> Optional["Statistic"]:
         return self._statistic
 
     @property
@@ -374,7 +374,7 @@ class PortStruct(BasePort):
         return self._port_conf
 
     def set_rate(self, rate: Decimal) -> None:
-        self._rate = rate
+        self.properties.rate = rate
 
     def init_counter(
         self, packet_size: Decimal, duration: Decimal, is_final: bool = False
@@ -382,10 +382,10 @@ class PortStruct(BasePort):
         self._statistic = Statistic(
             port_id=self._port_identity.name,
             frame_size=packet_size,
-            rate=self._rate,
+            rate=self.rate,
             duration=duration,
             is_final=is_final,
-            port_speed=self._port_speed,
+            port_speed=self.send_port_speed,
             interframe_gap=self._port_conf.inter_frame_gap,
         )
 
@@ -469,25 +469,25 @@ class PortStruct(BasePort):
         await self.set_arp_trucks(self.properties.arp_trunks)
         await self.set_ndp_trucks(self.properties.ndp_trunks)
 
-    async def get_port_speed(self) -> Decimal:
+    async def get_capped_port_speed(self) -> Decimal:
         port_speed = await self.get_physics_speed()
         if self._port_conf.port_rate_cap_profile.is_custom:
             port_speed = min(self._port_conf.port_rate, port_speed)
         return Decimal(str(port_speed))
 
     async def _get_use_port_speed(self) -> NonNegativeDecimal:
-        tx_speed = await self.get_port_speed()
+        tx_speed = await self.get_capped_port_speed()
         if self._port_conf.peer_config_slot and len(self.properties.peers) == 1:
             # Only Pair Topology Need to query peer speed
             peer_struct = self.properties.peers[0]
-            rx_speed = await peer_struct.get_port_speed()
+            rx_speed = await peer_struct.get_capped_port_speed()
             tx_speed = min(tx_speed, rx_speed)
-        self._port_speed = (
+        self.set_send_port_speed(
             tx_speed
             * Decimal(str(1e6 - self._port_conf.speed_reduction_ppm))
             / Decimal(str(1e6))
         )
-        return NonNegativeDecimal(str(self._port_speed))
+        return NonNegativeDecimal(str(self.send_port_speed))
 
 
 TypeConf = Union["ThroughputTest", "LatencyTest", "FrameLossRateTest", "BackToBackTest"]
@@ -506,6 +506,9 @@ class Properties:
     peers: List["PortStruct"] = field(default_factory=list)
     arp_trunks: Set[RXTableData] = field(default_factory=set)
     ndp_trunks: Set[RXTableData] = field(default_factory=set)
+
+    rate: Decimal = Decimal("0")
+    send_port_speed: Decimal = Decimal("0")
 
     def get_modifier_range(self, stream_id: int) -> Tuple[int, int]:
         if stream_id == 0:

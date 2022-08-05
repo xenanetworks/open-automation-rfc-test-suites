@@ -75,11 +75,11 @@ class FrameSizeConfiguration(BaseModel):
             return [self.mixed_average_packet_size]
 
         elif packet_size_type == const.PacketSizeType.RANGE:
-            return range(
+            return list(range(
                 self.fixed_packet_start_size,
                 self.fixed_packet_end_size + self.fixed_packet_step_size,
                 self.fixed_packet_step_size,
-            )
+            ))
 
         elif packet_size_type in {
             const.PacketSizeType.INCREMENTING,

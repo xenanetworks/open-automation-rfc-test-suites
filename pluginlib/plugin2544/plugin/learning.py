@@ -21,24 +21,19 @@ def get_dest_ip_modifier_addr_range(
     port_struct: "PortStruct",
 ) -> Optional[range]:
     header_segments = port_struct.port_conf.profile.header_segments
-    flag = False
-    addr_range = None
     for header_segment in header_segments:
         if header_segment.segment_type in (
             const.SegmentType.IP,
             const.SegmentType.IPV6,
         ):
-            flag = True
-        for modifier in header_segment.hw_modifiers:
-            if modifier.field_name in ["Dest IP Addr", "Dest IPv6 Addr"]:
-                addr_range = range(
-                    modifier.start_value,
-                    modifier.stop_value + 1,
-                    modifier.step_value,
-                )
-        if flag:
-            break
-    return addr_range
+            for modifier in header_segment.hw_modifiers:
+                if modifier.field_name in ("Dest IP Addr", "Dest IPv6 Addr"):
+                    return range(
+                        modifier.start_value,
+                        modifier.stop_value + 1,
+                        modifier.step_value,
+                    )
+    return None
 
 
 def add_address_refresh_entry(
@@ -146,13 +141,12 @@ async def setup_address_refresh(
                 arp_data,
                 resources.test_conf.use_gateway_mac_as_dmac,
             )
-            is_rx_only = (
-                port_struct.port_conf.is_rx_port
-                and not port_struct.port_conf.is_tx_port
-            )
             for packet in packet_list:
                 address_refresh_tokens.append(
-                    (port_struct._port.tx_single_pkt.send.set(packet), is_rx_only)
+                    (
+                        port_struct._port.tx_single_pkt.send.set(packet),
+                        port_struct.port_conf.is_rx_only,
+                    )
                 )
     return address_refresh_tokens
 

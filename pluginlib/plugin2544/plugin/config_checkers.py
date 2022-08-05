@@ -4,7 +4,7 @@ from xoa_driver.enums import ProtocolOption
 
 from ..model.m_test_type_config import AllTestType
 from ..utils import field, exceptions, constants as const
-from .common import filter_port_structs
+from .common import find_dest_port_structs
 
 if TYPE_CHECKING:
     from xoa_driver import testers as xoa_testers
@@ -91,7 +91,7 @@ async def check_ports(control_ports: List["PortStruct"]) -> None:
     )
 
 
-async def check_port_modifiers(
+def check_port_modifiers(
     capabilities: "P_CAPABILITIES.GetDataAttr",
     port_conf: "PortConfiguration",
     is_stream_based: bool,
@@ -108,7 +108,7 @@ async def check_port_modifiers(
             raise exceptions.ModifierBasedNotSupportDefineModifier()
 
 
-async def check_stream_limitations(
+def check_stream_limitations(
     port_struct: "PortStruct", per_port_stream_count: int, is_stream_based: bool
 ) -> None:
     if not is_stream_based:
@@ -143,7 +143,7 @@ def check_tid_limitations(
         return
 
     tid_value = 0
-    dest_port_structs = filter_port_structs(control_ports, is_source_port=False)
+    dest_port_structs = find_dest_port_structs(control_ports)
     for peer_struct in dest_port_structs:
         src_port_count = count_source_port(control_ports, peer_struct)
         tid_value += src_port_count
@@ -152,7 +152,7 @@ def check_tid_limitations(
             raise exceptions.TPLDIDExceed(tid_value, max_tpld_stats)
 
 
-async def check_port_min_packet_length(
+def check_port_min_packet_length(
     capabilities: "P_CAPABILITIES.GetDataAttr",
     min_packet_size: Union[field.NonNegativeDecimal, int],
     packet_size_type: "const.PacketSizeType",
@@ -165,7 +165,7 @@ async def check_port_min_packet_length(
         )
 
 
-async def check_port_max_packet_length(
+def check_port_max_packet_length(
     capabilities: "P_CAPABILITIES.GetDataAttr",
     max_packet_size: Union[field.NonNegativeDecimal, int],
     packet_size_type: "const.PacketSizeType",
@@ -195,7 +195,7 @@ def get_needed_packet_length(
     )
 
 
-async def check_needed_packet_length(
+def check_needed_packet_length(
     port_struct: "PortStruct",
     min_packet_size: Union[field.NonNegativeDecimal, int],
     use_micro_tpld_on_demand: bool,
@@ -205,7 +205,7 @@ async def check_needed_packet_length(
         raise exceptions.PacketSizeTooSmall(int(min_packet_size), need_packet_length)
 
 
-async def check_payload_pattern(
+def check_payload_pattern(
     capabilities: "P_CAPABILITIES.GetDataAttr", payload_pattern: str
 ) -> None:
     cur = len(payload_pattern) // 2
@@ -213,7 +213,7 @@ async def check_payload_pattern(
         raise exceptions.PayloadPatternExceed(cur, capabilities.max_pattern_length)
 
 
-async def check_micro_tpld(
+def check_micro_tpld(
     capabilities: "P_CAPABILITIES.GetDataAttr", use_mocro_tpld: bool
 ) -> None:
     if not use_mocro_tpld:
@@ -222,7 +222,7 @@ async def check_micro_tpld(
         raise exceptions.MicroTPLDNotSupport()
 
 
-async def check_port_test_config(
+def check_port_test_config(
     port_struct: "PortStruct", test_conf: "TestConfiguration"
 ) -> None:
     is_stream_based = test_conf.flow_creation_type.is_stream_based
@@ -234,21 +234,21 @@ async def check_port_test_config(
     min_packet_size = min(packet_size_list)
     max_packet_size = max(packet_size_list)
     per_port_stream_count = test_conf.multi_stream_config.per_port_stream_count
-    await check_payload_pattern(port_struct.capabilities, test_conf.payload_pattern)
-    await check_micro_tpld(port_struct.capabilities, test_conf.use_micro_tpld_on_demand)
-    await check_port_min_packet_length(
+    check_payload_pattern(port_struct.capabilities, test_conf.payload_pattern)
+    check_micro_tpld(port_struct.capabilities, test_conf.use_micro_tpld_on_demand)
+    check_port_min_packet_length(
         port_struct.capabilities, min_packet_size, packet_size_type
     )
-    await check_port_max_packet_length(
+    check_port_max_packet_length(
         port_struct.capabilities, max_packet_size, packet_size_type
     )
-    await check_needed_packet_length(
+    check_needed_packet_length(
         port_struct, min_packet_size, test_conf.use_micro_tpld_on_demand
     )
-    await check_port_modifiers(
+    check_port_modifiers(
         port_struct.capabilities, port_struct.port_conf, is_stream_based
     )
-    await check_stream_limitations(port_struct, per_port_stream_count, is_stream_based)
+    check_stream_limitations(port_struct, per_port_stream_count, is_stream_based)
 
 
 async def check_test_config(
@@ -256,13 +256,8 @@ async def check_test_config(
 ) -> None:
     is_stream_based = test_conf.flow_creation_type.is_stream_based
     scope = test_conf.tid_allocation_scope
-    await asyncio.gather(
-        *[
-            check_port_test_config(port_struct, test_conf)
-            for port_struct in control_ports
-        ]
-    )
-
+    for port_struct in control_ports:
+        check_port_test_config(port_struct, test_conf)
     check_tid_limitations(control_ports, scope, is_stream_based)
 
 

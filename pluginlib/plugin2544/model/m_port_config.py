@@ -114,6 +114,10 @@ class PortConfiguration(BaseModel):
         self._is_tx = value
 
     @property
+    def is_rx_only(self) -> bool:
+        return self.is_rx_port and not self.is_tx_port
+
+    @property
     def is_rx_port(self) -> bool:
         return self._is_rx
 

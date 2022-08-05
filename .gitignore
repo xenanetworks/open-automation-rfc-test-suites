@@ -4,3 +4,6 @@ config.py
 *.v2544
 *.v3918
 *.pyc
+*.bak
+*.dat
+*.dir
