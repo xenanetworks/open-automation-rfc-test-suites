@@ -54,8 +54,8 @@ def get_pair_address(
 
 
 def is_byte_values_zero(array: bytearray, start: int = 0, length: int = 0) -> bool:
-    if length == 0:
-        length = len(array)
+    length = length or len(array)
+
     if len(array) < start + length:
         return False
 
