@@ -3,10 +3,11 @@ import json
 import os
 from xoa_core import types, controller
 from loguru import logger
-from xoa_converter import converter
-INPUT_DATA_PATH = os.path.abspath(
-    "test/2.v2544",
-)
+
+from xoa_converter.entry import converter
+from xoa_converter.types import TestSuiteType
+
+INPUT_DATA_PATH = os.path.abspath("test/2.v2544")
 JSON_PATH = os.path.abspath("test/hello.json")
 
 
@@ -14,9 +15,10 @@ async def subscribe_executions(c: controller.MainController):
     async for msg in c.listen_changes(types.PIPE_EXECUTOR):
         logger.debug(msg)
 
+
 async def subscribe(id: str, c: controller.MainController):
     async for msg in c.listen_changes(id):
-        logger.debug(msg.json(indent=2))
+        logger.debug(msg)
 
 
 async def playground():
@@ -36,17 +38,13 @@ async def playground():
         await c.add_tester(t)
 
     with open(INPUT_DATA_PATH) as f:
-        app_data = json.load(f)
+        app_data = f.read()
         info = c.get_test_suite_info("RFC-2544")
-        new_data = converter("RFC-2544", json.loads(info['schema']), app_data)
-        with open(JSON_PATH, "w") as f:
-            f.write(new_data.json(indent=2))
+        new_data = converter(TestSuiteType.RFC2544,  app_data, info["schema"])
 
-    with open(JSON_PATH, "r") as f:
-        new_data = json.load(f)
     asyncio.create_task(subscribe_executions(c))
     try:
-        id = c.start_test_suite("RFC-2544", new_data)
+        id = c.start_test_suite("RFC-2544", json.loads(new_data))
     except Exception as err:
         logger.debug(err)
     else:
