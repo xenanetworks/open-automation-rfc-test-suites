@@ -39,13 +39,11 @@ class TestCaseProcessor:
         self.resources: "ResourceManager" = resources
         self.xoa_out = xoa_out
         self.address_refresh_handler: Optional[AddressRefreshHandler] = None
-        self.test_results = {}  # save result to calculate average 
+        self.test_results = {}  # save result to calculate average
         self._throughput_map = {}   # save throughput rate for latency relative to throughput use
 
     async def prepare(self) -> None:
-        if not self.resources.test_conf.arp_refresh_enabled:
-            return None
-        if self.resources.has_l3:
+        if not self.resources.test_conf.arp_refresh_enabled or self.resources.has_l3:
             return None
         self.address_refresh_handler = await setup_address_arp_refresh(self.resources)
 
