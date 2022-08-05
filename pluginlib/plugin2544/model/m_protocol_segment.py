@@ -166,19 +166,21 @@ class ProtocolSegmentProfileConfig(BaseModel):
 
     @validator("header_segments", always=True)
     def set_byte_offset(cls, v: List[HeaderSegment]) -> List[HeaderSegment]:
-        if v:
-            current_byte_offset = 0
-            for header_segment in v:
-                header_segment.segment_byte_offset = current_byte_offset
-                if header_segment.field_value_ranges:
-                    for fvr in header_segment.field_value_ranges:
-                        fvr.set_position(current_byte_offset * 8 + fvr.bit_offset)
-                if header_segment.hw_modifiers:
-                    for modifier in header_segment.hw_modifiers:
-                        modifier.set_position(current_byte_offset + modifier.byte_offset)
-                        if modifier.field_name in ("Src IP Addr", "Dest IP Addr"):
-                            modifier.set_position(modifier.offset)
-                current_byte_offset += len(header_segment.segment_value) // 2
+        if not v:
+            return []
+
+        current_byte_offset = 0
+        for header_segment in v:
+            header_segment.segment_byte_offset = current_byte_offset
+            if header_segment.field_value_ranges:
+                for fvr in header_segment.field_value_ranges:
+                    fvr.set_position(current_byte_offset * 8 + fvr.bit_offset)
+            if header_segment.hw_modifiers:
+                for modifier in header_segment.hw_modifiers:
+                    modifier.set_position(current_byte_offset + modifier.byte_offset)
+                    if modifier.field_name in ("Src IP Addr", "Dest IP Addr"):
+                        modifier.set_position(modifier.offset)
+            current_byte_offset += len(header_segment.segment_value) // 2
         return v
 
     @property
