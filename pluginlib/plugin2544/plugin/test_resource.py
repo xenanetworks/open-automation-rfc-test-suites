@@ -97,7 +97,7 @@ class ResourceManager:
                 for port_struct in self.port_structs
             ]
         )
-        await asyncio.sleep(1)
+        await asyncio.sleep(const.SleepSecond.TRAFFIC_STOP_DELAY)
 
     async def setup_sweep_reduction(self):
         if (
@@ -153,7 +153,7 @@ class ResourceManager:
         start_time = time.time()
         for port_struct in self.port_structs:
             while not port_struct.sync_status:
-                await asyncio.sleep(1)
+                await asyncio.sleep(const.SleepSecond.CHECK_SYNC_DELAY)
                 if time.time() - start_time > 30:
                     raise TimeoutError(
                         f"Waiting for {port_struct.port_identity.name} sync timeout!"
@@ -229,7 +229,7 @@ class ResourceManager:
 
     def test_finished(self) -> bool:
         return all(not port_struct.traffic_status for port_struct in self.tx_ports)
-        
+
 
     def los(self) -> bool:
         if self.test_conf.should_stop_on_los:
@@ -273,7 +273,7 @@ class ResourceManager:
         await asyncio.gather(
             *[port_struct.clear_statistic() for port_struct in self.port_structs]
         )
-        await asyncio.sleep(1)
+        await asyncio.sleep(const.SleepSecond.CLEAR_STATISTICS_DELAY)
 
     async def query_traffic_status(self) -> None:
         await asyncio.gather(

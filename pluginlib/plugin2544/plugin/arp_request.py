@@ -5,6 +5,8 @@ from .common import is_same_ipnetwork
 from ..utils.field import IPv4Address, IPv6Address, MacAddress
 from ..utils.packet import Ether, IPV4Packet, IPV6Packet
 from ..utils.traffic_definitions import EtherType
+from ..utils.constants import SleepSecond
+
 
 if TYPE_CHECKING:
     from .structure import PortStruct
@@ -82,7 +84,7 @@ async def send_arp_request(
         stream.gateway.ipv6.set("::"),
         stream.enable.set(enums.OnOffWithSuppress.ON),
     )
-    await asyncio.sleep(1)
+    await asyncio.sleep(SleepSecond.ARP_LEARNING_DELAY)
     result, *_ = await utils.apply(stream.request.arp.get())
     peer_mac_address = MacAddress(result.mac_address)
     await stream.delete()

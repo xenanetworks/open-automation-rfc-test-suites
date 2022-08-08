@@ -97,8 +97,8 @@ class TestCaseProcessor:
             self.xoa_out.send_statistics(data.json(include=data_format))
             if self.resources.should_quit(start_time, params.duration):
                 break
-            await asyncio.sleep(1)
-        await asyncio.sleep(5)
+            await asyncio.sleep(const.SleepSecond.SEND_STATISTICS_INTERVAL)
+        await asyncio.sleep(const.SleepSecond.STATISTICS_DELAY)
         logger.debug('-' * 50)
         data = await aggregate_data(
             self.resources,
