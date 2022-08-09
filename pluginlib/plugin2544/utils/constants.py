@@ -1,4 +1,3 @@
-import os
 from enum import Enum as CaseSensitiveEnum
 from xoa_driver import ports, enums
 
@@ -64,7 +63,7 @@ IMIX_AVERAGE = 463.501953
 MAX_PACKET_LIMIT_VALUE = 0x7FFFFFFF
 MAX_MASK_BIT_LENGTH = 16
 UNREACH_BYTE_VALUE = 256
-SEARCH_SEGMENT_PATH = f'segment_refs{os.path.sep}*.json'
+SEARCH_SEGMENT_PATH = f'segment_refs/*.json'
 
 STANDARD_SEGMENT_VALUE = (128, 256, 512, 1024, 2048)
 
