@@ -1,4 +1,5 @@
 import os, re
+from glob import glob
 from pydantic import BaseModel, Field, validator
 from ..plugin.common import copy_to, is_byte_values_zero
 from . import exceptions, constants as const
@@ -77,24 +78,24 @@ class SegmentDefinition(BaseModel):
         return bytearray([int(i, 2) for i in re.findall(".{4}", all_bits)])
 
 
-def load_segment_map(
-    path: str = const.DEFAULT_SEGMENT_PATH,
+def load_segment_mapping(
+    path: str = const.SEARCH_SEGMENT_PATH,
 ) -> Dict["const.SegmentType", "SegmentDefinition"]:
-    dic = {}
-    for i in os.listdir(path):
-        filepath = os.path.join(const.DEFAULT_SEGMENT_PATH, i)
-        if os.path.isfile(filepath) and filepath.endswith(".json"):
-            value = SegmentDefinition.parse_file(filepath, encoding="utf-8")
-            try:
-                key = const.SegmentType(value.name.lower())
-            except ValueError:
-                continue
+    mapping = {}
+    for segment_json_path in glob(path):
+        if not os.path.isfile(segment_json_path):
+            continue
 
-            dic[key] = value
-    return dic
+        definition = SegmentDefinition.parse_file(segment_json_path, encoding="utf-8")
+        try:
+            segment_type = const.SegmentType(definition.name.lower())
+        except ValueError:
+            continue
 
+        mapping[segment_type] = definition
+    return mapping
 
-DEFAULT_SEGMENT_DIC = load_segment_map()
+DEFAULT_SEGMENT_MAPPING = load_segment_mapping()
 
 
 def wrap_add_16(data: bytearray, offset_num: int) -> bytearray:
@@ -141,10 +142,10 @@ def calculate_checksum(
 
 
 def get_segment_definition(protocol: "const.SegmentType") -> SegmentDefinition:
-    if not protocol in DEFAULT_SEGMENT_DIC:
+    if not protocol in DEFAULT_SEGMENT_MAPPING:
         raise exceptions.ProtocolNotSupport(protocol.value)
     else:
-        return DEFAULT_SEGMENT_DIC[protocol]
+        return DEFAULT_SEGMENT_MAPPING[protocol]
 
 
 def get_field_definition(

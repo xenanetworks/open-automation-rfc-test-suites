@@ -236,7 +236,7 @@ class StreamStruct:
             pr_stream.update_rx_port_statistic()
 
         self._tx_port.statistic.aggregate_tx_statistic(self._stream_statistic)
-        
+
 
     async def set_packet_header(self) -> None:
         packet_header_list = bytearray()
@@ -253,7 +253,7 @@ class StreamStruct:
                 segment, segment_index, self._addr_coll
             )
             real_value = ps.calculate_checksum(
-                segment, ps.DEFAULT_SEGMENT_DIC, patched_value
+                segment, ps.DEFAULT_SEGMENT_MAPPING, patched_value
             )
 
             packet_header_list += real_value
