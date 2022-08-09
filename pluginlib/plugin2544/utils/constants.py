@@ -70,9 +70,7 @@ DEFAULT_SEGMENT_PATH = os.path.abspath(
         "reference/segment_refs",
     )
 )
-SERVER_CONFIG_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(os.path.dirname(__file__)), "config/server.json")
-)
+
 STANDARD_SEGMENT_VALUE = (128, 256, 512, 1024, 2048)
 
 MdixPorts = (
