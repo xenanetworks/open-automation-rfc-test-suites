@@ -9,7 +9,7 @@ from ..utils import exceptions, constants as const
 from ..utils.scheduler import schedule
 from ..utils.field import IPv4Address, IPv6Address
 from ..utils.packet import ARPPacket, MacAddress, NDPPacket
-from ..utils.constants import SleepSecond
+from ..utils import constants as const
 
 
 if TYPE_CHECKING:
@@ -281,7 +281,7 @@ async def add_L3_learning_preamble_steps(
     )
     while resources.test_running():
         await resources.query_traffic_status()
-        await asyncio.sleep(SleepSecond.CHECK_LEARNING_TRAFFIC_INTERVAL)
+        await asyncio.sleep(const.INTERVAL_CHECK_LEARNING_TRAFFIC)
     await resources.set_tx_time_limit(0)
 
 
@@ -297,7 +297,7 @@ async def add_flow_based_learning_preamble_steps(
     await resources.start_traffic()
     while resources.test_running():
         await resources.query_traffic_status()
-        await asyncio.sleep(SleepSecond.CHECK_LEARNING_TRAFFIC_INTERVAL)
+        await asyncio.sleep(const.INTERVAL_CHECK_LEARNING_TRAFFIC)
     await asyncio.sleep(resources.test_conf.delay_after_flow_based_learning_ms / 1000)
     await resources.set_frame_limit(0)  # clear packet limit
 
@@ -320,7 +320,7 @@ async def mac_learning(
         raise exceptions.PacketLengthExceed(cur_length, max_cap)
     for _ in range(mac_learning_frame_count):
         await port_struct.send_packet(packet)  # P_XMITONE
-        await asyncio.sleep(SleepSecond.MAC_LEARNING_DELAY)
+        await asyncio.sleep(const.DELAY_MAC_LEARNING)
 
 
 async def add_mac_learning_steps(
