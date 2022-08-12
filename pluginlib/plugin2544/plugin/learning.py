@@ -320,7 +320,7 @@ async def mac_learning(
         raise exceptions.PacketLengthExceed(cur_length, max_cap)
     for _ in range(mac_learning_frame_count):
         await port_struct.send_packet(packet)  # P_XMITONE
-        await asyncio.sleep(const.DELAY_MAC_LEARNING)
+        await asyncio.sleep(const.DELAY_LEARNING_MAC)
 
 
 async def add_mac_learning_steps(

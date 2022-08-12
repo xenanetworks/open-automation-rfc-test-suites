@@ -97,7 +97,7 @@ class ResourceManager:
                 for port_struct in self.port_structs
             ]
         )
-        await asyncio.sleep(const.DELAY_TRAFFIC_STOP)
+        await asyncio.sleep(const.DELAY_STOPPED_TRAFFIC)
 
     async def setup_sweep_reduction(self):
         if (
