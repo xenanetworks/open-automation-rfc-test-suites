@@ -1,0 +1,30 @@
+{
+    "Name": "IGMPV2",
+    "Description": "Internet Group Mgmt Protocol v2",
+    "SegmentType": "IGMPV2",
+    "ChecksumOffset": 2,
+    "ProtocolFields": [
+        {
+            "Name": "Type",
+            "BitLength": 8,
+            "DisplayType": "Hex",
+            "DefaultValue": "0x16",
+            "ValueMapName": "IgmpV2Types"
+        },
+        {
+            "Name": "Code",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Checksum",
+            "BitLength": 16,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Group Address",
+            "BitLength": 32,
+            "DisplayType": "IpV4Address"
+        }
+    ]
+}

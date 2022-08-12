@@ -1,0 +1,37 @@
+{
+    "Name": "IGMPV3_MR",
+    "Description": "IGMPv3 Membership Report",
+    "SegmentType": "IGMPV3_MR",
+    "ChecksumOffset": 2,
+    "ProtocolFields": [
+        {
+            "Name": "Type",
+            "BitLength": 8,
+            "DisplayType": "Hex",
+            "DefaultValue": "0x22"
+        },
+        {
+            "Name": "(reserved)",
+            "BitLength": 8,
+            "DisplayType": "Hex",
+            "IsReserved": true
+        },
+        {
+            "Name": "Checksum",
+            "BitLength": 16,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "(reserved)",
+            "BitLength": 16,
+            "DisplayType": "Hex",
+            "IsReserved": true
+        },
+        {
+            "Name": "Group Record Count",
+            "BitLength": 16,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0x00,0x01"
+        }
+    ]
+}

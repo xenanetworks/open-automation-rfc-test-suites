@@ -1,0 +1,32 @@
+{
+    "Name": "VXLAN",
+    "Description": "Virtual eXtensible LAN",
+    "SegmentType": "VXLAN",
+    "EnclosedTypeIndex": -1,
+    "ProtocolFields": [
+        {
+            "Name": "Flags",
+            "BitLength": 8,
+            "DisplayType": "Binary",
+            "DefaultValue": "0x08"
+        },
+        {
+            "Name": "(reserved)",
+            "BitLength": 24,
+            "DisplayType": "Binary",
+            "IsReserved": true
+        },
+        {
+            "Name": "VNI",
+            "BitLength": 24,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0,0,0"
+        },
+        {
+            "Name": "(reserved)",
+            "BitLength": 8,
+            "DisplayType": "Binary",
+            "IsReserved": true
+        }
+    ]
+}

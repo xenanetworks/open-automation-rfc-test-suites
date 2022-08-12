@@ -1,0 +1,30 @@
+{
+    "Name": "IGMPV3_GR",
+    "Description": "IGMPv3 Group Record",
+    "SegmentType": "IGMPV3_GR",
+    "ProtocolFields": [
+        {
+            "Name": "Record Type",
+            "BitLength": 8,
+            "DisplayType": "Decimal",
+            "ValueMapName": "IGMPv3GroupRecordTypes"
+        },
+        {
+            "Name": "Aux Data Len",
+            "BitLength": 8,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0x00"
+        },
+        {
+            "Name": "Number of Sources",
+            "BitLength": 16,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0x00,0x00"
+        },
+        {
+            "Name": "Multicast Address",
+            "BitLength": 32,
+            "DisplayType": "IpV4Address"
+        }
+    ]
+}

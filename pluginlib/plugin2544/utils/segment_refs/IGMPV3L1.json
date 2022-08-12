@@ -1,0 +1,62 @@
+{
+    "Name": "IGMPV3L1",
+    "Description": "IGMPv3 Membership Query L=1",
+    "SegmentType": "IGMPV3L1",
+    "ChecksumOffset": 2,
+    "ProtocolFields": [
+        {
+            "Name": "Type",
+            "BitLength": 8,
+            "DisplayType": "Hex",
+            "DefaultValue": "0x11",
+            "ValueMapName": "IgmpV2Types"
+        },
+        {
+            "Name": "Code",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Checksum",
+            "BitLength": 16,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Group Address",
+            "BitLength": 32,
+            "DisplayType": "IpV4Address"
+        },
+        {
+            "Name": "(reserved)",
+            "BitLength": 4,
+            "DisplayType": "Hex",
+            "IsReserved": true
+        },
+        {
+            "Name": "Suppress",
+            "BitLength": 1,
+            "DisplayType": "Binary"
+        },
+        {
+            "Name": "QRV",
+            "BitLength": 3,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "QQIC",
+            "BitLength": 8,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Sources",
+            "BitLength": 16,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0x00,0x01"
+        },
+        {
+            "Name": "Source Address",
+            "BitLength": 32,
+            "DisplayType": "IpV4Address"
+        }
+    ]
+}

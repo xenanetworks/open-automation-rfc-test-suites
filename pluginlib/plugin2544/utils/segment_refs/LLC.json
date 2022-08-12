@@ -1,0 +1,26 @@
+{
+    "Name": "LLC",
+    "Description": "Logical Link Control",
+    "SegmentType": "LLC",
+    "EnclosedTypeIndex": -1,
+    "ProtocolFields": [
+        {
+            "Name": "Dest SAP",
+            "BitLength": 8,
+            "DisplayType": "Hex",
+            "DefaultValue": "0xAA"
+        },
+        {
+            "Name": "Src SAP",
+            "BitLength": 8,
+            "DisplayType": "Hex",
+            "DefaultValue": "0xAA"
+        },
+        {
+            "Name": "Control",
+            "BitLength": 8,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0x03"
+        }
+    ]
+}

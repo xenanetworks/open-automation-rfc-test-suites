@@ -1,0 +1,31 @@
+{
+    "Name": "FCoEHead",
+    "Description": "Fiber Channel over Ethernet (head)",
+    "SegmentType": "FCOEHEAD",
+    "ProtocolFields": [
+        {
+            "Name": "Version",
+            "BitLength": 4,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "(reserved)",
+            "BitLength": 4,
+            "DisplayType": "Hex",
+            "IsReserved": true
+        },
+        {
+            "Name": "(reserved)",
+            "BitLength": 96,
+            "DisplayType": "Hex",
+            "IsReserved": true
+        },
+        {
+            "Name": "SOF",
+            "BitLength": 8,
+            "DisplayType": "Hex",
+            "ValueMapName": "FCoESoFTypes",
+            "DefaultValue": "0x2E"
+        }
+    ]
+}

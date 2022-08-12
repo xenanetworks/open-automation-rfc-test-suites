@@ -1,0 +1,60 @@
+{
+    "Name": "TCP",
+    "Description": "Transmission Control Protocol",
+    "SegmentType": "TCP",
+    "EnclosedTypeIndex": -1,
+    "ProtocolFields": [
+        {
+            "Name": "Src Port",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Dest Port",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Sequence Number",
+            "BitLength": 32,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Acknowledge Number",
+            "BitLength": 32,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Data Offset",
+            "BitLength": 4,
+            "DisplayType": "Decimal",
+            "DefaultValue": "5"
+        },
+        {
+            "Name": "(reserved)",
+            "IsReserved": true,
+            "BitLength": 3,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Flags",
+            "BitLength": 9,
+            "DisplayType": "Binary"
+        },
+        {
+            "Name": "Window Size",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        },
+        {
+            "Name": "Checksum",
+            "BitLength": 16,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Urgent",
+            "BitLength": 16,
+            "DisplayType": "Decimal"
+        }
+    ]
+}

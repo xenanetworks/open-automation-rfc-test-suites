@@ -1,0 +1,88 @@
+{
+    "Name": "IPv4",
+    "Description": "Internet Protocol v4",
+    "SegmentType": "IP",
+    "ChecksumOffset": 10,
+    "EnclosedTypeIndex": 9,
+    "ProtocolFields": [
+        {
+            "Name": "Version",
+            "BitLength": 4,
+            "DisplayType": "Decimal",
+            "DefaultValue": "4"
+        },
+        {
+            "Name": "Header Length",
+            "BitLength": 4,
+            "DisplayType": "Decimal",
+            "DefaultValue": "5"
+        },
+        {
+            "Name": "DSCP",
+            "BitLength": 6,
+            "DisplayType": "Binary",
+            "DefaultValue": "0x0",
+            "ValueMapName": "DiffServTypes"
+        },
+        {
+            "Name": "ECN",
+            "BitLength": 2,
+            "DisplayType": "Binary",
+            "DefaultValue": "0x0"
+        },
+        {
+            "Name": "Total Length",
+            "BitLength": 16,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0x00,0x14"
+        },
+        {
+            "Name": "Identification",
+            "BitLength": 16,
+            "DisplayType": "Hex",
+            "DefaultValue": "0x00,0x00"
+        },
+        {
+            "Name": "Flags",
+            "BitLength": 3,
+            "DisplayType": "Binary",
+            "DefaultValue": "0x00"
+        },
+        {
+            "Name": "Fragment Offset",
+            "BitLength": 13,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0,0"
+        },
+        {
+            "Name": "TTL",
+            "BitLength": 8,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0x7f"
+        },
+        {
+            "Name": "Protocol",
+            "BitLength": 8,
+            "DisplayType": "Decimal",
+            "DefaultValue": "0xff",
+            "ValueMapName": "IpTypes"
+        },
+        {
+            "Name": "Header Checksum",
+            "BitLength": 16,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Src IP Addr",
+            "BitLength": 32,
+            "DisplayType": "IpV4Address",
+            "SpecialType": "SrcIpAddress"
+        },
+        {
+            "Name": "Dest IP Addr",
+            "BitLength": 32,
+            "DisplayType": "IpV4Address",
+            "SpecialType": "DestIpAddress"
+        }
+    ]
+}

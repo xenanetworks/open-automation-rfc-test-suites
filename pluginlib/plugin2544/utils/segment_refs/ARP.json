@@ -1,0 +1,59 @@
+{
+    "Name": "ARP",
+    "Description": "Address Resolution Protocol",
+    "SegmentType": "ARP",
+    "EnclosedTypeIndex": -1,
+    "ProtocolFields": [
+        {
+            "Name": "Hardware Type",
+            "BitLength": 16,
+            "DisplayType": "Hex",
+            "DefaultValue": "0x00,0x01"
+        },
+        {
+            "Name": "Protocol Type",
+            "BitLength": 16,
+            "DisplayType": "Hex",
+            "DefaultValue": "0x08,0x00"
+        },
+        {
+            "Name": "Hardware Length",
+            "BitLength": 8,
+            "DisplayType": "Decimal",
+            "DefaultValue": "6"
+        },
+        {
+            "Name": "Protocol Length",
+            "BitLength": 8,
+            "DisplayType": "Decimal",
+            "DefaultValue": "4"
+        },
+        {
+            "Name": "Operation",
+            "BitLength": 16,
+            "DisplayType": "Decimal",
+            "ValueMapName": "ArpOperations",
+            "DefaultValue": "0x00,0x01"
+        },
+        {
+            "Name": "Sender HW Addr",
+            "BitLength": 48,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Sender Protocol Addr",
+            "BitLength": 32,
+            "DisplayType": "IpV4Address"
+        },
+        {
+            "Name": "Target HW Addr",
+            "BitLength": 48,
+            "DisplayType": "Hex"
+        },
+        {
+            "Name": "Target Protocol Addr",
+            "BitLength": 32,
+            "DisplayType": "IpV4Address"
+        }
+    ]
+}

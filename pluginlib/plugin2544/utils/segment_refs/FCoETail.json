@@ -1,0 +1,20 @@
+{
+    "Name": "FCoETail",
+    "Description": "Fiber Channel over Ethernet (tail)",
+    "SegmentType": "FCOETAIL",
+    "ProtocolFields": [
+        {
+            "Name": "EOF",
+            "BitLength": 8,
+            "DisplayType": "Hex",
+            "ValueMapName": "FCoEEoFTypes",
+            "DefaultValue": "0x42"
+        },
+        {
+            "Name": "(reserved)",
+            "BitLength": 24,
+            "DisplayType": "Hex",
+            "IsReserved": true
+        }
+    ]
+}

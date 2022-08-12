@@ -1,0 +1,62 @@
+{
+	"Name": "MPLS-TP OAM",
+	"Description": "MPLS-TP, OAM Header",
+	"SegmentType": "MPLS_TP_OAM",
+
+	"ProtocolFields": [
+		{
+			"Name": "G-Ach CtrlChan",
+			"BitLength": 4,
+			"DisplayType": "Binary",
+			"DefaultValue": "0x10"
+		},
+		{
+			"Name": "G-Ach Version",
+			"BitLength": 4,
+			"DisplayType": "Decimal",
+			"DefaultValue": "0"
+		},
+		{
+			"Name": "(reserved)",
+			"BitLength": 8,
+			"IsReserved": true
+		},
+		{
+			"Name": "Channel Type",
+			"BitLength": 16,
+			"DisplayType": "Hex",
+			"DefaultValue": "0x89,0x02"
+		},
+		{
+			"Name": "MEL",
+			"BitLength": 3,
+			"DisplayType": "Binary",
+			"DefaultValue": "0xE0"
+		},
+		{
+			"Name": "Version",
+			"BitLength": 5,
+			"DisplayType": "Binary",
+			"DefaultValue": "0x00"
+		},
+		{
+			"Name": "OpCode",
+			"BitLength": 8,
+			"DisplayType": "Decimal",
+			"ValueMapName": "MplsOamOpCodes",
+			"DefaultValue": "0x01"
+		},
+		{
+			"Name": "Flags",
+			"BitLength": 8,
+			"DisplayType": "Binary",
+			"DefaultValue": "0x00"
+		},
+		{
+			"Name": "TLV Offset",
+			"BitLength": 8,
+			"DisplayType": "Decimal",
+			"DefaultValue": "0x00"
+		}
+	]
+}

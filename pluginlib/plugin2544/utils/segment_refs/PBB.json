@@ -1,0 +1,28 @@
+{
+    "Name": "PBB",
+    "Description": "Provider Backbone Bridging Tag",
+    "SegmentType": "PBBTAG",
+    "ProtocolFields": [
+        {
+            "Name": "I-PCP",
+            "BitLength": 3,
+            "DisplayType": "Binary"
+        },
+        {
+            "Name": "I-DEI",
+            "BitLength": 1,
+            "DisplayType": "Binary"
+        },
+        {
+            "Name": "(reserved)",
+            "BitLength": 4,
+            "DisplayType": "Binary",
+            "IsReserved": true
+        },
+        {
+            "Name": "Service Id",
+            "BitLength": 24,
+            "DisplayType": "Decimal"
+        }
+    ]
+}
