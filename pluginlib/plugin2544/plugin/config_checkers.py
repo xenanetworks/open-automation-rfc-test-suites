@@ -109,7 +109,9 @@ def check_port_modifiers(
 def check_stream_limitations(
     port_struct: "PortStruct", per_port_stream_count: int, is_stream_based: bool
 ) -> None:
-    if not is_stream_based or not port_struct._port_conf.is_tx_port:
+    if not is_stream_based:
+        return
+    if not port_struct._port_conf.is_tx_port:
         return
     stream_count = len(port_struct.properties.peers) * per_port_stream_count
     if stream_count > port_struct.capabilities.max_streams_per_port:
@@ -133,7 +135,9 @@ def check_tid_limitations(
     scope: "const.TidAllocationScope",
     is_stream_based: bool,
 ) -> None:
-    if not is_stream_based or not scope.is_config_scope:
+    if not is_stream_based:
+        return
+    if not scope.is_config_scope:
         return
 
     tid_value = 0
