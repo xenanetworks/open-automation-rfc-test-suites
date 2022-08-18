@@ -17,7 +17,7 @@ class TestSuitePipe(typing.Protocol):
     def send_progress(self, progress: int) -> None:
         ...
 
-    def send_warning(self, worning: Exception) -> None:
+    def send_warning(self, warning: Exception) -> None:
         ...
 
     def send_error(self, error: Exception) -> None:

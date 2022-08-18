@@ -8,9 +8,7 @@ from .common import find_dest_port_structs
 
 if TYPE_CHECKING:
     from xoa_driver import testers as xoa_testers
-    from xoa_driver.internals.core.commands import (
-        P_CAPABILITIES,
-    )
+    from xoa_driver.lli import commands
     from .structure import PortStruct
     from ..model import (
         ProtocolSegmentProfileConfig,
@@ -20,7 +18,7 @@ if TYPE_CHECKING:
 
 
 def check_port_config_profile(
-    capabilities: "P_CAPABILITIES.GetDataAttr", profile: "ProtocolSegmentProfileConfig"
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr", profile: "ProtocolSegmentProfileConfig"
 ) -> None:
     segment_id_list = profile.segment_id_list
     if capabilities.max_protocol_segments < len(segment_id_list):
@@ -58,7 +56,7 @@ def check_can_fec(can_fec: int, fec_mode: const.FECModeStr) -> None:
 
 
 async def check_custom_port_config(
-    capabilities: "P_CAPABILITIES.GetDataAttr", port_conf: "PortConfiguration"
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr", port_conf: "PortConfiguration"
 ) -> None:
 
     if port_conf.port_rate > capabilities.max_speed * 1_000_000:
@@ -92,7 +90,7 @@ async def check_ports(control_ports: List["PortStruct"]) -> None:
 
 
 def check_port_modifiers(
-    capabilities: "P_CAPABILITIES.GetDataAttr",
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr",
     port_conf: "PortConfiguration",
     is_stream_based: bool,
 ) -> None:
@@ -149,7 +147,7 @@ def check_tid_limitations(
 
 
 def check_port_min_packet_length(
-    capabilities: "P_CAPABILITIES.GetDataAttr",
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr",
     min_packet_size: Union[field.NonNegativeDecimal, int],
     packet_size_type: "const.PacketSizeType",
 ) -> None:
@@ -162,7 +160,7 @@ def check_port_min_packet_length(
 
 
 def check_port_max_packet_length(
-    capabilities: "P_CAPABILITIES.GetDataAttr",
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr",
     max_packet_size: Union[field.NonNegativeDecimal, int],
     packet_size_type: "const.PacketSizeType",
 ) -> None:
@@ -175,7 +173,7 @@ def check_port_max_packet_length(
 
 
 def get_tpld_total_length(
-    capabilities: "P_CAPABILITIES.GetDataAttr", use_micro_tpld_on_demand: bool
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr", use_micro_tpld_on_demand: bool
 ) -> int:
     if use_micro_tpld_on_demand and capabilities.can_micro_tpld:
         return const.MICRO_TPLD_TOTAL_LENGTH
@@ -202,7 +200,7 @@ def check_needed_packet_length(
 
 
 def check_payload_pattern(
-    capabilities: "P_CAPABILITIES.GetDataAttr", payload_pattern: str
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr", payload_pattern: str
 ) -> None:
     cur = len(payload_pattern) // 2
     if capabilities.max_pattern_length < cur:
@@ -210,7 +208,7 @@ def check_payload_pattern(
 
 
 def check_micro_tpld(
-    capabilities: "P_CAPABILITIES.GetDataAttr", use_mocro_tpld: bool
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr", use_mocro_tpld: bool
 ) -> None:
     if not use_mocro_tpld:
         return

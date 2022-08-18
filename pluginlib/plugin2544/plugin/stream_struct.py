@@ -22,9 +22,6 @@ from ..utils import constants as const, protocol_segments as ps, exceptions
 
 if TYPE_CHECKING:
     from .structure import PortStruct
-    from xoa_driver.internals.core.commands import (
-        PT_STREAM
-    )
 
 class PRStream:
     def __init__(self, tx_port: "PortStruct", rx_port: "PortStruct", tpld_id):

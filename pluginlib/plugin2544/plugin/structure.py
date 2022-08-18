@@ -17,11 +17,7 @@ from ..utils.field import MacAddress, NonNegativeDecimal
 if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity
     from xoa_driver import ports as xoa_ports, testers as xoa_testers
-    from xoa_driver.internals.core.commands import (
-        P_TRAFFIC,
-        P_RECEIVESYNC,
-        P_CAPABILITIES,
-    )
+    from xoa_driver.lli import commands
     from ..utils.logger import TestSuitePipe
     from ..model import (
         FrameSizeConfiguration,
@@ -59,7 +55,7 @@ class BasePort:
         return self._port_identity
 
     @property
-    def capabilities(self) -> "P_CAPABILITIES.GetDataAttr":
+    def capabilities(self) -> "commands.P_CAPABILITIES.GetDataAttr":
         return self._port.info.capabilities
 
     @property
@@ -75,7 +71,7 @@ class BasePort:
         return self._traffic_status
 
     async def _change_sync_status(
-        self, port: "xoa_ports.GenericL23Port", get_attr: "P_RECEIVESYNC.GetDataAttr"
+        self, port: "xoa_ports.GenericL23Port", get_attr: "commands.P_RECEIVESYNC.GetDataAttr"
     ) -> None:
         before = self._sync_status
         after = self._sync_status = bool(get_attr.sync_status)
@@ -84,7 +80,7 @@ class BasePort:
             raise exceptions.LossofPortSignal(port)
 
     async def _change_traffic_status(
-        self, port: "xoa_ports.GenericL23Port", get_attr: "P_TRAFFIC.GetDataAttr"
+        self, port: "xoa_ports.GenericL23Port", get_attr: "commands.P_TRAFFIC.GetDataAttr"
     ) -> None:
         self._traffic_status = bool(get_attr.on_off)
 
