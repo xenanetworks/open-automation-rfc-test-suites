@@ -25,6 +25,8 @@ LATENCY_OUTPUT = {
                     "dest_port_id": ...,
                     "src_port_addr": ...,
                     "dest_port_addr": ...,
+                    "tx_counter": {"frames"},
+                    "rx_counter": {"frames"},
                     "latency": {"average", "minimum", "maximum"},
                     "jitter": {"average", "minimum", "maximum"},
                 }

@@ -39,13 +39,11 @@ class TestCaseProcessor:
         self.resources: "ResourceManager" = resources
         self.xoa_out = xoa_out
         self.address_refresh_handler: Optional[AddressRefreshHandler] = None
-        self.test_results = {}  # save result to calculate average 
-        self._throughput_map = {}   # save throughput rate for latency relative to throughput use
+        self.test_results = {}  # save result to calculate average
+        self._throughput_map = {} # save throughput rate for latency relative to throughput use
 
     async def prepare(self) -> None:
-        if not self.resources.test_conf.arp_refresh_enabled:
-            return None
-        if self.resources.has_l3:
+        if self.resources.has_l3 or (not self.resources.test_conf.arp_refresh_enabled):
             return None
         self.address_refresh_handler = await setup_address_arp_refresh(self.resources)
 
@@ -101,7 +99,7 @@ class TestCaseProcessor:
                 break
             await asyncio.sleep(const.INTERVAL_SEND_STATISTICS)
         await asyncio.sleep(const.DELAY_STATISTICS)
-        logger.debug('-' * 50)
+        logger.debug("-" * 50)
         data = await aggregate_data(
             self.resources,
             params,
@@ -273,13 +271,13 @@ class TestCaseProcessor:
     ) -> None:
         result = self.test_results[test_type_conf.test_type][frame_size]
         if isinstance(test_type_conf, ThroughputTest):
-            """ throughput test calculate average based on same frame size"""
+            """throughput test calculate average based on same frame size"""
             statistic_lists = []
             for s in result.values():
                 statistic_lists.extend(s)
             self._average_statistic(test_type_conf, statistic_lists)
         else:
-            """ calculate average based on same frame size and same rate """
+            """calculate average based on same frame size and same rate"""
             for statistic_lists in result.values():
                 self._average_statistic(test_type_conf, statistic_lists)
 
