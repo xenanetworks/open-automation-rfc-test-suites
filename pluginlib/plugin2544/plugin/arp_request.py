@@ -68,7 +68,7 @@ async def send_arp_request(
     stream = await port_struct.create_stream()
     await utils.apply(
         stream.packet.limit.set(-1),
-        stream.comment.set("Stream number 0"),
+        stream.comment.set("Stream 0 / 0"),
         stream.rate.fraction.set(0),
         stream.burst.burstiness.set(-1, 100),
         stream.burst.gap.set(0, 0),

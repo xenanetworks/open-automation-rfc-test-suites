@@ -155,11 +155,16 @@ class StreamStruct:
     async def configure(self, test_conf: "TestConfiguration") -> None:
         stream = await self._tx_port.create_stream()
         self._stream = stream
+        base_mac = (
+            test_conf.multi_stream_config.multi_stream_mac_base_address
+            if test_conf.flow_creation_type.is_stream_based
+            else test_conf.mac_base_address
+        )
         self._flow_creation_type = test_conf.flow_creation_type
         self._addr_coll = await get_address_collection(
             self._tx_port,
             self.rx_port,
-            test_conf.mac_base_address,
+            base_mac,
             self._arp_mac,
             self._stream_offset,
         )
