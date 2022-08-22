@@ -23,6 +23,7 @@ from ..utils import constants as const, protocol_segments as ps, exceptions
 if TYPE_CHECKING:
     from .structure import PortStruct
 
+
 class PRStream:
     def __init__(self, tx_port: "PortStruct", rx_port: "PortStruct", tpld_id):
         self._tx_port = tx_port
@@ -57,6 +58,7 @@ class PRStream:
             fcs=fcs.fcs_error_count,
             loss_frames=error.non_incre_seq_event_count,
             latency=DelayData(
+                counter_type=const.CounterType.LATENCY,
                 minimum=latency.min_val,
                 average=latency.avg_val,
                 maximum=latency.max_val,
@@ -72,8 +74,9 @@ class PRStream:
     def update_rx_port_statistic(self) -> None:
         before = self._rx_port.statistic.rx_counter.frames
         self._rx_port.statistic.aggregate_rx_statistic(self._statistic)
-        logger.info(f"{before} -> {self._rx_port.statistic.rx_counter.frames} current: {self._statistic.rx_stream_counter.frames}")
-
+        logger.info(
+            f"{before} -> {self._rx_port.statistic.rx_counter.frames} current: {self._statistic.rx_stream_counter.frames}"
+        )
 
 
 class StreamStruct:
@@ -177,7 +180,9 @@ class StreamStruct:
             test_conf.arp_refresh_enabled, test_conf.use_gateway_mac_as_dmac
         )
 
-    def init_rx_tables(self, arp_refresh_enabled: bool, use_gateway_mac_as_dmac: bool) -> None:
+    def init_rx_tables(
+        self, arp_refresh_enabled: bool, use_gateway_mac_as_dmac: bool
+    ) -> None:
         if not arp_refresh_enabled or not self._tx_port.protocol_version.is_l3:
             return
         if self._stream_offset:
@@ -211,7 +216,9 @@ class StreamStruct:
             self._stream_id
         ).get()
         await asyncio.gather(*[pr_stream.query() for pr_stream in self._pr_streams])
-        src_addr, dst_addr = self._addr_coll.get_addr_pair_by_protocol(self._tx_port.protocol_version)
+        src_addr, dst_addr = self._addr_coll.get_addr_pair_by_protocol(
+            self._tx_port.protocol_version
+        )
         self._stream_statistic = StreamStatisticData(
             src_port_id=self._tx_port.port_identity.name,
             dest_port_id=self.rx_port.port_identity.name,
@@ -227,13 +234,14 @@ class StreamStruct:
 
     def aggregate(self) -> None:
         # polling TX and RX statistic not at the same time, may cause the rx statistic larger than tx statistic
-        logger.info(f"handling: {self._tx_port.port_identity.name} -> {self.rx_port.port_identity.name}")
+        logger.info(
+            f"handling: {self._tx_port.port_identity.name} -> {self.rx_port.port_identity.name}"
+        )
         for pr_stream in self._pr_streams:
             self._stream_statistic.add_pr_stream_statistic(pr_stream.statistic)
             pr_stream.update_rx_port_statistic()
 
         self._tx_port.statistic.aggregate_tx_statistic(self._stream_statistic)
-        
 
     async def set_packet_header(self) -> None:
         packet_header_list = bytearray()

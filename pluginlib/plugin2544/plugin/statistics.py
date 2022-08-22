@@ -116,7 +116,7 @@ class StreamStatisticData(BaseModel):
     dest_port_addr: str
     tx_counter: StreamCounter = StreamCounter()
     rx_counter: StreamCounter = StreamCounter()
-    latency: DelayCounter = DelayCounter()
+    latency: DelayCounter = DelayCounter(counter_type=const.CounterType.LATENCY)
     jitter: DelayCounter = DelayCounter(counter_type=const.CounterType.JITTER)
     fcs: int = 0
     loss_frames: int = 0
@@ -189,14 +189,14 @@ class PortCounter(StreamCounter):
 
 
 class Statistic(BaseModel):
-    port_id: str
+    port_id: str = ""
     is_final: bool = False  # for calculation use
-    frame_size: Decimal  # for calculation use
-    duration: Decimal  # for calculation use
-    rate: Decimal  # # for calculation use
-    interframe_gap: Decimal  # for calculation use
-    port_speed: Decimal  # for calculation use
-    tx_counter: PortCounter = PortCounter()
+    frame_size: Decimal = Decimal("1")  # for calculation use
+    duration: Decimal = Decimal("0")  # for calculation use
+    rate: Decimal = Decimal("0")  # # for calculation use
+    interframe_gap: Decimal = Decimal("0")  # for calculation use
+    port_speed: Decimal = Decimal("0")  # for calculation use
+    tx_counter: PortCounter = PortCounter(counter_type=const.PortCounterType.TX)
     rx_counter: PortCounter = PortCounter(counter_type=const.PortCounterType.RX)
     latency: DelayCounter = DelayCounter(counter_type=const.CounterType.LATENCY)
     jitter: DelayCounter = DelayCounter(counter_type=const.CounterType.JITTER)

@@ -71,7 +71,9 @@ class BasePort:
         return self._traffic_status
 
     async def _change_sync_status(
-        self, port: "xoa_ports.GenericL23Port", get_attr: "commands.P_RECEIVESYNC.GetDataAttr"
+        self,
+        port: "xoa_ports.GenericL23Port",
+        get_attr: "commands.P_RECEIVESYNC.GetDataAttr",
     ) -> None:
         before = self._sync_status
         after = self._sync_status = bool(get_attr.sync_status)
@@ -80,7 +82,9 @@ class BasePort:
             raise exceptions.LossofPortSignal(port)
 
     async def _change_traffic_status(
-        self, port: "xoa_ports.GenericL23Port", get_attr: "commands.P_TRAFFIC.GetDataAttr"
+        self,
+        port: "xoa_ports.GenericL23Port",
+        get_attr: "commands.P_TRAFFIC.GetDataAttr",
     ) -> None:
         self._traffic_status = bool(get_attr.on_off)
 
@@ -344,7 +348,7 @@ class PortStruct(BasePort):
         self._port_conf = port_conf
         self.properties = Properties()
         self._stream_structs: List["StreamStruct"] = []
-        self._statistic: Optional[Statistic] = None  # type ignore
+        self._statistic: "Statistic" = Statistic()  # type ignore
 
     @property
     def send_port_speed(self) -> Decimal:
@@ -362,7 +366,7 @@ class PortStruct(BasePort):
         return self._stream_structs
 
     @property
-    def statistic(self) -> Optional["Statistic"]:
+    def statistic(self) -> "Statistic":
         return self._statistic
 
     @property
@@ -386,7 +390,7 @@ class PortStruct(BasePort):
         )
 
     def clear_counter(self) -> None:
-        self._statistic = None
+        self._statistic = Statistic()
 
     @property
     def protocol_version(self) -> const.PortProtocolVersion:
@@ -437,7 +441,8 @@ class PortStruct(BasePort):
             await self.set_mac_address(
                 str(
                     gen_macaddress(
-                        test_conf.mac_base_address, self.properties.test_port_index
+                        test_conf.multi_stream_config.multi_stream_mac_base_address,
+                        self.properties.test_port_index,
                     )
                 )
             )
