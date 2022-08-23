@@ -11,11 +11,7 @@ async def aggregate_data(
     params: StatisticParams,
     is_final: bool = False,
 ) -> "FinalStatistic":
-    await resource.collect(
-        params.frame_size,
-        params.duration,
-        is_final=is_final,
-    )
+    await resource.collect(params.frame_size, params.duration, is_final=is_final)
     return FinalStatistic(
         test_case_type=params.test_case_type,
         is_final=is_final,

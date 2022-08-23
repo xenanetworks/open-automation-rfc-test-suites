@@ -104,7 +104,7 @@ class PRStatistic(BaseModel):
     latency: DelayData = DelayData(counter_type = const.CounterType.LATENCY)
     jitter: DelayData = DelayData(counter_type = const.CounterType.JITTER)
     # fcs: int = 0
-    loss_frames: int = 0
+    live_loss_frames: int = 0
 
 
 class StreamStatisticData(BaseModel):
@@ -119,7 +119,7 @@ class StreamStatisticData(BaseModel):
     latency: DelayCounter = DelayCounter(counter_type=const.CounterType.LATENCY)
     jitter: DelayCounter = DelayCounter(counter_type=const.CounterType.JITTER)
     # fcs: int = 0
-    loss_frames: int = 0
+    live_loss_frames: int = 0
     burst_frames: int = 0
 
     def add_pr_stream_statistic(self, pr_stream_statistic: "PRStatistic") -> None:
@@ -127,7 +127,7 @@ class StreamStatisticData(BaseModel):
         self.rx_counter.add_stream_counter(pr_stream_statistic.rx_stream_counter)
         self.latency.update(pr_stream_statistic.latency)
         self.jitter.update(pr_stream_statistic.jitter)
-        self.loss_frames += pr_stream_statistic.loss_frames
+        self.live_loss_frames += pr_stream_statistic.live_loss_frames
         # self.fcs += pr_stream_statistic.fcs
 
     def calculate(
@@ -262,7 +262,7 @@ class Statistic(BaseModel):
         self.add_loss(
             stream_statistic.tx_counter.frames,
             stream_statistic.rx_counter.frames,
-            stream_statistic.loss_frames,
+            stream_statistic.live_loss_frames,
         )
         self.stream_statistic.append(stream_statistic)
 

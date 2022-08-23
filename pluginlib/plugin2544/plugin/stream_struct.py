@@ -184,6 +184,7 @@ class StreamStruct:
         )
         await utils.apply(
             self._stream.enable.set(enums.OnOffWithSuppress.ON),
+            self._stream.comment.set(f"Stream {self._stream_id} / {self._tpldid}"),
             self._stream.packet.header.protocol.set(
                 self._tx_port.port_conf.profile.segment_id_list
             ),

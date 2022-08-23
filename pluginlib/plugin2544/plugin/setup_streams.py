@@ -4,6 +4,7 @@ from .arp_request import set_arp_request
 from .common import TPLDControl
 from .data_model import StreamOffset
 from ..utils import exceptions
+
 if TYPE_CHECKING:
     from .structure import PortStruct
     from ..model import (
@@ -12,7 +13,9 @@ if TYPE_CHECKING:
     )
 
 
-async def setup_streams(port_structs: List["PortStruct"], test_conf: "TestConfiguration"):
+async def setup_streams(
+    port_structs: List["PortStruct"], test_conf: "TestConfiguration"
+):
     if not test_conf.flow_creation_type.is_stream_based:
         test_port_index_map = {
             port_struct.properties.test_port_index: port_struct
@@ -81,7 +84,8 @@ async def create_modifier_based_stream(
         tpldid = 2 * port_struct.properties.test_port_index + stream_id_counter
         modifier_range = port_struct.properties.get_modifier_range(stream_id_counter)
         rx_ports = [
-            test_port_index_map[test_port_index] for test_port_index in range(modifier_range[0], modifier_range[1] + 1)
+            test_port_index_map[test_port_index]
+            for test_port_index in range(modifier_range[0], modifier_range[1] + 1)
         ]
         await port_struct.add_stream(rx_ports, stream_id_counter, tpldid)
         stream_id_counter += 1
