@@ -72,7 +72,7 @@ class StreamCounter(BaseModel):
     l1_bit_rate: Decimal = Decimal("0.0")
     tx_l1_bps: Decimal = Decimal("0.0")
 
-    def add_pr_stream_counter(self, counter: "StreamCounter"):
+    def add_stream_counter(self, counter: "StreamCounter"):
         """update stream counter by pr stream"""
         self.frames += counter.frames  # _cal_port_tx_frames  + _cal_port_rx_frames
         self.bps += counter.bps
@@ -100,35 +100,35 @@ class StreamCounter(BaseModel):
 class PRStatistic(BaseModel):
     """pr stream statistic"""
 
-    rx_stream_counter: StreamCounter
-    latency: DelayData
-    jitter: DelayData
-    fcs: int
-    loss_frames: int
+    rx_stream_counter: StreamCounter =  StreamCounter()
+    latency: DelayData = DelayData(counter_type = const.CounterType.LATENCY)
+    jitter: DelayData = DelayData(counter_type = const.CounterType.JITTER)
+    # fcs: int = 0
+    loss_frames: int = 0
 
 
 class StreamStatisticData(BaseModel):
     """stream statistic"""
 
-    src_port_id: str
-    dest_port_id: str
-    src_port_addr: str
-    dest_port_addr: str
+    src_port_id: str = ""
+    dest_port_id: str = ""
+    src_port_addr: str = ""
+    dest_port_addr: str = ""
     tx_counter: StreamCounter = StreamCounter()
     rx_counter: StreamCounter = StreamCounter()
     latency: DelayCounter = DelayCounter(counter_type=const.CounterType.LATENCY)
     jitter: DelayCounter = DelayCounter(counter_type=const.CounterType.JITTER)
-    fcs: int = 0
+    # fcs: int = 0
     loss_frames: int = 0
     burst_frames: int = 0
 
     def add_pr_stream_statistic(self, pr_stream_statistic: "PRStatistic") -> None:
         """aggregate pr stream statistic"""
-        self.rx_counter.add_pr_stream_counter(pr_stream_statistic.rx_stream_counter)
+        self.rx_counter.add_stream_counter(pr_stream_statistic.rx_stream_counter)
         self.latency.update(pr_stream_statistic.latency)
         self.jitter.update(pr_stream_statistic.jitter)
         self.loss_frames += pr_stream_statistic.loss_frames
-        self.fcs += pr_stream_statistic.fcs
+        # self.fcs += pr_stream_statistic.fcs
 
     def calculate(
         self, tx_port_struct: "PortStruct", rx_port_struct: "PortStruct"
@@ -138,7 +138,7 @@ class StreamStatisticData(BaseModel):
         rx_port_struct.statistic.add_rx(self.rx_counter)
         rx_port_struct.statistic.add_latency(DelayData.parse_obj(self.latency))
         rx_port_struct.statistic.add_jitter(DelayData.parse_obj(self.jitter))
-        rx_port_struct.statistic.add_extra(self.fcs)
+        # rx_port_struct.statistic.add_extra(self.fcs)
 
 
 class PortCounter(StreamCounter):
@@ -271,7 +271,7 @@ class Statistic(BaseModel):
         self.add_rx(pr_statistic.rx_stream_counter)
         self.add_latency(pr_statistic.latency)
         self.add_jitter(pr_statistic.jitter)
-        self.add_extra(pr_statistic.fcs)
+        # self.add_extra(pr_statistic.fcs)
 
     def add_tx(self, tx_stream_counter: StreamCounter) -> None:
         tx_stream_counter.calculate_stream_rate(
@@ -297,8 +297,8 @@ class Statistic(BaseModel):
     def add_burst_bytes_count(self, bytes_count: int) -> None:
         self.burst_bytes_count += bytes_count
 
-    def add_extra(self, fcs: int) -> None:
-        self.fcs_error_frames += fcs
+    # def add_extra(self, fcs: int) -> None:
+    #     self.fcs_error_frames += fcs
 
     def add_loss(self, tx_frames, rx_frames, loss_frames: int) -> None:
         if self.is_final:

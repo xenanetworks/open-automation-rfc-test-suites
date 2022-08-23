@@ -347,6 +347,7 @@ class PortStruct(BasePort):
         BasePort.__init__(self, tester, port, port_identity, xoa_out)
         self._port_conf = port_conf
         self.properties = Properties()
+        self.lock = asyncio.Lock()
         self._stream_structs: List["StreamStruct"] = []
         self._statistic: "Statistic" = Statistic()  # type ignore
 
@@ -489,6 +490,15 @@ class PortStruct(BasePort):
             / Decimal(str(1e6))
         )
         return NonNegativeDecimal(str(self.send_port_speed))
+
+    async def query(self) -> None:
+        extra = self.port_statistic.rx.extra.get()
+        stream_tasks = [stream_struct.query() for stream_struct in self.stream_structs]
+        extra_tasks = [extra] if self.port_conf.is_rx_port else []
+        results = await asyncio.gather(*extra_tasks, *stream_tasks)
+        if self.port_conf.is_rx_port:
+            extra_r: commands.PR_EXTRA.GetDataAttr = results[0]
+            self._statistic.fcs_error_frames = extra_r.fcs_error_count
 
 
 TypeConf = Union["ThroughputTest", "LatencyTest", "FrameLossRateTest", "BackToBackTest"]

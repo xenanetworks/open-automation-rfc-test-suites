@@ -1,5 +1,5 @@
 from xoa_core.types import PluginAbstract
-from typing import TYPE_CHECKING, Iterator, List, Tuple
+from typing import TYPE_CHECKING, Generator, Tuple
 from decimal import getcontext
 
 from .plugin.config_checkers import check_test_type_config
@@ -39,17 +39,19 @@ class TestSuite2544(PluginAbstract["PluginModel2544"]):
     async def __pre_test(self) -> None:
         await self.__prepare_data()
 
-    def gen_loop(self, type_conf) -> Iterator[Tuple[int, NonNegativeDecimal]]:
+    def gen_loop(
+        self, type_conf
+    ) -> Generator[Tuple[int, NonNegativeDecimal], None, None]:
         max_iteration = type_conf.common_options.iterations
         packet_size_list = self.test_conf.frame_sizes.packet_size_list
         if self.test_conf.outer_loop_mode.is_iteration:
             for iteration in range(1, max_iteration + 1):
                 for current_packet_size in packet_size_list:
-                    yield iteration, current_packet_size
+                    yield iteration, NonNegativeDecimal(current_packet_size)
         else:
             for current_packet_size in packet_size_list:
                 for iteration in range(1, max_iteration + 1):
-                    yield iteration, current_packet_size
+                    yield iteration, NonNegativeDecimal(current_packet_size)
 
     async def __do_test(self) -> None:
         tc = TestCaseProcessor(self.resources, self.xoa_out)

@@ -230,7 +230,6 @@ class ResourceManager:
     def test_finished(self) -> bool:
         return all(not port_struct.traffic_status for port_struct in self.tx_ports)
 
-
     def los(self) -> bool:
         if self.test_conf.should_stop_on_los:
             return not all(port_struct.sync_status for port_struct in self.port_structs)
@@ -320,15 +319,19 @@ class ResourceManager:
     ):
         for port_struct in self.port_structs:
             port_struct.init_counter(packet_size, duration, is_final)
+        # await asyncio.gather(
+        #     *[
+        #         stream.query()
+        #         for port_struct in self.port_structs
+        #         for stream in port_struct.stream_structs
+        #     ]
+        # )
+
         await asyncio.gather(
-            *[
-                stream.query()
-                for port_struct in self.port_structs
-                for stream in port_struct.stream_structs
-            ]
+            *[port_struct.query() for port_struct in self.port_structs]
         )
-        for port_struct in self.port_structs:
-            for stream in port_struct.stream_structs:
-                stream.aggregate()
+        # for port_struct in self.port_structs:
+        #     for stream in port_struct.stream_structs:
+        #         stream.aggregate()
         for port_struct in self.port_structs:
             port_struct.statistic.calculate_rate()
