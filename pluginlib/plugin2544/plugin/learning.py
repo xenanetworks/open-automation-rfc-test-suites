@@ -149,6 +149,7 @@ async def setup_address_refresh(
                         port_struct.port_conf.is_rx_only,
                     )
                 )
+        await port_struct.set_rx_tables()
     return address_refresh_tokens
 
 

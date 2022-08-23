@@ -45,7 +45,7 @@ class TestCaseProcessor:
         )  # save throughput rate for latency relative to throughput use
 
     async def prepare(self) -> None:
-        if self.resources.has_l3 or (not self.resources.test_conf.arp_refresh_enabled):
+        if not self.resources.has_l3 or (not self.resources.test_conf.arp_refresh_enabled):
             return None
         self.address_refresh_handler = await setup_address_arp_refresh(self.resources)
 
