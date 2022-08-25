@@ -2,7 +2,7 @@ import asyncio
 from copy import deepcopy
 from typing import List, Optional, TYPE_CHECKING
 from xoa_driver import utils, misc, enums
-from ..model import TestConfiguration, HwModifier
+from ..model import TestConfiguration, HWModifier
 from .common import gen_macaddress
 from .data_model import (
     AddressCollection,
@@ -119,7 +119,7 @@ class StreamStruct:
             return self._tx_port
 
     @property
-    def hw_modifiers(self) -> List["HwModifier"]:
+    def hw_modifiers(self) -> List["HWModifier"]:
         if self._flow_creation_type.is_stream_based:
             return [
                 modifier
@@ -131,8 +131,7 @@ class StreamStruct:
                 self._stream_id
             )
             return [
-                HwModifier(
-                    field_name="Dst MAC addr",
+                HWModifier(
                     offset=4,
                     mask="0x00FF0000",
                     start_value=modifier_range[0],
@@ -236,7 +235,7 @@ class StreamStruct:
             pr_stream.update_rx_port_statistic()
 
         self._tx_port.statistic.aggregate_tx_statistic(self._stream_statistic)
-        
+
 
     async def set_packet_header(self) -> None:
         packet_header_list = bytearray()
