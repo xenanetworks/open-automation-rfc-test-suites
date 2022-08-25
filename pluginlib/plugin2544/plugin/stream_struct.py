@@ -252,7 +252,7 @@ class StreamStruct:
                 segment, segment_index, self._addr_coll
             )
             real_value = ps.calculate_checksum(
-                segment, ps.DEFAULT_SEGMENT_DIC, patched_value
+                segment, ps.DEFAULT_SEGMENT_MAPPING, patched_value
             )
 
             packet_header_list += real_value

@@ -1,6 +1,5 @@
 config.py
 *.log
-*.json
 *.v2544
 *.v3918
 *.pyc
