@@ -21,10 +21,7 @@ from .learning import (
     setup_address_arp_refresh,
 )
 from .setup_source_port_rates import setup_source_port_rates
-from .statistics import (
-    FinalStatistic,
-    StatisticParams,
-)
+from .statistics import FinalStatistic, StatisticParams
 from .tc_throughput import get_initial_boundaries
 from .test_result import aggregate_data
 from ..utils import constants as const
@@ -45,7 +42,9 @@ class TestCaseProcessor:
         )  # save throughput rate for latency relative to throughput use
 
     async def prepare(self) -> None:
-        if not self.resources.has_l3 or (not self.resources.test_conf.arp_refresh_enabled):
+        if (not self.resources.has_l3) or (
+            not self.resources.test_conf.arp_refresh_enabled
+        ):
             return None
         self.address_refresh_handler = await setup_address_arp_refresh(self.resources)
 

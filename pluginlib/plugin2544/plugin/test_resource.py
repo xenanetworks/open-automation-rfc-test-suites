@@ -83,12 +83,12 @@ class ResourceManager:
         )
         await self.setup_sweep_reduction()
         await self.add_toggle_port_sync_state_steps()
-        await add_mac_learning_steps(self, const.MACLearningMode.ONCE)
         await setup_streams(self.port_structs, self.test_conf)
         for port_struct in self.port_structs:
             await port_struct.configure_streams(self.test_conf)
             # set should stop on los before start traffic, can monitor sync status when traffic start
             port_struct.set_should_stop_on_los(self.test_conf.should_stop_on_los)
+        await add_mac_learning_steps(self, const.MACLearningMode.ONCE)
 
     async def stop_traffic(self):
         await utils.apply(

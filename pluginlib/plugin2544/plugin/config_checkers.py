@@ -56,7 +56,7 @@ def check_can_fec(can_fec: int, fec_mode: const.FECModeStr) -> None:
         raise exceptions.FECModeTypeNotSupport(const.FECModeStr.ON)
 
 
-async def check_custom_port_config(
+def check_custom_port_config(
     capabilities: "commands.P_CAPABILITIES.GetDataAttr", port_conf: "PortConfiguration"
 ) -> None:
 
@@ -81,13 +81,9 @@ async def check_custom_port_config(
     check_port_config_profile(capabilities, port_conf.profile)
 
 
-async def check_ports(control_ports: List["PortStruct"]) -> None:
-    await asyncio.gather(
-        *[
-            check_custom_port_config(port_struct.capabilities, port_struct.port_conf)
-            for port_struct in control_ports
-        ]
-    )
+def check_ports(control_ports: List["PortStruct"]) -> None:
+    for port_struct in control_ports:
+        check_custom_port_config(port_struct.capabilities, port_struct.port_conf)
 
 
 def check_port_modifiers(
@@ -246,7 +242,7 @@ def check_port_test_config(
     check_stream_limitations(port_struct, per_port_stream_count, is_stream_based)
 
 
-async def check_test_config(
+def check_test_config(
     control_ports: List["PortStruct"], test_conf: "TestConfiguration"
 ) -> None:
     is_stream_based = test_conf.flow_creation_type.is_stream_based
@@ -295,5 +291,5 @@ async def check_config(
     test_conf: "TestConfiguration",
 ) -> None:
     await check_testers(testers, test_conf)
-    await check_ports(control_ports)
-    await check_test_config(control_ports, test_conf)
+    check_ports(control_ports)
+    check_test_config(control_ports, test_conf)
