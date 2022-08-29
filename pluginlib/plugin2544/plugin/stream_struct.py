@@ -175,7 +175,7 @@ class StreamStruct:
             else test_conf.mac_base_address
         )
         self._flow_creation_type = test_conf.flow_creation_type
-        self._addr_coll = await get_address_collection(
+        self._addr_coll = get_address_collection(
             self._tx_port,
             self.rx_port,
             base_mac,
@@ -326,7 +326,7 @@ class StreamStruct:
         await self._stream.packet.limit.set(frame_count)
 
 
-async def get_address_collection(
+def get_address_collection(
     port_struct: "PortStruct",
     peer_struct: "PortStruct",
     mac_base_address: str,
@@ -355,7 +355,7 @@ async def get_address_collection(
         return AddressCollection(
             arp_mac=arp_mac,
             smac=port_struct.properties.native_mac_address,
-            dmac= peer_struct.properties.native_mac_address,
+            dmac=peer_struct.properties.native_mac_address,
             src_ipv4_addr=port_struct.port_conf.ipv4_properties.address,
             dst_ipv4_addr=peer_struct.port_conf.ipv4_properties.dst_addr,
             src_ipv6_addr=port_struct.port_conf.ipv6_properties.address,

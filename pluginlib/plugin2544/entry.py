@@ -30,14 +30,11 @@ class TestSuite2544(PluginAbstract["PluginModel2544"]):
         )
         return super().prepare()
 
-    async def __prepare_data(self) -> None:
+    async def __pre_test(self) -> None:
         check_test_type_config(self.cfg.test_types_configuration.available_test)
         await self.resources.init_resource(
             self.cfg.test_types_configuration.latency_test.latency_mode,
         )
-
-    async def __pre_test(self) -> None:
-        await self.__prepare_data()
 
     def gen_loop(
         self, type_conf

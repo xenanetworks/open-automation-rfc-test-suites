@@ -96,6 +96,13 @@ class PortStruct:
         # raise exceptions.LossofPortOwnership(self._port)
         pass
 
+    async def _change_physical_port_speed(
+        self,
+        port: "xoa_ports.GenericL23Port",
+        get_attr: "commands.P_SPEED.GetDataAttr",
+    ) -> None:
+        self.properties.physical_port_speed = get_attr.port_speed * 1e6
+
     async def __on_disconnect_tester(self, *args) -> None:
         raise exceptions.LossofTester(self._tester, self._port_identity.tester_id)
 
@@ -215,6 +222,7 @@ class PortStruct:
         self._port.on_reservation_change(self.__on_reservation_status)
         self._port.on_receive_sync_change(self._change_sync_status)
         self._port.on_traffic_change(self._change_traffic_status)
+        self._port.on_speed_change(self._change_physical_port_speed)
         self._tester.on_disconnected(self.__on_disconnect_tester)
         tokens = []
         if self._port.is_reserved_by_me():
@@ -238,9 +246,9 @@ class PortStruct:
 
         results = await utils.apply(*tokens)
 
-        self.properties.sync_status = results[sync_index].sync_status
-        self.properties.traffic_status = results[traffic_index].on_off
-        self.properties.native_mac_address = results[mac_index].mac_address
+        self.properties.sync_status = bool(results[sync_index].sync_status)
+        self.properties.traffic_status = bool(results[traffic_index].on_off)
+        self.properties.native_mac_address = MacAddress(results[mac_index].mac_address)
         self.properties.physical_port_speed = results[port_speed_index].port_speed * 1e6
 
     async def clear_statistic(self) -> None:
@@ -520,6 +528,7 @@ class Properties:
     rate: Decimal = Decimal("0")
     send_port_speed: Decimal = Decimal("0")
     native_mac_address: MacAddress = MacAddress()
+    arp_mac_address: MacAddress = MacAddress()
     traffic_status: bool = False
     sync_status: bool = True
     physical_port_speed: float = 0.0

@@ -21,17 +21,25 @@ async def setup_streams(
             port_struct.properties.test_port_index: port_struct
             for port_struct in port_structs
         }
-        await asyncio.gather(
-            *[
-                create_modifier_based_stream(port_struct, test_port_index_map)
-                for port_struct in port_structs
-                if port_struct.port_conf.is_tx_port
-            ]
-        )
-    elif test_conf.multi_stream_config.enable_multi_stream:
-        await create_multi_streams(port_structs, test_conf)
+        for port_struct in port_structs:
+            if port_struct.port_conf.is_tx_port:
+                add_modifier_based_stream(port_struct, test_port_index_map)
+
     else:
-        await create_standard_streams(port_structs, test_conf)
+        for port_struct in port_structs:
+            for peer_struct in port_struct.properties.peers:
+                peer_struct.properties.arp_mac_address = await set_arp_request(
+                    port_struct, peer_struct, test_conf.use_gateway_mac_as_dmac
+                )
+        if test_conf.multi_stream_config.enable_multi_stream:
+            add_multi_streams(port_structs, test_conf)
+        else:
+            add_standard_streams(port_structs, test_conf)
+
+    for port_struct in port_structs:
+        await port_struct.configure_streams(test_conf)
+        # set should stop on los before start traffic, can monitor sync status when traffic start
+        port_struct.set_should_stop_on_los(test_conf.should_stop_on_los)
 
 
 def get_stream_offsets(
@@ -74,9 +82,7 @@ def setup_offset_table(
     return offset_table
 
 
-async def create_modifier_based_stream(
-    port_struct: "PortStruct", test_port_index_map
-) -> None:
+def add_modifier_based_stream(port_struct: "PortStruct", test_port_index_map) -> None:
     if not port_struct.port_conf.is_tx_port:
         return
     stream_id_counter = 0
@@ -91,17 +97,15 @@ async def create_modifier_based_stream(
         stream_id_counter += 1
 
 
-async def create_multi_streams(
-    port_structs: List["PortStruct"], test_conf: "TestConfiguration"
-):
+def add_multi_streams(port_structs: List["PortStruct"], test_conf: "TestConfiguration"):
     offset_table = setup_offset_table(port_structs, test_conf.multi_stream_config)
     tpld_controller = TPLDControl(test_conf.tid_allocation_scope)
     for port_struct in port_structs:
         stream_id_counter = 0
         for peer_struct in port_struct.properties.peers:
-            arp_mac = await set_arp_request(
-                port_struct, peer_struct, test_conf.use_gateway_mac_as_dmac
-            )
+            # arp_mac = await set_arp_request(
+            #     port_struct, peer_struct, test_conf.use_gateway_mac_as_dmac
+            # )
             if test_conf.multi_stream_config.enable_multi_stream:
                 peer_index = peer_struct.port_identity.name
                 offsets_list = get_stream_offsets(
@@ -119,26 +123,34 @@ async def create_multi_streams(
                             tpldid, port_struct.capabilities.max_tpid
                         )
                     port_struct.add_stream(
-                        [peer_struct], stream_id_counter, tpldid, arp_mac, offsets
+                        [peer_struct],
+                        stream_id_counter,
+                        tpldid,
+                        peer_struct.properties.arp_mac_address,
+                        offsets,
                     )
                     stream_id_counter += 1
 
 
-async def create_standard_streams(
+def add_standard_streams(
     port_structs: List["PortStruct"], test_conf: "TestConfiguration"
 ):
     tpld_controller = TPLDControl(test_conf.tid_allocation_scope)
     for port_struct in port_structs:
         stream_id_counter = 0
         for peer_struct in port_struct.properties.peers:
-            arp_mac = await set_arp_request(
-                port_struct, peer_struct, test_conf.use_gateway_mac_as_dmac
-            )
+            # arp_mac = await set_arp_request(
+            #     port_struct, peer_struct, test_conf.use_gateway_mac_as_dmac
+            # )
+
             tpldid = tpld_controller.get_tpldid(
                 port_struct.properties.test_port_index,
                 peer_struct.properties.test_port_index,
             )
             port_struct.add_stream(
-                [peer_struct], stream_id_counter, tpldid, arp_mac
+                [peer_struct],
+                stream_id_counter,
+                tpldid,
+                peer_struct.properties.arp_mac_address,
             )
             stream_id_counter += 1

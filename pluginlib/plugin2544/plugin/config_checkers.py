@@ -252,25 +252,21 @@ def check_test_config(
     check_tid_limitations(control_ports, scope, is_stream_based)
 
 
-async def check_tester_sync_start(
+def check_tester_sync_start(
     tester: "xoa_testers.L23Tester", use_sync_start: bool
 ) -> None:
     if not use_sync_start:
         return
-    cap = await tester.capabilities.get()
-    if not bool(cap.can_sync_traffic_start):
+    cap = tester.info.capabilities
+    if cap and not bool(cap.can_sync_traffic_start):
         raise exceptions.PortStaggeringNotSupport()
 
 
-async def check_testers(
+def check_testers(
     testers: List["xoa_testers.L23Tester"], test_conf: "TestConfiguration"
 ) -> None:
-    await asyncio.gather(
-        *[
-            check_tester_sync_start(tester, test_conf.use_port_sync_start)
-            for tester in testers
-        ]
-    )
+    for tester in testers:
+        check_tester_sync_start(tester, test_conf.use_port_sync_start)
 
 
 def check_test_type_config(test_types: List[AllTestType]):
@@ -285,11 +281,11 @@ def check_test_type_config(test_types: List[AllTestType]):
                 raise exceptions.TimeDurationRequire(test_type_conf.test_type.value)
 
 
-async def check_config(
+def check_config(
     testers: List["xoa_testers.L23Tester"],
     control_ports: List["PortStruct"],
     test_conf: "TestConfiguration",
 ) -> None:
-    await check_testers(testers, test_conf)
+    check_testers(testers, test_conf)
     check_ports(control_ports)
     check_test_config(control_ports, test_conf)
