@@ -97,7 +97,7 @@ async def get_address_learning_packet(
         if not gwmac.is_empty:
             dmac = gwmac
     smac = (
-        await port_struct.get_mac_address()
+        port_struct.properties.native_mac_address 
         if not arp_refresh_data.source_mac or arp_refresh_data.source_mac.is_empty
         else arp_refresh_data.source_mac
     )

@@ -41,7 +41,7 @@ async def set_arp_request(
     return arp_mac
 
 
-async def get_packet_header(
+def get_packet_header(
     port_struct: "PortStruct", source_ip: "IPAddress", destination_ip: "IPAddress"
 ) -> str:
     if port_struct.protocol_version.is_ipv4:
@@ -54,7 +54,7 @@ async def get_packet_header(
         src_addr = IPv6Address(source_ip)
         dst_addr = IPv6Address(destination_ip)
         ip_header = IPV6Packet(source_ip=src_addr, destination_ip=dst_addr)
-    mac_address = await port_struct.get_mac_address()
+    mac_address = port_struct.properties.native_mac_address 
     packet_header = (
         Ether(smac=mac_address, type=ether_type).hexstring + ip_header.hexstring
     )
@@ -64,7 +64,7 @@ async def get_packet_header(
 async def send_arp_request(
     port_struct: "PortStruct", source_ip, destination_ip
 ) -> "MacAddress":
-    packet_header = await get_packet_header(port_struct, source_ip, destination_ip)
+    packet_header = get_packet_header(port_struct, source_ip, destination_ip)
     stream = await port_struct.create_stream()
     await utils.apply(
         stream.packet.limit.set(-1),

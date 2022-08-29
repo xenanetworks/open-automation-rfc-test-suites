@@ -354,8 +354,8 @@ async def get_address_collection(
     else:
         return AddressCollection(
             arp_mac=arp_mac,
-            smac=await port_struct.get_mac_address(),
-            dmac=await peer_struct.get_mac_address(),
+            smac=port_struct.properties.native_mac_address,
+            dmac= peer_struct.properties.native_mac_address,
             src_ipv4_addr=port_struct.port_conf.ipv4_properties.address,
             dst_ipv4_addr=peer_struct.port_conf.ipv4_properties.dst_addr,
             src_ipv6_addr=port_struct.port_conf.ipv6_properties.address,

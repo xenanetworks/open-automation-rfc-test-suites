@@ -127,7 +127,7 @@ class ResourceManager:
             )
             self.port_structs.append(port_struct)
         await asyncio.gather(
-            *[port_struct.reserve() for port_struct in self.port_structs]
+            *[port_struct.prepare() for port_struct in self.port_structs]
         )
 
     async def add_toggle_port_sync_state_steps(
@@ -152,7 +152,7 @@ class ResourceManager:
         # Delay After Sync On
         start_time = time.time()
         for port_struct in self.port_structs:
-            while not port_struct.sync_status:
+            while not port_struct.properties.sync_status:
                 await asyncio.sleep(const.DELAY_CHECK_SYNC)
                 if time.time() - start_time > 30:
                     raise TimeoutError(
@@ -225,14 +225,14 @@ class ResourceManager:
         )
 
     def test_running(self) -> bool:
-        return any(port_struct.traffic_status for port_struct in self.tx_ports)
+        return any(port_struct.properties.traffic_status for port_struct in self.tx_ports)
 
     def test_finished(self) -> bool:
-        return all(not port_struct.traffic_status for port_struct in self.tx_ports)
+        return all(not port_struct.properties.traffic_status for port_struct in self.tx_ports)
 
     def los(self) -> bool:
         if self.test_conf.should_stop_on_los:
-            return not all(port_struct.sync_status for port_struct in self.port_structs)
+            return not all(port_struct.properties.sync_status for port_struct in self.port_structs)
         return False
 
     def should_quit(self, start_time: float, actual_duration: Decimal) -> bool:

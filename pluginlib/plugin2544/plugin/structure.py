@@ -31,21 +31,29 @@ if TYPE_CHECKING:
     )
 
 
-class BasePort:
+class PortStruct:
     def __init__(
         self,
         tester: "xoa_testers.L23Tester",
         port: "xoa_ports.GenericL23Port",
+        port_conf: "PortConfiguration",
         port_identity: "PortIdentity",
         xoa_out: "TestSuitePipe",
-    ):
-        self._sync_status: bool = True
-        self._traffic_status: bool = False
+    ) -> None:
+
+        # self._sync_status: bool = True
+        # self._traffic_status: bool = False
         self._tester = tester
         self._port = port
         self._xoa_out = xoa_out
         self._port_identity = port_identity
         self._should_stop_on_los = False
+
+        self._port_conf = port_conf
+        self.properties = Properties()
+        self.lock = asyncio.Lock()
+        self._stream_structs: List["StreamStruct"] = []
+        self._statistic: "Statistic" = Statistic()  # type ignore
 
     def set_should_stop_on_los(self, value: bool) -> None:
         self._should_stop_on_los = value
@@ -62,21 +70,17 @@ class BasePort:
     def port_statistic(self):
         return self._port.statistics
 
-    @property
-    def sync_status(self) -> bool:
-        return self._sync_status
-
-    @property
-    def traffic_status(self) -> bool:
-        return self._traffic_status
+    # @property
+    # def sync_status(self) -> bool:
+    #     return self._sync_status
 
     async def _change_sync_status(
         self,
         port: "xoa_ports.GenericL23Port",
         get_attr: "commands.P_RECEIVESYNC.GetDataAttr",
     ) -> None:
-        before = self._sync_status
-        after = self._sync_status = bool(get_attr.sync_status)
+        before = self.properties.sync_status
+        after = self.properties.sync_status = bool(get_attr.sync_status)
         # logger.warning(f"Change sync status from {before} to {after} ")
         if self._should_stop_on_los and before and not after:
             raise exceptions.LossofPortSignal(port)
@@ -86,10 +90,11 @@ class BasePort:
         port: "xoa_ports.GenericL23Port",
         get_attr: "commands.P_TRAFFIC.GetDataAttr",
     ) -> None:
-        self._traffic_status = bool(get_attr.on_off)
+        self.properties.traffic_status = bool(get_attr.on_off)
 
     async def __on_reservation_status(self, port: "xoa_ports.GenericL23Port", v):
-        raise exceptions.LossofPortOwnership(self._port)
+        # raise exceptions.LossofPortOwnership(self._port)
+        pass
 
     async def __on_disconnect_tester(self, *args) -> None:
         raise exceptions.LossofTester(self._tester, self._port_identity.tester_id)
@@ -196,30 +201,40 @@ class BasePort:
                 position = int(k.split("_")[-1])
                 await self._port.mix.lengths[position].set(v)
 
-    async def get_mac_address(self) -> "MacAddress":
-        return MacAddress((await self._port.net_config.mac_address.get()).mac_address)
+    # def get_mac_address(self) -> "MacAddress":
+    #     return self.properties.native_mac_address
+        # return MacAddress((await self._port.net_config.mac_address.get()).mac_address)
 
     async def send_packet(self, packet: str) -> None:
         await self._port.tx_single_pkt.send.set(packet)
 
-    async def free(self) -> None:
-        await self._port.reservation.set_release()
+    def free(self) -> List[misc.Token]:
+        return [self._port.reservation.set_release()]
 
-    async def reserve(self) -> None:
-        if self._port.is_reserved_by_me():
-            await self.free()
-        elif self._port.is_reserved_by_others():
-            await self._port.reservation.set_relinquish()
-        await utils.apply(
-            self._port.reservation.set_reserve(),
-            self._port.reset.set(),
-        )
-        self._sync_status = await self.get_sync_status()
-        self._traffic_status = await self.get_traffic_status()
+    async def prepare(self) -> None:
         self._port.on_reservation_change(self.__on_reservation_status)
         self._port.on_receive_sync_change(self._change_sync_status)
         self._port.on_traffic_change(self._change_traffic_status)
         self._tester.on_disconnected(self.__on_disconnect_tester)
+        tokens = []
+        if self._port.is_reserved_by_me():
+            tokens.extend(self.free())
+        elif self._port.is_reserved_by_others():
+            tokens.append(self._port.reservation.set_relinquish())
+        tokens.append(self._port.reservation.set_reserve())
+        tokens.append(self._port.reset.set())
+
+        tokens.append(self._port.sync_status.get())
+        sync_index = len(tokens) - 1
+        tokens.append(self._port.traffic.state.get())
+        traffic_index = len(tokens) - 1
+        tokens.append(self._port.net_config.mac_address.get())
+        mac_index = len(tokens) - 1
+
+        results = await utils.apply(*tokens)
+        self.properties.sync_status = results[sync_index].sync_status
+        self.properties.traffic_status = results[traffic_index].on_off
+        self.properties.native_mac_address = results[mac_index].mac_address
 
     async def clear_statistic(self) -> None:
         await utils.apply(
@@ -313,6 +328,7 @@ class BasePort:
 
     async def set_mac_address(self, mac_addr: str) -> None:
         await self._port.net_config.mac_address.set(mac_addr)
+        self.properties.native_mac_address = MacAddress(mac_addr)
 
     @property
     def local_states(self):
@@ -322,34 +338,17 @@ class BasePort:
         return (await self._port.speed.current.get()).port_speed * 1e6
 
     async def clear(self) -> None:
-        await self.free()
+        await utils.apply(*self.free())
         await self._tester.session.logoff()
 
     async def create_stream(self):
         return await self._port.streams.create()
 
-    async def get_sync_status(self) -> bool:
-        return bool((await self._port.sync_status.get()).sync_status)
+    # async def get_sync_status(self) -> bool:
+    #     return bool((await self._port.sync_status.get()).sync_status)
 
     async def get_traffic_status(self) -> bool:
         return bool((await self._port.traffic.state.get()).on_off)
-
-
-class PortStruct(BasePort):
-    def __init__(
-        self,
-        tester: "xoa_testers.L23Tester",
-        port: "xoa_ports.GenericL23Port",
-        port_conf: "PortConfiguration",
-        port_identity: "PortIdentity",
-        xoa_out: "TestSuitePipe",
-    ) -> None:
-        BasePort.__init__(self, tester, port, port_identity, xoa_out)
-        self._port_conf = port_conf
-        self.properties = Properties()
-        self.lock = asyncio.Lock()
-        self._stream_structs: List["StreamStruct"] = []
-        self._statistic: "Statistic" = Statistic()  # type ignore
 
     @property
     def send_port_speed(self) -> Decimal:
@@ -397,7 +396,7 @@ class PortStruct(BasePort):
     def protocol_version(self) -> const.PortProtocolVersion:
         return self._port_conf.profile.protocol_version
 
-    async def add_stream(
+    def add_stream(
         self,
         rx_ports: List["PortStruct"],
         stream_id: int,
@@ -439,14 +438,11 @@ class PortStruct(BasePort):
         self, test_conf: "TestConfiguration", latency_mode: const.LatencyModeStr
     ) -> None:
         if not test_conf.flow_creation_type.is_stream_based:
-            await self.set_mac_address(
-                str(
-                    gen_macaddress(
-                        test_conf.multi_stream_config.multi_stream_mac_base_address,
-                        self.properties.test_port_index,
-                    )
-                )
+            mac = gen_macaddress(
+                test_conf.multi_stream_config.multi_stream_mac_base_address,
+                self.properties.test_port_index,
             )
+            await self.set_mac_address(str(mac))
 
         await self.set_speed_mode(self._port_conf.port_speed_mode)
         await self.set_latency_offset(self._port_conf.latency_offset_ms)
@@ -520,6 +516,9 @@ class Properties:
 
     rate: Decimal = Decimal("0")
     send_port_speed: Decimal = Decimal("0")
+    native_mac_address: MacAddress = MacAddress()
+    traffic_status: bool = False
+    sync_status: bool = True
 
     def get_modifier_range(self, stream_id: int) -> Tuple[int, int]:
         if stream_id == 0:

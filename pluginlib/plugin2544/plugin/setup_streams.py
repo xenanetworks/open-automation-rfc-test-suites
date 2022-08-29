@@ -87,7 +87,7 @@ async def create_modifier_based_stream(
             test_port_index_map[test_port_index]
             for test_port_index in range(modifier_range[0], modifier_range[1] + 1)
         ]
-        await port_struct.add_stream(rx_ports, stream_id_counter, tpldid)
+        port_struct.add_stream(rx_ports, stream_id_counter, tpldid)
         stream_id_counter += 1
 
 
@@ -118,7 +118,7 @@ async def create_multi_streams(
                         raise exceptions.TPLDIDExceed(
                             tpldid, port_struct.capabilities.max_tpid
                         )
-                    await port_struct.add_stream(
+                    port_struct.add_stream(
                         [peer_struct], stream_id_counter, tpldid, arp_mac, offsets
                     )
                     stream_id_counter += 1
@@ -138,7 +138,7 @@ async def create_standard_streams(
                 port_struct.properties.test_port_index,
                 peer_struct.properties.test_port_index,
             )
-            await port_struct.add_stream(
+            port_struct.add_stream(
                 [peer_struct], stream_id_counter, tpldid, arp_mac
             )
             stream_id_counter += 1
