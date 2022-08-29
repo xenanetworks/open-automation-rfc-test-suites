@@ -203,7 +203,7 @@ class PortStruct:
 
     # def get_mac_address(self) -> "MacAddress":
     #     return self.properties.native_mac_address
-        # return MacAddress((await self._port.net_config.mac_address.get()).mac_address)
+    # return MacAddress((await self._port.net_config.mac_address.get()).mac_address)
 
     async def send_packet(self, packet: str) -> None:
         await self._port.tx_single_pkt.send.set(packet)
@@ -226,15 +226,22 @@ class PortStruct:
 
         tokens.append(self._port.sync_status.get())
         sync_index = len(tokens) - 1
+
         tokens.append(self._port.traffic.state.get())
         traffic_index = len(tokens) - 1
+
         tokens.append(self._port.net_config.mac_address.get())
         mac_index = len(tokens) - 1
 
+        tokens.append(self._port.speed.current.get())
+        port_speed_index = len(tokens) - 1
+
         results = await utils.apply(*tokens)
+
         self.properties.sync_status = results[sync_index].sync_status
         self.properties.traffic_status = results[traffic_index].on_off
         self.properties.native_mac_address = results[mac_index].mac_address
+        self.properties.physical_port_speed = results[port_speed_index].port_speed * 1e6
 
     async def clear_statistic(self) -> None:
         await utils.apply(
@@ -261,12 +268,10 @@ class PortStruct:
         for arp_data in arp_datas:
             arp_chunk.append(
                 misc.ArpChunk(
-                    *[
-                        arp_data.destination_ip,
-                        const.IPPrefixLength.IPv4.value,
-                        enums.OnOff.OFF,
-                        arp_data.dmac,
-                    ]
+                    arp_data.destination_ip,
+                    const.IPPrefixLength.IPv4.value,
+                    enums.OnOff.OFF,
+                    arp_data.dmac,
                 )
             )
         await self._port.arp_rx_table.set(arp_chunk)
@@ -276,12 +281,10 @@ class PortStruct:
         for rx_data in ndp_datas:
             ndp_chunk.append(
                 misc.NdpChunk(
-                    *[
-                        rx_data.destination_ip,
-                        const.IPPrefixLength.IPv6.value,
-                        enums.OnOff.OFF,
-                        rx_data.dmac,
-                    ]
+                    rx_data.destination_ip,
+                    const.IPPrefixLength.IPv6.value,
+                    enums.OnOff.OFF,
+                    rx_data.dmac,
                 )
             )
         await self._port.ndp_rx_table.set(ndp_chunk)
@@ -334,8 +337,8 @@ class PortStruct:
     def local_states(self):
         return self._port.local_states
 
-    async def get_physics_speed(self) -> float:
-        return (await self._port.speed.current.get()).port_speed * 1e6
+    # async def get_physics_speed(self) -> float:
+    #     return (await self._port.speed.current.get()).port_speed * 1e6
 
     async def clear(self) -> None:
         await utils.apply(*self.free())
@@ -461,24 +464,24 @@ class PortStruct:
         await self.set_sweep_reduction(self._port_conf.speed_reduction_ppm)
         await self.set_stagger_step(test_conf.port_stagger_steps)
         await self.set_packet_size_if_mix(test_conf.frame_sizes)
-        await self._get_use_port_speed()
+        self._get_use_port_speed()
 
     async def set_rx_tables(self) -> None:
         await self.set_arp_trucks(self.properties.arp_trunks)
         await self.set_ndp_trucks(self.properties.ndp_trunks)
 
-    async def get_capped_port_speed(self) -> Decimal:
-        port_speed = await self.get_physics_speed()
+    def get_capped_port_speed(self) -> Decimal:
+        port_speed = self.properties.physical_port_speed
         if self._port_conf.port_rate_cap_profile.is_custom:
             port_speed = min(self._port_conf.port_rate, port_speed)
         return Decimal(str(port_speed))
 
-    async def _get_use_port_speed(self) -> NonNegativeDecimal:
-        tx_speed = await self.get_capped_port_speed()
+    def _get_use_port_speed(self) -> NonNegativeDecimal:
+        tx_speed = self.get_capped_port_speed()
         if self._port_conf.peer_config_slot and len(self.properties.peers) == 1:
             # Only Pair Topology Need to query peer speed
             peer_struct = self.properties.peers[0]
-            rx_speed = await peer_struct.get_capped_port_speed()
+            rx_speed = peer_struct.get_capped_port_speed()
             tx_speed = min(tx_speed, rx_speed)
         self.set_send_port_speed(
             tx_speed
@@ -519,6 +522,7 @@ class Properties:
     native_mac_address: MacAddress = MacAddress()
     traffic_status: bool = False
     sync_status: bool = True
+    physical_port_speed: float = 0.0
 
     def get_modifier_range(self, stream_id: int) -> Tuple[int, int]:
         if stream_id == 0:
