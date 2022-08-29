@@ -224,7 +224,12 @@ class PortStruct:
         self._port.on_traffic_change(self._change_traffic_status)
         self._port.on_speed_change(self._change_physical_port_speed)
         self._tester.on_disconnected(self.__on_disconnect_tester)
-        tokens = []
+        tokens = [
+            self._port.sync_status.get(),
+            self._port.traffic.state.get(),
+            self._port.net_config.mac_address.get(),
+            self._port.speed.current.get(),
+        ]
         if self._port.is_reserved_by_me():
             tokens.extend(self.free())
         elif self._port.is_reserved_by_others():
@@ -232,24 +237,11 @@ class PortStruct:
         tokens.append(self._port.reservation.set_reserve())
         tokens.append(self._port.reset.set())
 
-        tokens.append(self._port.sync_status.get())
-        sync_index = len(tokens) - 1
-
-        tokens.append(self._port.traffic.state.get())
-        traffic_index = len(tokens) - 1
-
-        tokens.append(self._port.net_config.mac_address.get())
-        mac_index = len(tokens) - 1
-
-        tokens.append(self._port.speed.current.get())
-        port_speed_index = len(tokens) - 1
-
-        results = await utils.apply(*tokens)
-
-        self.properties.sync_status = bool(results[sync_index].sync_status)
-        self.properties.traffic_status = bool(results[traffic_index].on_off)
-        self.properties.native_mac_address = MacAddress(results[mac_index].mac_address)
-        self.properties.physical_port_speed = results[port_speed_index].port_speed * 1e6
+        (sync, traffic, mac, port_speed, *_) = await utils.apply(*tokens)
+        self.properties.sync_status = bool(sync.sync_status)
+        self.properties.traffic_status = bool(traffic.on_off)
+        self.properties.native_mac_address = MacAddress(mac.mac_address)
+        self.properties.physical_port_speed = port_speed.port_speed * 1e6
 
     async def clear_statistic(self) -> None:
         await utils.apply(
