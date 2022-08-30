@@ -240,14 +240,17 @@ class StreamStruct:
     async def set_packet_header(self) -> None:
         packet_header_list = bytearray()
         # Insert all configured header segments in order
-        segment_index = 0
-        for segment in self._tx_port.port_conf.profile.header_segments:
+        for index, segment in enumerate(self._tx_port.port_conf.profile.header_segments):
             segment_type = segment.segment_type
-            if (
-                segment_type == const.SegmentType.TCP
-                and self._tx_port.capabilities.can_tcp_checksum
-            ):
+            if (segment_type == const.SegmentType.TCP and self._tx_port.capabilities.can_tcp_checksum): # ????
                 segment_type = const.SegmentType.TCPCHECK
+            if segment.segment_type.is_ethernet and index == 0:
+                setup_segment_ethernet()
+            elif segment.segment_type.is_ipv4:
+                setup_segment_ipv4()
+            elif segment.segment_type.is_ipv6:
+                setup_segment_ipv6()
+
             patched_value = ps.get_segment_value(
                 segment, segment_index, self._addr_coll
             )

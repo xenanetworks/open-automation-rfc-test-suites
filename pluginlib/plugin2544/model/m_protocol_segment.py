@@ -12,9 +12,15 @@ from pydantic.class_validators import validator
 from pydantic.fields import Field
 
 
-BinaryString = str
+# BinaryString = str
 HexString = str
 
+
+class BinaryString(str):
+    def __new__(cls, content):
+        if not :
+            raise ValueError('binary string must zero or one')
+        return str.__new__(cls, content)
 
 class ModifierActionOption(Enum):
     INC = "increment"
@@ -62,6 +68,20 @@ def wrap_add_16(data: bytearray, offset_num: int) -> bytearray:
 
 def hex_to_bitstring(hex_vlaue: int) -> BinaryString:
     return f'{hex_vlaue:0>42b}'
+
+
+def setup_ethernet_segment(segment: bytearray, dest_mac: BinaryString, arp_mac: Optional[BinaryString] = None) -> bytearray:
+    dest_mac = (
+        dest_mac
+        if not arp_mac or arp_mac.is_empty
+        else arp_mac
+    )
+    if not dest_mac.is_empty and is_byte_values_zero(template, 0, 6):
+        copy_to(dest_mac.to_bytearray(), template, 0)
+    if not address_collection.smac.is_empty and is_byte_values_zero(template, 6, 6):
+        copy_to(address_collection.smac.to_bytearray(), template, 6)
+    return template
+
 
 class EnumActions(Enum):
     INCR = "increment"
@@ -150,12 +170,7 @@ class ValueRange(BaseModel):
     stop_value: int
     action: EnumActions
     restart_for_each_port: bool
-
-    bit_segment_position: int # bit position in segment
-    bit_length: int
-
-    # computed value after init
-    current_count: int = 0
+    current_count: int = 0 #
 
     def reset(self) -> None:
         self.current_count = 0
@@ -187,15 +202,12 @@ class HWModifier(BaseModel):
     position: int
     mask: HexString
 
-    bit_segment_position: int = 0 # the bit position from the start of the segment
-
 
 class SegmentField(BaseModel):
     name: str
-    original_value: BinaryString = Field(alias='value')
     value: BinaryString = ''
     bit_length: int
-    bit_segment_position: int
+    bit_segment_position: int = 0 # the bit position from the start of the segment
     hw_modifier: Optional[HWModifier]
     value_range: Optional[ValueRange]
 
@@ -214,23 +226,18 @@ class SegmentField(BaseModel):
 
     def apply_value_range_if_exists(self) -> BinaryString:
         if not self.value_range:
-            return self.original_value
+            return self.value
 
-        value_range_str = bin( self.value_range.get_current_value() )[2:].zfill(self.value_range.bit_length)
+        value_range_str = bin( self.value_range.get_current_value() )[2:].zfill(self.bit_length)
         result = (
-            self.original_value[:self.value_range.bit_segment_position]
+            self.value[:self.bit_segment_position]
             + value_range_str
-            + self.original_value[self.value_range.bit_segment_position + self.value_range.bit_length]
+            + self.value[self.bit_segment_position + self.bit_length]
         )
         return result
 
     def prepare(self) -> BinaryString:
-        logger.debug(self.value)
-        self.value = self.apply_value_range_if_exists()
-        return self.value
-
-    def to_bytearray(self) -> bytearray:
-        return bytearray(bitstring_to_bytes(self.value))
+        return self.apply_value_range_if_exists()
 
     def set_field_value(self, new_value: BinaryString) -> None:
         if len(new_value) == self.bit_length:
@@ -251,6 +258,10 @@ class Segment(BaseModel):
     def hw_modifiers(self) -> Generator[HWModifier, None, None]:
         return (f.hw_modifier for f in self.fields if f.hw_modifier)
 
+    @property
+    def value_ranges(self) -> Generator[ValueRange, None, None]:
+        return (f.value_range for f in self.fields if f.value_range)
+
     @validator('checksum_offset')
     def is_digit(cls, value):
         if value and not isinstance(value, int):
@@ -258,10 +269,7 @@ class Segment(BaseModel):
         return value
 
     def prepare(self) -> bytearray:
-        result = bytearray()
-        for f in self.fields:
-            f.prepare()
-            result += f.to_bytearray()
+        result = bytearray(bitstring_to_bytes(''.join(f.prepare() for f in self.fields)))
 
         if self.checksum_offset:
             result = wrap_add_16(result, self.checksum_offset)
@@ -276,6 +284,14 @@ class Segment(BaseModel):
 
     def __setitem__(self, field_name: str, new_value: BinaryString) -> None:
         self[field_name].set_field_value(new_value)
+
+    def __len__(self) -> int:
+        """segment length in bit"""
+        return sum(f.bit_length for f in self.fields)
+
+    @property
+    def modifier_count(self) -> int:
+        return sum(1 for f in self.fields if f.hw_modifier)
 
     # should make it as validator
     # def setup_fields(self, current_segment_bit_offset: int) -> None:
@@ -317,17 +333,19 @@ class ProtocolSegmentProfileConfig(BaseModel):
     def segment_id_list(self) -> List[ProtocolOption]:
         return [h.segment_type.to_xmp() for h in self.header_segments]
 
+    def __len__(self) -> int:
+        """header length in bit"""
+        return sum(len(hs) for hs in self.header_segments)
+
     @property
     def packet_header_length(self) -> int:
-        return (
-            sum(
-                [
-                    len(header_segment.)
-                    for header_segment in self.header_segments
-                ]
-            )
-            // 2
-        )
+        """header length in byte for convenient use with xoa-driver"""
+        return len(self) // 8
+
+    @property
+    def modifier_count(self) -> int:
+        return sum(hs.modifier_count for hs in self.header_segments)
+
 fake_data = {
     'header_segments': [
         {

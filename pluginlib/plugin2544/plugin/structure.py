@@ -175,14 +175,13 @@ class BasePort:
             return
         await self._port.fec_mode.set(fec_mode.to_xmp())  # PP_FECMODE
 
-    async def set_max_header(self, header_segments: List["HeaderSegment"]) -> None:
+    async def set_max_header(self, header_length: int) -> None:
         # calculate max header length
-        header_segments_val = sum(len(i.segment_value) for i in header_segments)
         for p in const.STANDARD_SEGMENT_VALUE:
-            if header_segments_val <= p:
-                header_segments_val = p
+            if header_length <= p:
+                header_length = p
                 break
-        await self._port.max_header_length.set(header_segments_val)
+        await self._port.max_header_length.set(header_length)
 
     async def set_packet_size_if_mix(
         self, frame_sizes: "FrameSizeConfiguration"
@@ -411,8 +410,8 @@ class PortStruct(BasePort):
 
     async def configure_streams(self, test_conf: "TestConfiguration") -> None:
         for header_segment in self._port_conf.profile.header_segments:
-            for field_value_range in header_segment.field_value_ranges:
-                if field_value_range.reset_for_each_port:
+            for field_value_range in header_segment.value_ranges:
+                if field_value_range.restart_for_each_port:
                     field_value_range.reset()
         for stream_struct in self._stream_structs:
             await stream_struct.configure(test_conf)
@@ -459,7 +458,7 @@ class PortStruct(BasePort):
         await self.set_fec_mode(self._port_conf.fec_mode)
         await self.set_anlt(self._port_conf.anlt_enabled)
         await self.set_auto_negotiation(self._port_conf.auto_neg_enabled)
-        await self.set_max_header(self._port_conf.profile.header_segments)
+        await self.set_max_header(self._port_conf.profile.packet_header_length)
         await self.set_sweep_reduction(self._port_conf.speed_reduction_ppm)
         await self.set_stagger_step(test_conf.port_stagger_steps)
         await self.set_packet_size_if_mix(test_conf.frame_sizes)
