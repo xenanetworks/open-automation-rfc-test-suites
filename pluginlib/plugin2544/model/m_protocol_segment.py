@@ -2,6 +2,7 @@ from enum import Enum
 from random import randint
 from loguru import logger
 from typing import Any, Callable, Dict, Generator, List, Optional, Protocol, Union
+from xoa_driver.enums import ProtocolOption
 # from ..common import copy_to, is_byte_values_zero
 # from pluginlib.plugin2544.plugin.data_model import AddressCollection
 # from pluginlib.plugin2544.utils import constants
@@ -19,6 +20,24 @@ class ModifierActionOption(Enum):
     INC = "increment"
     DEC = "decrement"
     RANDOM = "random"
+
+
+class PortProtocolVersion(Enum):
+    ETHERNET = 0
+    IPV4 = 4
+    IPV6 = 6
+
+    @property
+    def is_ipv4(self) -> bool:
+        return self == type(self).IPV4
+
+    @property
+    def is_ipv6(self) -> bool:
+        return self == type(self).IPV6
+
+    @property
+    def is_l3(self) -> bool:
+        return self != type(self).ETHERNET
 
 
 class FieldValueToBinaryString(Protocol):
@@ -120,6 +139,10 @@ class SegmentType(Enum):
             return 0
         return int(self.value.split("_")[-1])
 
+    def to_xmp(self) -> "ProtocolOption":
+        return ProtocolOption[self.name]
+
+
 
 class ValueRange(BaseModel):
     start_value: int
@@ -165,7 +188,6 @@ class HWModifier(BaseModel):
     mask: HexString
 
     bit_segment_position: int = 0 # the bit position from the start of the segment
-    bit_packet_position: int = 0 # the bit position from the start of the packet
 
 
 class SegmentField(BaseModel):
@@ -220,7 +242,7 @@ class SegmentField(BaseModel):
 class Segment(BaseModel):
     segment_type: SegmentType
     fields: list[SegmentField]
-    checksum_offset: int
+    checksum_offset: Optional[int] = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -231,7 +253,7 @@ class Segment(BaseModel):
 
     @validator('checksum_offset')
     def is_digit(cls, value):
-        if not value.is_digit():
+        if value and not isinstance(value, int):
             raise ValueError('checksum offset must digit')
         return value
 
@@ -279,7 +301,33 @@ class ProtocolSegmentProfileConfig(BaseModel):
     def get_segment(self, segment_type: SegmentType, index: int = 0) -> Segment:
         return self[segment_type][index]
 
+    @property
+    def protocol_version(self) -> PortProtocolVersion:
+        v = PortProtocolVersion.ETHERNET
+        for i in self.header_segments:
+            if i.segment_type == SegmentType.IPV6:
+                v = PortProtocolVersion.IPV6
+                break
+            elif i.segment_type == SegmentType.IP:
+                v = PortProtocolVersion.IPV4
+                break
+        return v
 
+    @property
+    def segment_id_list(self) -> List[ProtocolOption]:
+        return [h.segment_type.to_xmp() for h in self.header_segments]
+
+    @property
+    def packet_header_length(self) -> int:
+        return (
+            sum(
+                [
+                    len(header_segment.)
+                    for header_segment in self.header_segments
+                ]
+            )
+            // 2
+        )
 fake_data = {
     'header_segments': [
         {
