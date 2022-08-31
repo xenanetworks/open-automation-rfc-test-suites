@@ -333,7 +333,7 @@ async def add_mac_learning_steps(
     for port_struct in resources.port_structs:
         for stream_struct in port_struct._stream_structs:
             src_hex_data = f"{none_mac}{stream_struct._addr_coll.smac.to_hexstring()}{four_f}{paddings}"
-            if port_struct in done_struct:
+            if port_struct not in done_struct:
                 tokens = make_mac_token(port_struct, src_hex_data, mac_learning_frame_count)
                 tasks.extend(tokens)
                 done_struct.append(port_struct)
