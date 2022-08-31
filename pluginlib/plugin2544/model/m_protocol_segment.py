@@ -1,3 +1,4 @@
+import re
 from enum import Enum
 from random import randint
 from loguru import logger
@@ -12,15 +13,18 @@ from pydantic.class_validators import validator
 from pydantic.fields import Field
 
 
-# BinaryString = str
 HexString = str
 
 
 class BinaryString(str):
-    def __new__(cls, content):
-        if not :
+    def __new__(cls, content) -> "BinaryString":
+        if not re.search("^[01]+$", content):
             raise ValueError('binary string must zero or one')
         return str.__new__(cls, content)
+
+    @property
+    def is_all_zero(self) -> bool:
+        return bool(re.search("^[0]+$", self))
 
 class ModifierActionOption(Enum):
     INC = "increment"
@@ -46,9 +50,6 @@ class PortProtocolVersion(Enum):
         return self != type(self).ETHERNET
 
 
-class FieldValueToBinaryString(Protocol):
-    def to_binary_string(self) -> BinaryString: ...
-
 def bitstring_to_bytes(s) -> bytes:
     return int(s, 2).to_bytes((len(s) + 7) // 8, byteorder='big')
 
@@ -67,20 +68,12 @@ def wrap_add_16(data: bytearray, offset_num: int) -> bytearray:
     return data
 
 def hex_to_bitstring(hex_vlaue: int) -> BinaryString:
-    return f'{hex_vlaue:0>42b}'
+    return BinaryString(f'{hex_vlaue:0>42b}')
+
+def hex_string_to_binary_string(hex_vlaue: str) -> BinaryString:
+    return BinaryString(f'{int(hex_vlaue):0>42b}')
 
 
-def setup_ethernet_segment(segment: bytearray, dest_mac: BinaryString, arp_mac: Optional[BinaryString] = None) -> bytearray:
-    dest_mac = (
-        dest_mac
-        if not arp_mac or arp_mac.is_empty
-        else arp_mac
-    )
-    if not dest_mac.is_empty and is_byte_values_zero(template, 0, 6):
-        copy_to(dest_mac.to_bytearray(), template, 0)
-    if not address_collection.smac.is_empty and is_byte_values_zero(template, 6, 6):
-        copy_to(address_collection.smac.to_bytearray(), template, 6)
-    return template
 
 
 class EnumActions(Enum):
@@ -162,6 +155,17 @@ class SegmentType(Enum):
     def to_xmp(self) -> "ProtocolOption":
         return ProtocolOption[self.name]
 
+    @property
+    def is_ethernet(self) -> bool:
+        return self == SegmentType.ETHERNET
+
+    @property
+    def is_ipv4(self) -> bool:
+        return self == SegmentType.IP
+
+    @property
+    def is_ipv6(self) -> bool:
+        return self == SegmentType.IPV6
 
 
 class ValueRange(BaseModel):
@@ -205,26 +209,24 @@ class HWModifier(BaseModel):
 
 class SegmentField(BaseModel):
     name: str
-    value: BinaryString = ''
+    value: BinaryString
     bit_length: int
     bit_segment_position: int = 0 # the bit position from the start of the segment
     hw_modifier: Optional[HWModifier]
     value_range: Optional[ValueRange]
 
-    @validator('original_value', 'value')
-    def is_binary_string(cls, value):
-        if not all(v in '01' for v in value):
-            raise ValueError('binary string must zero or one')
-        return value
-
     class Config:
         validate_assignment = True
+
+    def __init__(self, **data: Any):
+        super().__init__(**data)
+        self.value = BinaryString(self.value)
 
     @property
     def is_ipv4_address(self) -> bool:
         return self.name in ("Src IP Addr", "Dest IP Addr") # field name change to src/dest ipv4 addr?
 
-    def apply_value_range_if_exists(self) -> BinaryString:
+    def apply_value_range_if_exists(self) -> Union[BinaryString, str]:
         if not self.value_range:
             return self.value
 
@@ -236,7 +238,7 @@ class SegmentField(BaseModel):
         )
         return result
 
-    def prepare(self) -> BinaryString:
+    def prepare(self) -> Union[BinaryString, str]:
         return self.apply_value_range_if_exists()
 
     def set_field_value(self, new_value: BinaryString) -> None:
@@ -245,14 +247,38 @@ class SegmentField(BaseModel):
         else:
             raise ValueError(f'value length {len(new_value)} not match {self.bit_length}({self.name})')
 
+    @property
+    def is_value_all_zero(self) -> bool:
+        return self.value.is_all_zero
+
+
 
 class Segment(BaseModel):
     segment_type: SegmentType
     fields: list[SegmentField]
     checksum_offset: Optional[int] = None
 
+    # compute value after init, maybe is wrong approche, need discuss
+    is_field_src_value_all_zero: Optional[bool] = False
+    is_field_dst_value_all_zero: Optional[bool] = False
+
+    def saving_is_original_value_zero(self) -> None:
+        if self.segment_type.is_ethernet:
+            self.is_field_src_value_all_zero = self['Src MAC addr'].is_value_all_zero
+            self.is_field_dst_value_all_zero = self['Dst MAC addr'].is_value_all_zero
+        elif self.segment_type.is_ipv4:
+            self.is_field_src_value_all_zero = self['Src IP Addr'].is_value_all_zero
+            self.is_field_dst_value_all_zero = self['Dest IP Addr'].is_value_all_zero
+        elif self.segment_type.is_ipv6:
+            self.is_field_src_value_all_zero = self['Src IPv6 Addr'].is_value_all_zero
+            self.is_field_dst_value_all_zero = self['Dest IPv6 Addr'].is_value_all_zero
+
     class Config:
         arbitrary_types_allowed = True
+
+    def __init__(self, **data: Any):
+        super().__init__(**data)
+        self.saving_is_original_value_zero()
 
     @property
     def hw_modifiers(self) -> Generator[HWModifier, None, None]:
@@ -365,6 +391,25 @@ fake_data = {
         }
     ],
 }
+
+def setup_segment_ethernet(segment: Segment, src_mac: BinaryString, dst_mac: BinaryString, arp_mac: Optional[BinaryString] = None):
+    dst_mac = (dst_mac if not arp_mac or arp_mac.is_all_zero else arp_mac)
+    if not dst_mac.is_all_zero and segment.is_field_dst_value_all_zero:
+        segment['Dst MAC addr'].value = dst_mac
+    if not src_mac.is_all_zero and segment.is_field_src_value_all_zero:
+        segment['Src MAC addr'].value = src_mac
+
+def setup_segment_ipv4(segment: Segment, src_ipv4: BinaryString, dst_ipv4: BinaryString):
+    if segment.is_field_src_value_all_zero:
+        segment['Src IP addr'] = src_ipv4
+    if segment.is_field_dst_value_all_zero:
+        segment['Dst IP addr'] = dst_ipv4
+
+def setup_segment_ipv6(segment: Segment, src_ipv6: BinaryString, dst_ipv6: BinaryString):
+    if segment.is_field_src_value_all_zero:
+        segment['Src IPv6 addr'] = src_ipv6
+    if segment.is_field_dst_value_all_zero:
+        segment['Dst IPv6 addr'] = dst_ipv6
 
 # hsp = HeaderSegmentsProfileBase.parse_obj(fake_data)
 

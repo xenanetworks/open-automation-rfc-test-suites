@@ -1,8 +1,9 @@
 import asyncio
 from copy import deepcopy
 from typing import List, Optional, TYPE_CHECKING
+from pluginlib.plugin2544.model.m_protocol_segment import hex_string_to_binary_string, setup_segment_ipv4, setup_segment_ipv6
 from xoa_driver import utils, misc, enums
-from ..model import TestConfiguration, HWModifier
+from ..model import TestConfiguration, HWModifier, setup_segment_ethernet
 from .common import gen_macaddress
 from .data_model import (
     AddressCollection,
@@ -238,32 +239,35 @@ class StreamStruct:
 
 
     async def set_packet_header(self) -> None:
-        packet_header_list = bytearray()
         # Insert all configured header segments in order
         for index, segment in enumerate(self._tx_port.port_conf.profile.header_segments):
             segment_type = segment.segment_type
-            if (segment_type == const.SegmentType.TCP and self._tx_port.capabilities.can_tcp_checksum): # ????
+            if (segment_type == const.SegmentType.TCP and self._tx_port.capabilities.can_tcp_checksum): # ?
                 segment_type = const.SegmentType.TCPCHECK
+
             if segment.segment_type.is_ethernet and index == 0:
-                setup_segment_ethernet()
+                setup_segment_ethernet(
+                    segment,
+                    hex_string_to_binary_string(self._addr_coll.smac.to_hexstring()),
+                    hex_string_to_binary_string(self._addr_coll.dmac.to_hexstring()),
+                    hex_string_to_binary_string(self._addr_coll.arp_mac.to_hexstring()),
+                )
             elif segment.segment_type.is_ipv4:
-                setup_segment_ipv4()
+                setup_segment_ipv4(
+                    segment,
+                    hex_string_to_binary_string(self._addr_coll.src_ipv4_addr.to_hexstring()),
+                    hex_string_to_binary_string(self._addr_coll.dst_ipv4_addr.to_hexstring()),
+                )
             elif segment.segment_type.is_ipv6:
-                setup_segment_ipv6()
+                setup_segment_ipv6(
+                    segment,
+                    hex_string_to_binary_string(self._addr_coll.src_ipv6_addr.to_hexstring()),
+                    hex_string_to_binary_string(self._addr_coll.dst_ipv6_addr.to_hexstring()),
+                )
 
-            patched_value = ps.get_segment_value(
-                segment, segment_index, self._addr_coll
-            )
-            real_value = ps.calculate_checksum(
-                segment, ps.DEFAULT_SEGMENT_MAPPING, patched_value
-            )
-
-            packet_header_list += real_value
-            segment_index += 1
-
-        self._packet_header = packet_header_list
+        all_segments = self._tx_port.port_conf.profile.prepare()
         await self._stream.packet.header.data.set(
-            f"0x{bytes(self._packet_header).hex()}"
+            f"0x{all_segments.hex()}"
         )
 
     async def setup_modifier(self) -> None:
