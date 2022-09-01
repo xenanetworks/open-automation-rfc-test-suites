@@ -62,6 +62,8 @@ class MacAddress(str):
     def is_empty(self) -> bool:
         return not self or self == MacAddress("00:00:00:00:00:00")
 
+    def binary_string(self) -> str:
+        return bin(int('1'+self.replace(':', ''), 16))[3:]
 
 class IPv4Address(OldIPv4Address):
     def to_hexstring(self) -> str:
@@ -79,6 +81,9 @@ class IPv4Address(OldIPv4Address):
     @property
     def is_empty(self) -> bool:
         return not self or self == IPv4Address("0.0.0.0")
+
+    def binary_string(self) -> str:
+        return bin(int('1'+self.to_hexstring(), 16))[3:]
 
 
 class IPv6Address(OldIPv6Address):
