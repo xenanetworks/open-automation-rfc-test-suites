@@ -23,17 +23,16 @@ def get_dest_ip_modifier_addr_range(
 ) -> Optional[range]:
     header_segments = port_struct.port_conf.profile.header_segments
     for header_segment in header_segments:
-        if header_segment.segment_type in (
-            const.SegmentType.IP,
-            const.SegmentType.IPV6,
-        ):
-            for modifier in header_segment.hw_modifiers:
-                if modifier.field_name in ("Dest IP Addr", "Dest IPv6 Addr"):
-                    return range(
-                        modifier.start_value,
-                        modifier.stop_value + 1,
-                        modifier.step_value,
-                    )
+        if (not header_segment.segment_type.is_ipv4) or (not header_segment.segment_type.is_ipv6):
+            continue
+
+        for field in header_segment.fields:
+            if field.name in ("Dest IP Addr", "Dest IPv6 Addr") and (modifier := field.hw_modifier):
+                return range(
+                    modifier.start_value,
+                    modifier.stop_value + 1,
+                    modifier.step_value,
+                )
     return None
 
 

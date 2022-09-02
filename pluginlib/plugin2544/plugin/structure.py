@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     from ..model import (
         FrameSizeConfiguration,
         TestConfiguration,
-        HeaderSegment,
         PortConfiguration,
         ThroughputTest,
         LatencyTest,
@@ -393,7 +392,8 @@ class PortStruct(BasePort):
 
     @property
     def protocol_version(self) -> const.PortProtocolVersion:
-        return self._port_conf.profile.protocol_version
+        return const.PortProtocolVersion[self._port_conf.profile.protocol_version.name]
+
 
     async def add_stream(
         self,

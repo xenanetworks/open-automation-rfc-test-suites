@@ -1,18 +1,15 @@
 import re
 from enum import Enum
 from random import randint
-from loguru import logger
-from typing import Any, Callable, Dict, Generator, List, Optional, Protocol, Union
-from xoa_driver.enums import ProtocolOption
-# from ..common import copy_to, is_byte_values_zero
-# from pluginlib.plugin2544.plugin.data_model import AddressCollection
-# from pluginlib.plugin2544.utils import constants
-# from pluginlib.plugin2544.utils.constants import SegmentType
+from typing import Any, Generator, List, Optional
+from xoa_driver.enums import ProtocolOption, ModifierAction
 from pydantic import BaseModel
 from pydantic.class_validators import validator
 
 
 HexString = str
+
+
 class BinaryString(str):
     def __new__(cls, content) -> "BinaryString":
         if not re.search("^[01]+$", content):
@@ -31,7 +28,6 @@ def wrap_add_16(data: bytearray, offset_num: int) -> bytearray:
     checksum = 0
     data[offset_num + 0] = 0
     data[offset_num + 1] = 0
-    logger.debug(len(data))
     for i in range(0, len(data), 2):
         w = (data[i + 0] << 8) + data[i + 1]
         checksum += w
@@ -41,17 +37,8 @@ def wrap_add_16(data: bytearray, offset_num: int) -> bytearray:
     data[offset_num + 1] = 0xFF + 1 + (~(checksum & 0xFF))
     return data
 
-def hex_to_bitstring(hex_vlaue: int) -> "BinaryString":
-    return BinaryString(f'{hex_vlaue:0>42b}')
 
-def hex_string_to_binary_string(hex_vlaue: str) -> "BinaryString":
-    return BinaryString(f'{int(hex_vlaue, 16):0>42b}')
-
-def setup_segment_ethernet(segment: "ProtocolSegment", src_mac: str, dst_mac: str, arp_mac: Optional["str"] = None):
-    src_mac = BinaryString(src_mac)
-    dst_mac = BinaryString(dst_mac)
-    arp_mac = BinaryString(arp_mac)
-
+def setup_segment_ethernet(segment: "ProtocolSegment", src_mac: "BinaryString", dst_mac: "BinaryString", arp_mac: Optional["BinaryString"] = None):
     dst_mac = (dst_mac if not arp_mac or arp_mac.is_all_zero else arp_mac)
     if not dst_mac.is_all_zero and segment.can_set_field_dst:
         segment['Dst MAC addr'] = dst_mac
@@ -70,14 +57,20 @@ def setup_segment_ipv6(segment: "ProtocolSegment", src_ipv6: "BinaryString", dst
     if segment.can_set_field_dst:
         segment['Dest IPv6 Addr'] = dst_ipv6
 
-
-
+def hex_string_to_binary_string(hex: str) -> "BinaryString":
+    """binary string with leading zeros
+    """
+    hex = hex.lower().replace('0x', '')
+    return BinaryString(bin(int('1'+hex, 16))[3:])
 
 
 class ModifierActionOption(Enum):
     INC = "increment"
     DEC = "decrement"
     RANDOM = "random"
+
+    def to_xmp(self) -> "ModifierAction":
+        return ModifierAction[self.name]
 
 
 class PortProtocolVersion(Enum):
@@ -224,45 +217,47 @@ class HWModifier(BaseModel):
     mask: HexString
 
     # computed values
-    byte_segment_position: Optional[int] = None # byte postion at all header segments
+    byte_segment_position: Optional[int] = None # byte position of all header segments
 
 
 class SegmentField(BaseModel):
     name: str
     value: BinaryString
     bit_length: int
-    bit_segment_position: int = 0 # the bit position at current segment
+    bit_segment_position: int = 0 # bit position of current segment
     hw_modifier: Optional[HWModifier]
     value_range: Optional[ValueRange]
 
     class Config:
         validate_assignment = True
 
-    def __init__(self, **data: Any):
+    def __init__(self, **data: Any) -> None:
         super().__init__(**data)
-        # logger.debug(f"raw {self.value}")
-        self.value = BinaryString(self.value)
-        # logger.debug(self.value)
+        self.check_value_range()
+        if not isinstance(self.value, BinaryString):
+            self.value = BinaryString(self.value)
+
+    def check_value_range(self) -> None:
+        if not self.value_range:
+            return
+        max_val = max(self.value_range.start_value, self.value_range.stop_value)
+        theory_max = pow(2, self.bit_length)
+        if max_val >= theory_max: # why not fvr.stop_value >= can_max?
+            raise Exception('invalid value range', self.name, theory_max)
 
     @property
     def is_ipv4_address(self) -> bool:
         return self.name in ("Src IP Addr", "Dest IP Addr") # field name change to src/dest ipv4 addr?
 
-    def apply_value_range_if_exists(self) -> Union[BinaryString, str]:
+    def apply_value_range(self) -> BinaryString:
         if not self.value_range:
             return self.value
 
         value_range_str = bin( self.value_range.get_current_value() )[2:].zfill(self.bit_length)
-        result = (
-            self.value[:self.bit_segment_position]
-            + value_range_str
-            + self.value[self.bit_segment_position + self.bit_length]
-        )
-        return result
+        return BinaryString(value_range_str)
 
-    def prepare(self) -> Union[BinaryString, str]:
-        value = self.apply_value_range_if_exists()
-        logger.debug(f"{self.name}, {len(value)} {value}")
+    def prepare(self) -> BinaryString:
+        value = self.apply_value_range()
         return value
 
     def set_field_value(self, new_value: BinaryString) -> None:
@@ -301,7 +296,7 @@ class ProtocolSegment(BaseModel):
             self.can_set_field_dst = self['Dest IPv6 Addr'].is_value_all_zero
 
 
-    def __init__(self, **data: Any):
+    def __init__(self, **data: Any) -> None:
         super().__init__(**data)
         self.saving_is_original_value_zero()
 
@@ -321,20 +316,14 @@ class ProtocolSegment(BaseModel):
 
     def prepare(self) -> bytearray:
         result = ''
-        length = 0
         for f in self.fields:
-            fv = f.prepare()
-            length += len(fv)
-            result += fv
+            field_binary_string = f.prepare()
+            result += field_binary_string
 
         result = bytearray(bitstring_to_bytes(result))
-        logger.debug(f"raw length: {len(result)}")
         if self.checksum_offset:
             result = wrap_add_16(result, self.checksum_offset)
-
-        logger.debug(f"final length: {len(result)}")
         return result
-
 
     def __getitem__(self, field_name: str) -> SegmentField:
         for field in self.fields:
@@ -346,21 +335,13 @@ class ProtocolSegment(BaseModel):
         self[field_name].set_field_value(new_value)
 
     def __len__(self) -> int:
-        """segment length in bit"""
+        """bit segment length"""
         return sum(f.bit_length for f in self.fields)
 
     @property
     def modifier_count(self) -> int:
         return sum(1 for f in self.fields if f.hw_modifier)
 
-    # should make it as validator
-    # def setup_fields(self, current_segment_bit_offset: int) -> None:
-    #     for field in self.fields:
-    #         if field.value_range:
-    #             max_val = max(field.value_range.start_value, field.value_range.stop_value)
-    #             theory_max = pow(2, field.bit_length)
-    #             if max_val >= theory_max: # why not fvr.stop_value >= can_max?
-    #                 raise Exception('over max', field.name, theory_max)
 
 class ProtocolSegmentProfileConfig(BaseModel):
     header_segments: list[ProtocolSegment] = []
@@ -371,8 +352,6 @@ class ProtocolSegmentProfileConfig(BaseModel):
     def prepare(self) -> bytearray:
         result = bytearray()
         for s in self.header_segments:
-            logger.debug(s.segment_type)
-            logger.debug(len(s))
             result += s.prepare()
         return result
 
@@ -396,12 +375,12 @@ class ProtocolSegmentProfileConfig(BaseModel):
         return [h.segment_type.to_xmp() for h in self.header_segments]
 
     def __len__(self) -> int:
-        """header length in bit"""
+        """bit header length"""
         return sum(len(hs) for hs in self.header_segments)
 
     @property
     def packet_header_length(self) -> int:
-        """header length in byte for convenient use with xoa-driver"""
+        """byte header length for convenient use with xoa-driver"""
         return len(self) // 8
 
     @property
@@ -416,15 +395,9 @@ class ProtocolSegmentProfileConfig(BaseModel):
                 if (modifier := field.hw_modifier):
                     modifier.byte_segment_position = total_bit_length // 8
 
-                    if field.name in ("Src IP Addr", "Dest IP Addr"): # ?
-                        modifier.byte_segment_position = field.bit_length // 8
+                    # if field.is_ipv4_address:
+                    #     modifier.byte_segment_position = field.bit_length // 8
 
-    def __init__(self, **data: Any):
+    def __init__(self, **data: Any) -> None:
         super().__init__(**data)
         self.calc_segment_position()
-
-# hsp = HeaderSegmentsProfileBase.parse_obj(fake_data)
-
-# segment = hsp[SegmentType.ETHERNET][0]
-
-# segment['dst mac address'] = hex_to_bitstring(0xbc6348b035e7)
