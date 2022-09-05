@@ -6,9 +6,6 @@ from ..model import (
     TestConfiguration,
     HWModifier,
     ModifierActionOption,
-    setup_segment_ethernet,
-    setup_segment_ipv4,
-    setup_segment_ipv6,
 )
 from .common import gen_macaddress
 from .data_model import (
@@ -143,6 +140,7 @@ class StreamStruct:
                     step_value=1,
                     action=ModifierActionOption.INC,
                     repeat=1,
+                    offset=0,
                 )
             ]
 
@@ -246,25 +244,21 @@ class StreamStruct:
     async def set_packet_header(self) -> None:
         # Insert all configured header segments in order
         for index, segment in enumerate(self._tx_port.port_conf.profile.header_segments):
-            segment_type = segment.segment_type
-            if (segment_type == const.SegmentType.TCP and self._tx_port.capabilities.can_tcp_checksum): # ?
-                segment_type = const.SegmentType.TCPCHECK
-
             if segment.segment_type.is_ethernet and index == 0:
-                setup_segment_ethernet(
+                ps.setup_segment_ethernet(
                     segment,
                     self._addr_coll.smac.to_binary_string(),
                     self._addr_coll.dmac.to_binary_string(),
                     self._addr_coll.arp_mac.to_binary_string(),
                 )
-            elif segment.segment_type.is_ipv4:
-                setup_segment_ipv4(
+            if segment.segment_type.is_ipv4:
+                ps.setup_segment_ipv4(
                     segment,
                     self._addr_coll.src_ipv4_addr.to_binary_string(),
                     self._addr_coll.dst_ipv4_addr.to_binary_string(),
                 )
-            elif segment.segment_type.is_ipv6:
-                setup_segment_ipv6(
+            if segment.segment_type.is_ipv6:
+                ps.setup_segment_ipv6(
                     segment,
                     self._addr_coll.src_ipv6_addr.to_binary_string(),
                     self._addr_coll.dst_ipv6_addr.to_binary_string(),
@@ -279,11 +273,10 @@ class StreamStruct:
         await modifiers.configure(len(self.hw_modifiers))
         for mid, hw_modifier in enumerate(self.hw_modifiers):
             modifier = modifiers.obtain(mid)
-            assert hw_modifier.byte_segment_position
             tokens.append(
                 modifier.specification.set(
                     position=hw_modifier.byte_segment_position,
-                    mask=hw_modifier.mask,
+                    mask=f"0x{hw_modifier.mask}",
                     action=hw_modifier.action.to_xmp(),
                     repetition=hw_modifier.repeat,
                 )

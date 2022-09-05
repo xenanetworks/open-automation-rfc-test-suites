@@ -7,12 +7,19 @@ from ipaddress import (
     IPv4Network,
     IPv6Network,
 )
-from ..model.m_protocol_segment import hex_string_to_binary_string
+from ..model.m_protocol_segment import BinaryString
 
 if TYPE_CHECKING:
     from ..model.m_protocol_segment import BinaryString
 
 from . import exceptions
+
+
+def hex_string_to_binary_string(hex: str) -> "BinaryString":
+    """binary string with leading zeros
+    """
+    hex = hex.lower().replace('0x', '')
+    return BinaryString(bin(int('1'+hex, 16))[3:])
 
 
 class HexString(str):
