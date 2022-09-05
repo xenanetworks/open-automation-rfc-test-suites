@@ -8,9 +8,7 @@ from .common import find_dest_port_structs
 
 if TYPE_CHECKING:
     from xoa_driver import testers as xoa_testers
-    from xoa_driver.internals.core.commands import (
-        P_CAPABILITIES,
-    )
+    from xoa_driver.lli import commands
     from .structure import PortStruct
     from ..model import (
         ProtocolSegmentProfileConfig,
@@ -20,7 +18,8 @@ if TYPE_CHECKING:
 
 
 def check_port_config_profile(
-    capabilities: "P_CAPABILITIES.GetDataAttr", profile: "ProtocolSegmentProfileConfig"
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr",
+    profile: "ProtocolSegmentProfileConfig",
 ) -> None:
     segment_id_list = profile.segment_id_list
     if capabilities.max_protocol_segments < len(segment_id_list):
@@ -57,8 +56,8 @@ def check_can_fec(can_fec: int, fec_mode: const.FECModeStr) -> None:
         raise exceptions.FECModeTypeNotSupport(const.FECModeStr.ON)
 
 
-async def check_custom_port_config(
-    capabilities: "P_CAPABILITIES.GetDataAttr", port_conf: "PortConfiguration"
+def check_custom_port_config(
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr", port_conf: "PortConfiguration"
 ) -> None:
 
     if port_conf.port_rate > capabilities.max_speed * 1_000_000:
@@ -82,17 +81,13 @@ async def check_custom_port_config(
     check_port_config_profile(capabilities, port_conf.profile)
 
 
-async def check_ports(control_ports: List["PortStruct"]) -> None:
-    await asyncio.gather(
-        *[
-            check_custom_port_config(port_struct.capabilities, port_struct.port_conf)
-            for port_struct in control_ports
-        ]
-    )
+def check_ports(control_ports: List["PortStruct"]) -> None:
+    for port_struct in control_ports:
+        check_custom_port_config(port_struct.capabilities, port_struct.port_conf)
 
 
 def check_port_modifiers(
-    capabilities: "P_CAPABILITIES.GetDataAttr",
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr",
     port_conf: "PortConfiguration",
     is_stream_based: bool,
 ) -> None:
@@ -111,7 +106,7 @@ def check_port_modifiers(
 def check_stream_limitations(
     port_struct: "PortStruct", per_port_stream_count: int, is_stream_based: bool
 ) -> None:
-    if not (is_stream_based or port_struct._port_conf.is_tx_port):
+    if (not is_stream_based) or (not port_struct._port_conf.is_tx_port):
         return
     stream_count = len(port_struct.properties.peers) * per_port_stream_count
     if stream_count > port_struct.capabilities.max_streams_per_port:
@@ -135,7 +130,7 @@ def check_tid_limitations(
     scope: "const.TidAllocationScope",
     is_stream_based: bool,
 ) -> None:
-    if not (is_stream_based or scope.is_config_scope):
+    if (not is_stream_based) or (not scope.is_config_scope):
         return
 
     tid_value = 0
@@ -149,7 +144,7 @@ def check_tid_limitations(
 
 
 def check_port_min_packet_length(
-    capabilities: "P_CAPABILITIES.GetDataAttr",
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr",
     min_packet_size: Union[field.NonNegativeDecimal, int],
     packet_size_type: "const.PacketSizeType",
 ) -> None:
@@ -162,7 +157,7 @@ def check_port_min_packet_length(
 
 
 def check_port_max_packet_length(
-    capabilities: "P_CAPABILITIES.GetDataAttr",
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr",
     max_packet_size: Union[field.NonNegativeDecimal, int],
     packet_size_type: "const.PacketSizeType",
 ) -> None:
@@ -175,7 +170,7 @@ def check_port_max_packet_length(
 
 
 def get_tpld_total_length(
-    capabilities: "P_CAPABILITIES.GetDataAttr", use_micro_tpld_on_demand: bool
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr", use_micro_tpld_on_demand: bool
 ) -> int:
     if use_micro_tpld_on_demand and capabilities.can_micro_tpld:
         return const.MICRO_TPLD_TOTAL_LENGTH
@@ -202,7 +197,7 @@ def check_needed_packet_length(
 
 
 def check_payload_pattern(
-    capabilities: "P_CAPABILITIES.GetDataAttr", payload_pattern: str
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr", payload_pattern: str
 ) -> None:
     cur = len(payload_pattern) // 2
     if capabilities.max_pattern_length < cur:
@@ -210,7 +205,7 @@ def check_payload_pattern(
 
 
 def check_micro_tpld(
-    capabilities: "P_CAPABILITIES.GetDataAttr", use_mocro_tpld: bool
+    capabilities: "commands.P_CAPABILITIES.GetDataAttr", use_mocro_tpld: bool
 ) -> None:
     if not use_mocro_tpld:
         return
@@ -247,7 +242,7 @@ def check_port_test_config(
     check_stream_limitations(port_struct, per_port_stream_count, is_stream_based)
 
 
-async def check_test_config(
+def check_test_config(
     control_ports: List["PortStruct"], test_conf: "TestConfiguration"
 ) -> None:
     is_stream_based = test_conf.flow_creation_type.is_stream_based
@@ -257,25 +252,21 @@ async def check_test_config(
     check_tid_limitations(control_ports, scope, is_stream_based)
 
 
-async def check_tester_sync_start(
+def check_tester_sync_start(
     tester: "xoa_testers.L23Tester", use_sync_start: bool
 ) -> None:
     if not use_sync_start:
         return
-    cap = await tester.capabilities.get()
-    if not bool(cap.can_sync_traffic_start):
+    cap = tester.info.capabilities
+    if cap and not bool(cap.can_sync_traffic_start):
         raise exceptions.PortStaggeringNotSupport()
 
 
-async def check_testers(
+def check_testers(
     testers: List["xoa_testers.L23Tester"], test_conf: "TestConfiguration"
 ) -> None:
-    await asyncio.gather(
-        *[
-            check_tester_sync_start(tester, test_conf.use_port_sync_start)
-            for tester in testers
-        ]
-    )
+    for tester in testers:
+        check_tester_sync_start(tester, test_conf.use_port_sync_start)
 
 
 def check_test_type_config(test_types: List[AllTestType]):
@@ -290,11 +281,11 @@ def check_test_type_config(test_types: List[AllTestType]):
                 raise exceptions.TimeDurationRequire(test_type_conf.test_type.value)
 
 
-async def check_config(
+def check_config(
     testers: List["xoa_testers.L23Tester"],
     control_ports: List["PortStruct"],
     test_conf: "TestConfiguration",
 ) -> None:
-    await check_testers(testers, test_conf)
-    await check_ports(control_ports)
-    await check_test_config(control_ports, test_conf)
+    check_testers(testers, test_conf)
+    check_ports(control_ports)
+    check_test_config(control_ports, test_conf)

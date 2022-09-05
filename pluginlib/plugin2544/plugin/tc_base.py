@@ -21,10 +21,7 @@ from .learning import (
     setup_address_arp_refresh,
 )
 from .setup_source_port_rates import setup_source_port_rates
-from .statistics import (
-    FinalStatistic,
-    StatisticParams,
-)
+from .statistics import FinalStatistic, StatisticParams
 from .tc_throughput import get_initial_boundaries
 from .test_result import aggregate_data
 from ..utils import constants as const
@@ -40,10 +37,14 @@ class TestCaseProcessor:
         self.xoa_out = xoa_out
         self.address_refresh_handler: Optional[AddressRefreshHandler] = None
         self.test_results = {}  # save result to calculate average
-        self._throughput_map = {}   # save throughput rate for latency relative to throughput use
+        self._throughput_map = (
+            {}
+        )  # save throughput rate for latency relative to throughput use
 
     async def prepare(self) -> None:
-        if not self.resources.test_conf.arp_refresh_enabled or self.resources.has_l3:
+        if (not self.resources.has_l3) or (
+            not self.resources.test_conf.arp_refresh_enabled
+        ):
             return None
         self.address_refresh_handler = await setup_address_arp_refresh(self.resources)
 
@@ -89,22 +90,14 @@ class TestCaseProcessor:
     ) -> FinalStatistic:
         while True:
             start_time = time.time()
-            data = await aggregate_data(
-                self.resources,
-                params,
-                is_final=False,
-            )
+            data = await aggregate_data(self.resources, params, is_final=False)
             self.xoa_out.send_statistics(data.json(include=data_format))
             if self.resources.should_quit(start_time, params.duration):
                 break
             await asyncio.sleep(const.INTERVAL_SEND_STATISTICS)
         await asyncio.sleep(const.DELAY_STATISTICS)
-        logger.debug('-' * 50)
-        data = await aggregate_data(
-            self.resources,
-            params,
-            is_final=True,
-        )
+        logger.debug("-" * 50)
+        data = await aggregate_data(self.resources, params, is_final=True)
         return data
 
     async def _latency(
@@ -271,13 +264,13 @@ class TestCaseProcessor:
     ) -> None:
         result = self.test_results[test_type_conf.test_type][frame_size]
         if isinstance(test_type_conf, ThroughputTest):
-            """ throughput test calculate average based on same frame size"""
+            """throughput test calculate average based on same frame size"""
             statistic_lists = []
             for s in result.values():
                 statistic_lists.extend(s)
             self._average_statistic(test_type_conf, statistic_lists)
         else:
-            """ calculate average based on same frame size and same rate """
+            """calculate average based on same frame size and same rate"""
             for statistic_lists in result.values():
                 self._average_statistic(test_type_conf, statistic_lists)
 

@@ -28,40 +28,54 @@ if TYPE_CHECKING:
     from .structure import PortStruct
 
 
-class PRStream:
-    def __init__(self, tx_port: "PortStruct", rx_port: "PortStruct", tpld_id):
-        self._tx_port = tx_port
-        self._tpldid = tpld_id
-        self._rx_port = rx_port
-        self._rx = self._rx_port.port_statistic.rx.access_tpld(tpld_id)
-        self._statistic: "PRStatistic"
 
-    @property
-    def rx_port(self) -> "PortStruct":
-        return self._rx_port
-
-    @property
-    def statistic(self) -> "PRStatistic":
-        return self._statistic
+class PTStream:
+    def __init__(self, tx_port: "PortStruct", stream_id: int) -> None:
+        self.tx_port = tx_port
+        self.stream_id = stream_id
+        self.statistic = StreamCounter()
 
     async def query(self) -> None:
-        rx_frames, error, ji, latency, fcs = await utils.apply(
-            self._rx.traffic.get(),
-            self._rx.errors.get(),
-            self._rx.jitter.get(),
-            self._rx.latency.get(),
-            self._rx_port.port_statistic.rx.extra.get(),
+        tx_frames = await self.tx_port.port_statistic.tx.obtain_from_stream(
+            self.stream_id
+        ).get()
+        self.statistic = StreamCounter(
+            frames=tx_frames.packet_count_since_cleared,
+            bps=tx_frames.bit_count_last_sec,
+            pps=tx_frames.packet_count_last_sec,
         )
-        self._statistic = PRStatistic(
+
+
+class PRStream:
+    def __init__(
+        self, tx_port: "PortStruct", rx_port: "PortStruct", tpld_id: int
+    ) -> None:
+        self.tx_port = tx_port
+        self.tpld_id = tpld_id
+        self.rx_port = rx_port
+        self.statistic: "PRStatistic" = PRStatistic()
+
+    async def query(self) -> None:
+        rx = self.rx_port.port_statistic.rx.access_tpld(self.tpld_id)
+        # rx_frames, error, ji, latency, fcs = await utils.apply(
+        rx_frames, error, ji, latency = await utils.apply(
+            rx.traffic.get(),
+            rx.errors.get(),
+            rx.jitter.get(),
+            rx.latency.get(),
+            # self.rx_port.port_statistic.rx.extra.get(),
+        )
+        self.statistic = PRStatistic(
             rx_stream_counter=StreamCounter(
                 frames=rx_frames.packet_count_since_cleared,
                 bps=rx_frames.bit_count_last_sec,
                 pps=rx_frames.packet_count_last_sec,
                 bytes_count=rx_frames.byte_count_since_cleared,
             ),
-            fcs=fcs.fcs_error_count,
+            # fcs=fcs.fcs_error_count,
             loss_frames=error.non_incre_seq_event_count,
             latency=DelayData(
+                counter_type=const.CounterType.LATENCY,
                 minimum=latency.min_val,
                 average=latency.avg_val,
                 maximum=latency.max_val,
@@ -74,11 +88,12 @@ class PRStream:
             ),
         )
 
-    def update_rx_port_statistic(self) -> None:
-        before = self._rx_port.statistic.rx_counter.frames
-        self._rx_port.statistic.aggregate_rx_statistic(self._statistic)
-        logger.info(f"{before} -> {self._rx_port.statistic.rx_counter.frames} current: {self._statistic.rx_stream_counter.frames}")
-
+    # def update_rx_port_statistic(self) -> None:
+    #     before = self.rx_port.statistic.rx_counter.frames
+    #     self.rx_port.statistic.aggregate_rx_statistic(self.statistic)
+    #     logger.info(
+    #         f"{before} -> {self.rx_port.statistic.rx_counter.frames} current: {self.statistic.rx_stream_counter.frames}"
+    #     )
 
 
 class StreamStruct:
@@ -97,15 +112,17 @@ class StreamStruct:
         self._tpldid: int = tpldid
         self._arp_mac: MacAddress = arp_mac
         self._stream: misc.GenuineStream
-        self._flow_creation_type: const.FlowCreationType
-        self._addr_coll: AddressCollection
-        self._packet_header: bytearray
+        self._flow_creation_type: const.FlowCreationType = const.FlowCreationType.STREAM
+        self._addr_coll: AddressCollection = AddressCollection()
+        self._packet_header: bytearray = bytearray()
         self._stream_offset = stream_offset
         self._packet_limit: int = 0
-        self._pr_streams = [
-            PRStream(self._tx_port, port, self._tpldid) for port in self._rx_ports
-        ]
-        self._stream_statistic: StreamStatisticData  # record the latest statistic
+        # self._pr_streams = [
+        #     PRStream(self._tx_port, port, self._tpldid) for port in self._rx_ports
+        # ]
+        self._stream_statistic: StreamStatisticData = (
+            StreamStatisticData()
+        )  # record the latest statistic
         self._best_result: Optional[
             StreamStatisticData
         ] = None  # store best result for throughput per_port_result_scope, only for stream based
@@ -158,16 +175,22 @@ class StreamStruct:
     async def configure(self, test_conf: "TestConfiguration") -> None:
         stream = await self._tx_port.create_stream()
         self._stream = stream
+        base_mac = (
+            test_conf.multi_stream_config.multi_stream_mac_base_address
+            if test_conf.flow_creation_type.is_stream_based
+            else test_conf.mac_base_address
+        )
         self._flow_creation_type = test_conf.flow_creation_type
-        self._addr_coll = await get_address_collection(
+        self._addr_coll = get_address_collection(
             self._tx_port,
             self.rx_port,
-            test_conf.mac_base_address,
+            base_mac,
             self._arp_mac,
             self._stream_offset,
         )
         await utils.apply(
             self._stream.enable.set(enums.OnOffWithSuppress.ON),
+            self._stream.comment.set(f"Stream {self._stream_id} / {self._tpldid}"),
             self._stream.packet.header.protocol.set(
                 self._tx_port.port_conf.profile.segment_id_list
             ),
@@ -183,7 +206,9 @@ class StreamStruct:
             test_conf.arp_refresh_enabled, test_conf.use_gateway_mac_as_dmac
         )
 
-    def init_rx_tables(self, arp_refresh_enabled: bool, use_gateway_mac_as_dmac: bool) -> None:
+    def init_rx_tables(
+        self, arp_refresh_enabled: bool, use_gateway_mac_as_dmac: bool
+    ) -> None:
         if not arp_refresh_enabled or not self._tx_port.protocol_version.is_l3:
             return
         if self._stream_offset:
@@ -213,33 +238,35 @@ class StreamStruct:
             )
 
     async def query(self) -> None:
-        tx_frames = await self._tx_port.port_statistic.tx.obtain_from_stream(
-            self._stream_id
-        ).get()
-        await asyncio.gather(*[pr_stream.query() for pr_stream in self._pr_streams])
-        src_addr, dst_addr = self._addr_coll.get_addr_pair_by_protocol(self._tx_port.protocol_version)
+        pr_streams = [
+            PRStream(self._tx_port, port, self._tpldid) for port in self._rx_ports
+        ]
+        pt_stream = PTStream(self._tx_port, self._stream_id)
+        await asyncio.gather(
+            pt_stream.query(), *[pr_stream.query() for pr_stream in pr_streams]
+        )
+        src_addr, dst_addr = self._addr_coll.get_addr_pair_by_protocol(
+            self._tx_port.protocol_version
+        )
         self._stream_statistic = StreamStatisticData(
             src_port_id=self._tx_port.port_identity.name,
             dest_port_id=self.rx_port.port_identity.name,
             src_port_addr=str(src_addr),
             dest_port_addr=str(dst_addr),
-            tx_counter=StreamCounter(
-                frames=tx_frames.packet_count_since_cleared,
-                bps=tx_frames.bit_count_last_sec,
-                pps=tx_frames.packet_count_last_sec,
-            ),
             burst_frames=self._packet_limit,
         )
 
-    def aggregate(self) -> None:
         # polling TX and RX statistic not at the same time, may cause the rx statistic larger than tx statistic
-        logger.info(f"handling: {self._tx_port.port_identity.name} -> {self.rx_port.port_identity.name}")
-        for pr_stream in self._pr_streams:
+        logger.info(
+            f"handling: {self._tx_port.port_identity.name} -> {self.rx_port.port_identity.name}"
+        )
+        self._stream_statistic.tx_counter.add_stream_counter(pt_stream.statistic)
+        for pr_stream in pr_streams:
             self._stream_statistic.add_pr_stream_statistic(pr_stream.statistic)
-            pr_stream.update_rx_port_statistic()
-
-        self._tx_port.statistic.aggregate_tx_statistic(self._stream_statistic)
-
+            async with pr_stream.rx_port.lock:
+                pr_stream.rx_port.statistic.aggregate_rx_statistic(pr_stream.statistic)
+        async with self._tx_port.lock:
+            self._tx_port.statistic.aggregate_tx_statistic(self._stream_statistic)
 
     async def set_packet_header(self) -> None:
         # Insert all configured header segments in order
@@ -305,7 +332,7 @@ class StreamStruct:
         await self._stream.packet.limit.set(frame_count)
 
 
-async def get_address_collection(
+def get_address_collection(
     port_struct: "PortStruct",
     peer_struct: "PortStruct",
     mac_base_address: str,
@@ -333,8 +360,8 @@ async def get_address_collection(
     else:
         return AddressCollection(
             arp_mac=arp_mac,
-            smac=await port_struct.get_mac_address(),
-            dmac=await peer_struct.get_mac_address(),
+            smac=port_struct.properties.native_mac_address,
+            dmac=peer_struct.properties.native_mac_address,
             src_ipv4_addr=port_struct.port_conf.ipv4_properties.address,
             dst_ipv4_addr=peer_struct.port_conf.ipv4_properties.dst_addr,
             src_ipv6_addr=port_struct.port_conf.ipv6_properties.address,

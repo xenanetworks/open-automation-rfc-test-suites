@@ -17,11 +17,7 @@ from ..utils.field import MacAddress, NonNegativeDecimal
 if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity
     from xoa_driver import ports as xoa_ports, testers as xoa_testers
-    from xoa_driver.internals.core.commands import (
-        P_TRAFFIC,
-        P_RECEIVESYNC,
-        P_CAPABILITIES,
-    )
+    from xoa_driver.lli import commands
     from ..utils.logger import TestSuitePipe
     from ..model import (
         FrameSizeConfiguration,
@@ -34,21 +30,29 @@ if TYPE_CHECKING:
     )
 
 
-class BasePort:
+class PortStruct:
     def __init__(
         self,
         tester: "xoa_testers.L23Tester",
         port: "xoa_ports.GenericL23Port",
+        port_conf: "PortConfiguration",
         port_identity: "PortIdentity",
         xoa_out: "TestSuitePipe",
-    ):
-        self._sync_status: bool = True
-        self._traffic_status: bool = False
+    ) -> None:
+
+        # self._sync_status: bool = True
+        # self._traffic_status: bool = False
         self._tester = tester
         self._port = port
         self._xoa_out = xoa_out
         self._port_identity = port_identity
         self._should_stop_on_los = False
+
+        self._port_conf = port_conf
+        self.properties = Properties()
+        self.lock = asyncio.Lock()
+        self._stream_structs: List["StreamStruct"] = []
+        self._statistic: "Statistic" = Statistic()  # type ignore
 
     def set_should_stop_on_los(self, value: bool) -> None:
         self._should_stop_on_los = value
@@ -58,37 +62,45 @@ class BasePort:
         return self._port_identity
 
     @property
-    def capabilities(self) -> "P_CAPABILITIES.GetDataAttr":
+    def capabilities(self) -> "commands.P_CAPABILITIES.GetDataAttr":
         return self._port.info.capabilities
 
     @property
     def port_statistic(self):
         return self._port.statistics
 
-    @property
-    def sync_status(self) -> bool:
-        return self._sync_status
-
-    @property
-    def traffic_status(self) -> bool:
-        return self._traffic_status
+    # @property
+    # def sync_status(self) -> bool:
+    #     return self._sync_status
 
     async def _change_sync_status(
-        self, port: "xoa_ports.GenericL23Port", get_attr: "P_RECEIVESYNC.GetDataAttr"
+        self,
+        port: "xoa_ports.GenericL23Port",
+        get_attr: "commands.P_RECEIVESYNC.GetDataAttr",
     ) -> None:
-        before = self._sync_status
-        after = self._sync_status = bool(get_attr.sync_status)
+        before = self.properties.sync_status
+        after = self.properties.sync_status = bool(get_attr.sync_status)
         # logger.warning(f"Change sync status from {before} to {after} ")
         if self._should_stop_on_los and before and not after:
             raise exceptions.LossofPortSignal(port)
 
     async def _change_traffic_status(
-        self, port: "xoa_ports.GenericL23Port", get_attr: "P_TRAFFIC.GetDataAttr"
+        self,
+        port: "xoa_ports.GenericL23Port",
+        get_attr: "commands.P_TRAFFIC.GetDataAttr",
     ) -> None:
-        self._traffic_status = bool(get_attr.on_off)
+        self.properties.traffic_status = bool(get_attr.on_off)
 
     async def __on_reservation_status(self, port: "xoa_ports.GenericL23Port", v):
-        raise exceptions.LossofPortOwnership(self._port)
+        # raise exceptions.LossofPortOwnership(self._port)
+        pass
+
+    async def _change_physical_port_speed(
+        self,
+        port: "xoa_ports.GenericL23Port",
+        get_attr: "commands.P_SPEED.GetDataAttr",
+    ) -> None:
+        self.properties.physical_port_speed = get_attr.port_speed * 1e6
 
     async def __on_disconnect_tester(self, *args) -> None:
         raise exceptions.LossofTester(self._tester, self._port_identity.tester_id)
@@ -194,30 +206,40 @@ class BasePort:
                 position = int(k.split("_")[-1])
                 await self._port.mix.lengths[position].set(v)
 
-    async def get_mac_address(self) -> "MacAddress":
-        return MacAddress((await self._port.net_config.mac_address.get()).mac_address)
+    # def get_mac_address(self) -> "MacAddress":
+    #     return self.properties.native_mac_address
+    # return MacAddress((await self._port.net_config.mac_address.get()).mac_address)
 
     async def send_packet(self, packet: str) -> None:
         await self._port.tx_single_pkt.send.set(packet)
 
-    async def free(self) -> None:
-        await self._port.reservation.set_release()
+    def free(self) -> List[misc.Token]:
+        return [self._port.reservation.set_release()]
 
-    async def reserve(self) -> None:
-        if self._port.is_reserved_by_me():
-            await self.free()
-        elif self._port.is_reserved_by_others():
-            await self._port.reservation.set_relinquish()
-        await utils.apply(
-            self._port.reservation.set_reserve(),
-            self._port.reset.set(),
-        )
-        self._sync_status = await self.get_sync_status()
-        self._traffic_status = await self.get_traffic_status()
+    async def prepare(self) -> None:
         self._port.on_reservation_change(self.__on_reservation_status)
         self._port.on_receive_sync_change(self._change_sync_status)
         self._port.on_traffic_change(self._change_traffic_status)
+        self._port.on_speed_change(self._change_physical_port_speed)
         self._tester.on_disconnected(self.__on_disconnect_tester)
+        tokens = [
+            self._port.sync_status.get(),
+            self._port.traffic.state.get(),
+            self._port.net_config.mac_address.get(),
+            self._port.speed.current.get(),
+        ]
+        if self._port.is_reserved_by_me():
+            tokens.extend(self.free())
+        elif self._port.is_reserved_by_others():
+            tokens.append(self._port.reservation.set_relinquish())
+        tokens.append(self._port.reservation.set_reserve())
+        tokens.append(self._port.reset.set())
+
+        (sync, traffic, mac, port_speed, *_) = await utils.apply(*tokens)
+        self.properties.sync_status = bool(sync.sync_status)
+        self.properties.traffic_status = bool(traffic.on_off)
+        self.properties.native_mac_address = MacAddress(mac.mac_address)
+        self.properties.physical_port_speed = port_speed.port_speed * 1e6
 
     async def clear_statistic(self) -> None:
         await utils.apply(
@@ -244,12 +266,10 @@ class BasePort:
         for arp_data in arp_datas:
             arp_chunk.append(
                 misc.ArpChunk(
-                    *[
-                        arp_data.destination_ip,
-                        const.IPPrefixLength.IPv4.value,
-                        enums.OnOff.OFF,
-                        arp_data.dmac,
-                    ]
+                    arp_data.destination_ip,
+                    const.IPPrefixLength.IPv4.value,
+                    enums.OnOff.OFF,
+                    arp_data.dmac,
                 )
             )
         await self._port.arp_rx_table.set(arp_chunk)
@@ -259,12 +279,10 @@ class BasePort:
         for rx_data in ndp_datas:
             ndp_chunk.append(
                 misc.NdpChunk(
-                    *[
-                        rx_data.destination_ip,
-                        const.IPPrefixLength.IPv6.value,
-                        enums.OnOff.OFF,
-                        rx_data.dmac,
-                    ]
+                    rx_data.destination_ip,
+                    const.IPPrefixLength.IPv6.value,
+                    enums.OnOff.OFF,
+                    rx_data.dmac,
                 )
             )
         await self._port.ndp_rx_table.set(ndp_chunk)
@@ -311,42 +329,27 @@ class BasePort:
 
     async def set_mac_address(self, mac_addr: str) -> None:
         await self._port.net_config.mac_address.set(mac_addr)
+        self.properties.native_mac_address = MacAddress(mac_addr)
 
     @property
     def local_states(self):
         return self._port.local_states
 
-    async def get_physics_speed(self) -> float:
-        return (await self._port.speed.current.get()).port_speed * 1e6
+    # async def get_physics_speed(self) -> float:
+    #     return (await self._port.speed.current.get()).port_speed * 1e6
 
     async def clear(self) -> None:
-        await self.free()
+        await utils.apply(*self.free())
         await self._tester.session.logoff()
 
     async def create_stream(self):
         return await self._port.streams.create()
 
-    async def get_sync_status(self) -> bool:
-        return bool((await self._port.sync_status.get()).sync_status)
+    # async def get_sync_status(self) -> bool:
+    #     return bool((await self._port.sync_status.get()).sync_status)
 
     async def get_traffic_status(self) -> bool:
         return bool((await self._port.traffic.state.get()).on_off)
-
-
-class PortStruct(BasePort):
-    def __init__(
-        self,
-        tester: "xoa_testers.L23Tester",
-        port: "xoa_ports.GenericL23Port",
-        port_conf: "PortConfiguration",
-        port_identity: "PortIdentity",
-        xoa_out: "TestSuitePipe",
-    ) -> None:
-        BasePort.__init__(self, tester, port, port_identity, xoa_out)
-        self._port_conf = port_conf
-        self.properties = Properties()
-        self._stream_structs: List["StreamStruct"] = []
-        self._statistic: Optional[Statistic] = None  # type ignore
 
     @property
     def send_port_speed(self) -> Decimal:
@@ -364,7 +367,7 @@ class PortStruct(BasePort):
         return self._stream_structs
 
     @property
-    def statistic(self) -> Optional["Statistic"]:
+    def statistic(self) -> "Statistic":
         return self._statistic
 
     @property
@@ -388,14 +391,14 @@ class PortStruct(BasePort):
         )
 
     def clear_counter(self) -> None:
-        self._statistic = None
+        self._statistic = Statistic()
 
     @property
     def protocol_version(self) -> const.PortProtocolVersion:
         return const.PortProtocolVersion[self._port_conf.profile.protocol_version.name]
 
 
-    async def add_stream(
+    def add_stream(
         self,
         rx_ports: List["PortStruct"],
         stream_id: int,
@@ -437,13 +440,11 @@ class PortStruct(BasePort):
         self, test_conf: "TestConfiguration", latency_mode: const.LatencyModeStr
     ) -> None:
         if not test_conf.flow_creation_type.is_stream_based:
-            await self.set_mac_address(
-                str(
-                    gen_macaddress(
-                        test_conf.mac_base_address, self.properties.test_port_index
-                    )
-                )
+            mac = gen_macaddress(
+                test_conf.multi_stream_config.multi_stream_mac_base_address,
+                self.properties.test_port_index,
             )
+            await self.set_mac_address(str(mac))
 
         await self.set_speed_mode(self._port_conf.port_speed_mode)
         await self.set_latency_offset(self._port_conf.latency_offset_ms)
@@ -462,24 +463,24 @@ class PortStruct(BasePort):
         await self.set_sweep_reduction(self._port_conf.speed_reduction_ppm)
         await self.set_stagger_step(test_conf.port_stagger_steps)
         await self.set_packet_size_if_mix(test_conf.frame_sizes)
-        await self._get_use_port_speed()
+        self._get_use_port_speed()
 
     async def set_rx_tables(self) -> None:
         await self.set_arp_trucks(self.properties.arp_trunks)
         await self.set_ndp_trucks(self.properties.ndp_trunks)
 
-    async def get_capped_port_speed(self) -> Decimal:
-        port_speed = await self.get_physics_speed()
+    def get_capped_port_speed(self) -> Decimal:
+        port_speed = self.properties.physical_port_speed
         if self._port_conf.port_rate_cap_profile.is_custom:
             port_speed = min(self._port_conf.port_rate, port_speed)
         return Decimal(str(port_speed))
 
-    async def _get_use_port_speed(self) -> NonNegativeDecimal:
-        tx_speed = await self.get_capped_port_speed()
+    def _get_use_port_speed(self) -> NonNegativeDecimal:
+        tx_speed = self.get_capped_port_speed()
         if self._port_conf.peer_config_slot and len(self.properties.peers) == 1:
             # Only Pair Topology Need to query peer speed
             peer_struct = self.properties.peers[0]
-            rx_speed = await peer_struct.get_capped_port_speed()
+            rx_speed = peer_struct.get_capped_port_speed()
             tx_speed = min(tx_speed, rx_speed)
         self.set_send_port_speed(
             tx_speed
@@ -487,6 +488,15 @@ class PortStruct(BasePort):
             / Decimal(str(1e6))
         )
         return NonNegativeDecimal(str(self.send_port_speed))
+
+    async def query(self) -> None:
+        extra = self.port_statistic.rx.extra.get()
+        stream_tasks = [stream_struct.query() for stream_struct in self.stream_structs]
+        extra_tasks = [extra] if self.port_conf.is_rx_port else []
+        results = await asyncio.gather(*extra_tasks, *stream_tasks)
+        if self.port_conf.is_rx_port:
+            extra_r: commands.PR_EXTRA.GetDataAttr = results[0]
+            self._statistic.fcs_error_frames = extra_r.fcs_error_count
 
 
 TypeConf = Union["ThroughputTest", "LatencyTest", "FrameLossRateTest", "BackToBackTest"]
@@ -508,6 +518,11 @@ class Properties:
 
     rate: Decimal = Decimal("0")
     send_port_speed: Decimal = Decimal("0")
+    native_mac_address: MacAddress = MacAddress()
+    arp_mac_address: MacAddress = MacAddress()
+    traffic_status: bool = False
+    sync_status: bool = True
+    physical_port_speed: float = 0.0
 
     def get_modifier_range(self, stream_id: int) -> Tuple[int, int]:
         if stream_id == 0:

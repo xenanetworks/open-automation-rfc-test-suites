@@ -30,13 +30,13 @@ class StreamOffset(BaseModel):
 
 @dataclass
 class AddressCollection:
-    smac: MacAddress
-    dmac: MacAddress
-    arp_mac: MacAddress
-    src_ipv4_addr: IPv4Address
-    dst_ipv4_addr: IPv4Address
-    src_ipv6_addr: IPv6Address
-    dst_ipv6_addr: IPv6Address
+    smac: MacAddress = MacAddress()
+    dmac: MacAddress = MacAddress()
+    arp_mac: MacAddress = MacAddress()
+    src_ipv4_addr: IPv4Address = IPv4Address("0.0.0.0")
+    dst_ipv4_addr: IPv4Address = IPv4Address("0.0.0.0")
+    src_ipv6_addr: IPv6Address = IPv6Address("::")
+    dst_ipv6_addr: IPv6Address = IPv6Address("::")
 
     def get_addr_pair_by_protocol(self, protocol: PortProtocolVersion) -> Tuple:
         if protocol.is_ipv4:

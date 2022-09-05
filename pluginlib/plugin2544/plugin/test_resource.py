@@ -59,12 +59,15 @@ class ResourceManager:
             if port_struct.port_conf.is_rx_port
         ]
 
-    async def init_resource(self, latency_mode: const.LatencyModeStr):
-        await self.collect_control_ports()
-        self.resolve_port_relations()
-        await check_config(
-            list(self.__testers.values()), self.port_structs, self.test_conf
+    async def setup_ports(self, latency_mode: const.LatencyModeStr) -> None:
+        await asyncio.gather(
+            *[
+                port_struct.setup_port(self.test_conf, latency_mode)
+                for port_struct in self.port_structs
+            ]
         )
+
+    def build_map(self) -> None:
         for port_struct in self.tx_ports:
             tester_id = port_struct.port_identity.tester_id
             if tester_id not in self.mapping:
@@ -73,22 +76,19 @@ class ResourceManager:
                 port_struct.port_identity.module_index,
                 port_struct.port_identity.port_index,
             ]
+
+    async def init_resource(self, latency_mode: const.LatencyModeStr) -> None:
+        await self.collect_control_ports()
+        self.resolve_port_relations()
+        check_config(list(self.__testers.values()), self.port_structs, self.test_conf)
+        self.build_map()
         await self.stop_traffic()
         await asyncio.sleep(self.test_conf.delay_after_port_reset_second)
-        await asyncio.gather(
-            *[
-                port_struct.setup_port(self.test_conf, latency_mode)
-                for port_struct in self.port_structs
-            ]
-        )
+        await self.setup_ports(latency_mode)
         await self.setup_sweep_reduction()
         await self.add_toggle_port_sync_state_steps()
-        await add_mac_learning_steps(self, const.MACLearningMode.ONCE)
         await setup_streams(self.port_structs, self.test_conf)
-        for port_struct in self.port_structs:
-            await port_struct.configure_streams(self.test_conf)
-            # set should stop on los before start traffic, can monitor sync status when traffic start
-            port_struct.set_should_stop_on_los(self.test_conf.should_stop_on_los)
+        await add_mac_learning_steps(self, const.MACLearningMode.ONCE)
 
     async def stop_traffic(self):
         await utils.apply(
@@ -127,7 +127,7 @@ class ResourceManager:
             )
             self.port_structs.append(port_struct)
         await asyncio.gather(
-            *[port_struct.reserve() for port_struct in self.port_structs]
+            *[port_struct.prepare() for port_struct in self.port_structs]
         )
 
     async def add_toggle_port_sync_state_steps(
@@ -152,7 +152,7 @@ class ResourceManager:
         # Delay After Sync On
         start_time = time.time()
         for port_struct in self.port_structs:
-            while not port_struct.sync_status:
+            while not port_struct.properties.sync_status:
                 await asyncio.sleep(const.DELAY_CHECK_SYNC)
                 if time.time() - start_time > 30:
                     raise TimeoutError(
@@ -225,15 +225,20 @@ class ResourceManager:
         )
 
     def test_running(self) -> bool:
-        return any(port_struct.traffic_status for port_struct in self.tx_ports)
+        return any(
+            port_struct.properties.traffic_status for port_struct in self.tx_ports
+        )
 
     def test_finished(self) -> bool:
-        return all(not port_struct.traffic_status for port_struct in self.tx_ports)
-
+        return all(
+            not port_struct.properties.traffic_status for port_struct in self.tx_ports
+        )
 
     def los(self) -> bool:
         if self.test_conf.should_stop_on_los:
-            return not all(port_struct.sync_status for port_struct in self.port_structs)
+            return not all(
+                port_struct.properties.sync_status for port_struct in self.port_structs
+            )
         return False
 
     def should_quit(self, start_time: float, actual_duration: Decimal) -> bool:
@@ -320,15 +325,19 @@ class ResourceManager:
     ):
         for port_struct in self.port_structs:
             port_struct.init_counter(packet_size, duration, is_final)
+        # await asyncio.gather(
+        #     *[
+        #         stream.query()
+        #         for port_struct in self.port_structs
+        #         for stream in port_struct.stream_structs
+        #     ]
+        # )
+
         await asyncio.gather(
-            *[
-                stream.query()
-                for port_struct in self.port_structs
-                for stream in port_struct.stream_structs
-            ]
+            *[port_struct.query() for port_struct in self.port_structs]
         )
-        for port_struct in self.port_structs:
-            for stream in port_struct.stream_structs:
-                stream.aggregate()
+        # for port_struct in self.port_structs:
+        #     for stream in port_struct.stream_structs:
+        #         stream.aggregate()
         for port_struct in self.port_structs:
             port_struct.statistic.calculate_rate()

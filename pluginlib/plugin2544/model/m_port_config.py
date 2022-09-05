@@ -104,6 +104,9 @@ class PortConfiguration(BaseModel):
     class Config:
         underscore_attrs_are_private = True
 
+    @validator("ip_gateway_mac_address", pre=True)
+    def set_ip_gateway_mac_address(cls, ip_gateway_mac_address):
+        return MacAddress(ip_gateway_mac_address)
     @property
     def is_tx_port(self) -> bool:
         return self._is_tx
@@ -150,5 +153,5 @@ class PortConfiguration(BaseModel):
         else:
             return self.ipv4_properties
 
-    def change_ip_gateway_mac_address(self, gateway_mac: MacAddress) -> None:
-        self.ip_gateway_mac_address = gateway_mac
+    # def change_ip_gateway_mac_address(self, gateway_mac: MacAddress) -> None:
+    #     self.ip_gateway_mac_address = gateway_mac
