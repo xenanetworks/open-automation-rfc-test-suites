@@ -28,7 +28,6 @@ class TestSuite2544(PluginAbstract["PluginModel2544"]):
             self.cfg.test_configuration,
             self.xoa_out,
         )
-        return super().prepare()
 
     async def __pre_test(self) -> None:
         check_test_type_config(self.cfg.test_types_configuration.available_test)
@@ -81,12 +80,8 @@ class TestSuite2544(PluginAbstract["PluginModel2544"]):
         # await asyncio.gather(*[port_struct.clear() for port_struct in self.control_ports])
 
     async def start(self) -> None:
-        try:
-            await self.__pre_test()
-            await self.__do_test()
-            await self.__post_test()
-        # except [exceptions.LossofPortOwnership, exceptions.LossofTester]:
-        #     pass
-        except Exception as e:
-            logger.exception(e)
-            raise e
+        await self.__pre_test()
+        await self.__do_test()
+        await self.__post_test()
+
+
