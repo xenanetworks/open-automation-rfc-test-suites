@@ -218,10 +218,6 @@ class SegmentField(BaseModel):
         if max_val >= theory_max: # why not fvr.stop_value >= can_max?
             raise Exception('invalid value range', self.name, theory_max)
 
-    @property
-    def is_ipv4_address(self) -> bool:
-        return self.name in ("Src IP Addr", "Dest IP Addr")
-
     def prepare(self) -> BinaryString:
         if not self.value_range:
             return self.value
