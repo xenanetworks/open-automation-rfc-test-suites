@@ -96,7 +96,7 @@ async def get_address_learning_packet(
         if not gwmac.is_empty:
             dmac = gwmac
     smac = (
-        port_struct.properties.native_mac_address
+        port_struct.properties.native_mac_address 
         if not arp_refresh_data.source_mac or arp_refresh_data.source_mac.is_empty
         else arp_refresh_data.source_mac
     )
@@ -302,20 +302,18 @@ async def add_flow_based_learning_preamble_steps(
     await resources.set_frame_limit(0)  # clear packet limit
 
 
-async def send_mac_tokens(
+def make_mac_token(
     send_struct: "PortStruct", hex_data: str, mac_learning_frame_count: int
-) -> None:
-    tokens = []
+) -> List["misc.Token"]:
+    tasks = []
     packet = f"0x{hex_data}"
     max_cap = send_struct.capabilities.max_xmit_one_packet_length
     cur_length = len(hex_data) // 2
     if cur_length > max_cap:
         raise exceptions.PacketLengthExceed(cur_length, max_cap)
     for _ in range(mac_learning_frame_count):
-        tokens.append(send_struct.send_packet(packet))  # P_XMITONE
-    await utils.apply(*tokens)
-    # Deliberately sleep after each sending to ensure the learning packets are received one by one instead of being received as a big trunk.
-    await asyncio.sleep(1)
+        tasks.append(send_struct.send_packet(packet))  # P_XMITONE
+    return tasks
 
 
 async def add_mac_learning_steps(
@@ -329,19 +327,21 @@ async def add_mac_learning_steps(
     none_mac = "FFFFFFFFFFFF"
     four_f = "FFFF"
     paddings = "00" * 118
+    tasks = []
     done_struct = []
     for port_struct in resources.port_structs:
         for stream_struct in port_struct._stream_structs:
             src_hex_data = f"{none_mac}{stream_struct._addr_coll.smac.to_hexstring()}{four_f}{paddings}"
             if port_struct not in done_struct:
-                await send_mac_tokens(
-                    port_struct, src_hex_data, mac_learning_frame_count
-                )
+                tokens = make_mac_token(port_struct, src_hex_data, mac_learning_frame_count)
+                tasks.extend(tokens)
                 done_struct.append(port_struct)
             for dest_port_struct in stream_struct._rx_ports:
                 dest_hex_data = f"{none_mac}{stream_struct._addr_coll.dmac.to_hexstring()}{four_f}{paddings}"
                 if dest_port_struct not in done_struct:
-                    await send_mac_tokens(
+                    tokens = make_mac_token(
                         dest_port_struct, dest_hex_data, mac_learning_frame_count
                     )
+                    tasks.extend(tokens)
+    await asyncio.gather(*tasks)
     await asyncio.sleep(const.DELAY_LEARNING_MAC)
