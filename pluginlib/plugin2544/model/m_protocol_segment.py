@@ -227,7 +227,7 @@ class SegmentField(BaseModel):
 
     def set_field_value(self, new_value: BinaryString) -> None:
         if len(new_value) != self.bit_length:
-            raise ValueError(f'new value length {len(new_value)} not match field length{self.bit_length} ({self.name})')
+            raise ValueError(f'new value length {len(new_value)} not match field length {self.bit_length} ({self.name})')
         self.value = new_value
 
     @property
