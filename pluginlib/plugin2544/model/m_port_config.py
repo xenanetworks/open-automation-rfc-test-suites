@@ -25,18 +25,17 @@ class IPV6AddressProperties(BaseModel):
     def network(self) -> IPv6Network:
         return IPv6Network(f"{self.address}/{self.routing_prefix}", strict=False)
 
-    @validator("address", "public_address", "gateway", "remote_loop_address", pre=True)
+    @validator("address", "public_address", "gateway", "remote_loop_address", pre=True, allow_reuse=True)
     def set_address(cls, v) -> IPv6Address:
         return IPv6Address(v)
 
-    @validator("routing_prefix", "public_routing_prefix", pre=True)
+    @validator("routing_prefix", "public_routing_prefix", pre=True,  allow_reuse=True)
     def set_prefix(cls, v) -> Prefix:
         return Prefix(v)
 
     @property
     def dst_addr(self):
         return self.public_address if not self.public_address.is_empty else self.address
-
 
 class IPV4AddressProperties(BaseModel):
     address: IPv4Address = IPv4Address("0.0.0.0")
@@ -51,18 +50,17 @@ class IPV4AddressProperties(BaseModel):
     def network(self) -> IPv4Network:
         return IPv4Network(f"{self.address}/{self.routing_prefix}", strict=False)
 
-    @validator("address", "public_address", "gateway", "remote_loop_address", pre=True)
+    @validator("address", "public_address", "gateway", "remote_loop_address", pre=True, allow_reuse=True)
     def set_address(cls, v) -> IPv4Address:
         return IPv4Address(v)
 
-    @validator("routing_prefix", "public_routing_prefix", pre=True)
+    @validator("routing_prefix", "public_routing_prefix", pre=True, allow_reuse=True)
     def set_prefix(cls, v) -> Prefix:
         return Prefix(v)
 
     @property
     def dst_addr(self):
         return self.public_address if not self.public_address.is_empty else self.address
-
 
 class PortConfiguration(BaseModel):
     port_slot: str

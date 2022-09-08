@@ -1,13 +1,25 @@
-from decimal import Decimal
 import re
-from typing import Any, List, Union
+from decimal import Decimal
+from typing import Any, List, Union, TYPE_CHECKING
 from ipaddress import (
     IPv4Address as OldIPv4Address,
     IPv6Address as OldIPv6Address,
     IPv4Network,
     IPv6Network,
 )
+from ..model.m_protocol_segment import BinaryString
+
+if TYPE_CHECKING:
+    from ..model.m_protocol_segment import BinaryString
+
 from . import exceptions
+
+
+def hex_string_to_binary_string(hex: str) -> "BinaryString":
+    """binary string with leading zeros
+    """
+    hex = hex.lower().replace('0x', '')
+    return BinaryString(bin(int('1'+hex, 16))[3:])
 
 
 class HexString(str):
@@ -62,6 +74,9 @@ class MacAddress(str):
     def is_empty(self) -> bool:
         return not self or self == MacAddress("00:00:00:00:00:00")
 
+    def to_binary_string(self) -> "BinaryString":
+        return hex_string_to_binary_string(self.replace(':', ''))
+
 
 class IPv4Address(OldIPv4Address):
     def to_hexstring(self) -> str:
@@ -80,6 +95,9 @@ class IPv4Address(OldIPv4Address):
     def is_empty(self) -> bool:
         return not self or self == IPv4Address("0.0.0.0")
 
+    def to_binary_string(self) -> "BinaryString":
+        return hex_string_to_binary_string(self.to_hexstring())
+
 
 class IPv6Address(OldIPv6Address):
     def to_hexstring(self) -> str:
@@ -97,6 +115,9 @@ class IPv6Address(OldIPv6Address):
 
     def network(self, prefix: int) -> IPv6Network:
         return IPv6Network(f"{self}/{prefix}", strict=False)
+
+    def to_binary_string(self) -> "BinaryString":
+        return hex_string_to_binary_string(self.to_hexstring())
 
 
 class Prefix(int):

@@ -2,7 +2,11 @@ import asyncio
 from copy import deepcopy
 from typing import List, Optional, TYPE_CHECKING
 from xoa_driver import utils, misc, enums
-from ..model import TestConfiguration, HwModifier
+from ..model import (
+    TestConfiguration,
+    HWModifier,
+    ModifierActionOption,
+)
 from .common import gen_macaddress
 from .data_model import (
     AddressCollection,
@@ -22,6 +26,7 @@ from ..utils import constants as const, protocol_segments as ps, exceptions
 
 if TYPE_CHECKING:
     from .structure import PortStruct
+
 
 
 class PTStream:
@@ -133,7 +138,7 @@ class StreamStruct:
             return self._tx_port
 
     @property
-    def hw_modifiers(self) -> List["HwModifier"]:
+    def hw_modifiers(self) -> List["HWModifier"]:
         if self._flow_creation_type.is_stream_based:
             return [
                 modifier
@@ -145,13 +150,14 @@ class StreamStruct:
                 self._stream_id
             )
             return [
-                HwModifier(
-                    field_name="Dst MAC addr",
-                    offset=4,
+                HWModifier(
                     mask="0x00FF0000",
                     start_value=modifier_range[0],
                     stop_value=modifier_range[1],
                     step_value=1,
+                    action=ModifierActionOption.INC,
+                    repeat=1,
+                    offset=0,
                 )
             ]
 
@@ -263,30 +269,30 @@ class StreamStruct:
             self._tx_port.statistic.aggregate_tx_statistic(self._stream_statistic)
 
     async def set_packet_header(self) -> None:
-        packet_header_list = bytearray()
         # Insert all configured header segments in order
-        segment_index = 0
-        for segment in self._tx_port.port_conf.profile.header_segments:
-            segment_type = segment.segment_type
-            if (
-                segment_type == const.SegmentType.TCP
-                and self._tx_port.capabilities.can_tcp_checksum
-            ):
-                segment_type = const.SegmentType.TCPCHECK
-            patched_value = ps.get_segment_value(
-                segment, segment_index, self._addr_coll
-            )
-            real_value = ps.calculate_checksum(
-                segment, ps.DEFAULT_SEGMENT_DIC, patched_value
-            )
+        for index, segment in enumerate(self._tx_port.port_conf.profile.header_segments):
+            if segment.segment_type.is_ethernet and index == 0:
+                ps.setup_segment_ethernet(
+                    segment,
+                    self._addr_coll.smac.to_binary_string(),
+                    self._addr_coll.dmac.to_binary_string(),
+                    self._addr_coll.arp_mac.to_binary_string(),
+                )
+            if segment.segment_type.is_ipv4:
+                ps.setup_segment_ipv4(
+                    segment,
+                    self._addr_coll.src_ipv4_addr.to_binary_string(),
+                    self._addr_coll.dst_ipv4_addr.to_binary_string(),
+                )
+            if segment.segment_type.is_ipv6:
+                ps.setup_segment_ipv6(
+                    segment,
+                    self._addr_coll.src_ipv6_addr.to_binary_string(),
+                    self._addr_coll.dst_ipv6_addr.to_binary_string(),
+                )
 
-            packet_header_list += real_value
-            segment_index += 1
-
-        self._packet_header = packet_header_list
-        await self._stream.packet.header.data.set(
-            f"0x{bytes(self._packet_header).hex()}"
-        )
+        header_segments = self._tx_port.port_conf.profile.prepare()
+        await self._stream.packet.header.data.set(f"0x{header_segments.hex()}")
 
     async def setup_modifier(self) -> None:
         tokens = []
@@ -296,10 +302,10 @@ class StreamStruct:
             modifier = modifiers.obtain(mid)
             tokens.append(
                 modifier.specification.set(
-                    position=hw_modifier.position,
-                    mask=hw_modifier.mask,
+                    position=hw_modifier.byte_segment_position,
+                    mask=f"0x{hw_modifier.mask}",
                     action=hw_modifier.action.to_xmp(),
-                    repetition=hw_modifier.repeat_count,
+                    repetition=hw_modifier.repeat,
                 )
             )
             tokens.append(

@@ -38,9 +38,9 @@ def check_port_config_profile(
 
     for header_segment in profile.header_segments:
         for modifier in header_segment.hw_modifiers:
-            if modifier.repeat_count > capabilities.max_repeat:
+            if modifier.repeat > capabilities.max_repeat:
                 raise exceptions.ModifierRepeatCountExceed(
-                    modifier.repeat_count, capabilities.max_repeat
+                    modifier.repeat, capabilities.max_repeat
                 )
 
 
