@@ -157,15 +157,11 @@ class PortResult(BaseModel):
 
     @property
     def join_delay(self) -> float:
-        return max(
-            0, (self.rx_data_after_join_timestamp - self.join_sent_timestamp) / 1e6
-        )
+        return self.rx_data_after_join_timestamp - self.join_sent_timestamp
 
     @property
     def leave_delay(self) -> float:
-        return max(
-            0, (self.rx_data_after_leave_timestamp - self.leave_sent_timestamp) / 1e6
-        )
+        return self.rx_data_after_leave_timestamp - self.leave_sent_timestamp
 
     def set_rx_mc_group_count(self, val: int) -> None:
         self.rx_mc_group_count = val

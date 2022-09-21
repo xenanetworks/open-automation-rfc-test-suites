@@ -113,6 +113,7 @@ class AggregatedThroughputTest(BaseTestType):
             "Result State": self.bout_info.result_state.value,
             "Loss(Packets)": self.resource_manager.test_result.total_mc_frame_loss,
             "Loss Rate(Percents)": self.resource_manager.test_result.total_mc_loss_ratio_percent,
+            "Is Final": self.bout_info.is_final,
             "Source Ports": [],
             "Destination Ports": [],
         }

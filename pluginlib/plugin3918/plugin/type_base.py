@@ -694,7 +694,7 @@ class BaseTestType:
             learning_packet = f"{dmac.hexstring}{smac.hexstring}{ether_type}{payload}"
             tokens.append(port_ins.port.tx_single_pkt.send.set(learning_packet))
         await apply(*tokens)
-        await sleep(1)
+        await sleep(2)
 
     async def start_counter_poll(self) -> None:
         self.counter_poll_active = True

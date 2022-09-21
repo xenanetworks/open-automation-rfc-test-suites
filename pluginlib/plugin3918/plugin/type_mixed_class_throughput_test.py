@@ -2,7 +2,7 @@ from asyncio import sleep
 from typing import TYPE_CHECKING, List
 from .resource_manager import ResourceManager
 from .type_base import BaseTestType
-from ..utils.constants import ResultState,  StreamTypeInfo
+from ..utils.constants import ResultState, StreamTypeInfo
 from ..utils.print_result import display
 
 if TYPE_CHECKING:
@@ -59,7 +59,6 @@ class MixedClassThroughputTest(BaseTestType):
             await self.send_igmp_leave()
             await sleep(self.model_data.get_delay_after_leave())
             done = await self.get_final_counters()
-
 
     async def get_final_counters(self) -> bool:
         self.bout_info.set_is_final(True)
@@ -122,6 +121,7 @@ class MixedClassThroughputTest(BaseTestType):
             "UC Loss(Percents)": self.resource_manager.test_result.total_uc_loss_ratio_percent,
             "Loss(Packets)": self.resource_manager.test_result.total_mc_frame_loss,
             "Loss Rate(Percent)": self.resource_manager.test_result.total_mc_loss_ratio_percent,
+            "Is Final": self.bout_info.is_final,
             "Source Ports": [],
             "Destination Ports": [],
         }

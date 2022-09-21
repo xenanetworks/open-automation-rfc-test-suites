@@ -80,6 +80,7 @@ class BurdenedGroupJoinDelayTest(BaseTestType):
             "Result State": self.bout_info.result_state.value,
             "Tx(Packets)": self.resource_manager.test_result.total_tx_frames,
             "Rx(Packets)": self.resource_manager.test_result.total_rx_frames,
+            "Is Final": self.bout_info.is_final,
             "Source Ports": [],
             "Destination Ports": [],
         }
@@ -104,7 +105,7 @@ class BurdenedGroupJoinDelayTest(BaseTestType):
                     "Destination Port Name": d.name,
                     "MC Rx Packets": r.frames,
                     "MC Rx Rate(Bit/s)": r.bps,
-                    "Join Delay(msec)": d.test_result.join_delay,
+                    "Join Delay(msec)": d.test_result.join_delay / self.model_data.get_latency_unit().scale ,
                 }
             )
-        display(totals)
+        display(totals)     

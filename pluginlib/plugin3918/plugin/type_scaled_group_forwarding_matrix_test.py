@@ -88,6 +88,7 @@ class ScaledGroupThroughputTest(BaseTestType):
             "Group Count": self.bout_info.mc_group_count,
             "Result State": self.bout_info.result_state.value,
             "Curr. Loss(Packets)": self.resource_manager.test_result.total_mc_frame_loss_delta,
+            "Is Final": self.bout_info.is_final,
             "Source Ports": [],
             "Destination Ports": [],
         }

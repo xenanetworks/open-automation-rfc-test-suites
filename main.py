@@ -7,7 +7,6 @@ from pluginlib.plugin3918.utils.constants import PayloadType
 from xoa_converter.entry import converter
 from xoa_converter.types import TestSuiteType
 
-
 async def test():
     new = [
         types.Credentials(

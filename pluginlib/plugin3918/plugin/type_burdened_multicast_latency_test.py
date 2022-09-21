@@ -101,8 +101,4 @@ class BurdenedMulticastLatencyTest(BaseTestType):
                 }
             )
         display(totals)
-        import json
-        from loguru import logger
-
-        logger.error(json.dumps(totals, indent=2))
-        logger.error("-" * 100)
+        

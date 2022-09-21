@@ -148,6 +148,7 @@ class GroupJoinLeaveDelayTest(BaseTestType):
             "Tx Off.Rate(Percent)": self.bout_info.rate,
             "Group Count": self.bout_info.mc_group_count,
             "Result State": self.bout_info.result_state.value,
+            "Is Final": self.bout_info.is_final,
             "Source Ports": [],
             "Destination Ports": [],
         }
@@ -172,8 +173,10 @@ class GroupJoinLeaveDelayTest(BaseTestType):
                     "Destination Port Name": d.name,
                     "Rx Packets": r.frames,
                     "Rx Rate(Bit/s)": r.bps,
-                    "Join Delay(msec)": d.test_result.join_delay,
-                    "Leave Delay(msec)": d.test_result.leave_delay,
+                    "Join Delay(msec)": d.test_result.join_delay
+                    / self.model_data.get_latency_unit().scale,
+                    "Leave Delay(msec)": d.test_result.leave_delay
+                    / self.model_data.get_latency_unit().scale,
                 }
             )
         display(totals)

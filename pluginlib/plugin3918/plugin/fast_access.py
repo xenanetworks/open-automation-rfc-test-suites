@@ -172,17 +172,7 @@ class Data3918:
         return self.test_types_configuration.duration
 
     def get_delay_after_stop(self) -> int:
-        if isinstance(
-            self.test_types_configuration,
-            (
-                MulticastGroupCapacity,
-                ScaledGroupForwardingMatrix,
-                MulticastLatency,
-                BurdenedGroupJoinDelay,
-            ),
-        ):
-            return 5
-        return -1
+        return 5
 
     def get_leave_to_stop_delay(self) -> int:
         if isinstance(self.test_types_configuration, GroupJoinLeaveDelay):
@@ -190,18 +180,7 @@ class Data3918:
         return -1
 
     def get_delay_after_leave(self) -> int:
-        if isinstance(
-            self.test_types_configuration,
-            (
-                MulticastGroupCapacity,
-                AggregatedMulticastThroughput,
-                MixedClassThroughput,
-                AggregatedMulticastThroughput,
-                MulticastLatency,
-            ),
-        ):
-            return 2
-        return -1
+        return 2
 
     def get_mc_config(self) -> ProtocolSegmentProfileConfig:
         return self.mc_definition.stream_definition
