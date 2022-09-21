@@ -87,7 +87,7 @@ class PortConfiguration(BaseModel):
     broadr_reach_mode: BRRMode
 
     # PortRateCap
-    # port_rate_cap_enabled: bool
+    port_rate_cap_enabled: bool
     port_rate_cap_value: float
     port_rate_cap_profile: PortRateCapProfile
     port_rate_cap_unit: PortRateCapUnit
@@ -143,15 +143,5 @@ class PortConfiguration(BaseModel):
         self.ip_gateway_mac_address = gateway_mac
 
     @property
-    def cap_port_rate(self) -> Decimal:
-        return Decimal(
-            str(
-                {
-                    "1e9_bps": 1e9,
-                    "1e6_bps": 1e6,
-                    "1e3_bps": 1e3,
-                    "bps": 1,
-                }[self.port_rate_cap_unit.value.core()]
-                * self.port_rate_cap_value
-            )
-        )
+    def cap_port_rate(self) -> float:
+        return self.port_rate_cap_unit.scale * self.port_rate_cap_value

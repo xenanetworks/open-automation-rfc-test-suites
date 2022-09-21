@@ -446,9 +446,9 @@ class HeaderSegment(BaseModel):
     segment_type: ProtocolOption
     segment_value: str
 
-    # @property
-    # def byte_length(self) -> int:
-    #     return len(self.segment_value) // 2
+    @property
+    def byte_length(self) -> int:
+        return len(self.segment_value) // 2
 
 
 class ProtocolSegmentProfileConfig(BaseModel):
@@ -474,7 +474,7 @@ class ProtocolSegmentProfileConfig(BaseModel):
 
     @property
     def header_segment_id_list(self) -> List[XProtocolOption]:
-        return [h.segment_type.value.xoa for h in self.header_segments]
+        return [h.segment_type.xoa for h in self.header_segments]
 
     @property
     def ip_version(self) -> IPVersion:

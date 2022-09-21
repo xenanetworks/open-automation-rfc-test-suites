@@ -96,8 +96,8 @@ class BurdenedMulticastLatencyTest(BaseTestType):
                     "Destination Port Name": d.name,
                     "Rx Packets": r.frames,
                     "Rx Rate(Bit/s)": r.bps,
-                    f"Latency({latency_unit.value.core})": f"{d.test_result.latency_counters.average / latency_unit.scale}/{d.test_result.latency_counters.minimum / latency_unit.scale}/{d.test_result.latency_counters.maximum / latency_unit.scale}",
-                    f"Jitter({jitter_unit.value.core})": f"{d.test_result.jitter_counters.average / jitter_unit.scale}/{d.test_result.jitter_counters.minimum / jitter_unit.scale}/{d.test_result.jitter_counters.maximum / jitter_unit.scale}",
+                    f"Latency({latency_unit.value})": f"{d.test_result.latency_counters.average / latency_unit.scale}/{d.test_result.latency_counters.minimum / latency_unit.scale}/{d.test_result.latency_counters.maximum / latency_unit.scale}",
+                    f"Jitter({jitter_unit.value})": f"{d.test_result.jitter_counters.average / jitter_unit.scale}/{d.test_result.jitter_counters.minimum / jitter_unit.scale}/{d.test_result.jitter_counters.maximum / jitter_unit.scale}",
                 }
             )
         display(totals)

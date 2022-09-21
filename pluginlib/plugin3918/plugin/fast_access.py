@@ -43,13 +43,13 @@ class Data3918:
         return self.test_configuration.tid_offset
 
     def get_latency_mode_xoa(self) -> "LatencyMode":
-        return self.test_configuration.latency_mode.value.xoa
+        return self.test_configuration.latency_mode.xoa
 
     def get_packet_size_type(self) -> PacketSizeType:
         return self.test_configuration.frame_sizes.packet_size_type
 
     def get_packet_size_type_xoa(self) -> "LengthType":
-        return self.get_packet_size_type().value.xoa
+        return self.get_packet_size_type().xoa
 
     def is_packet_size_type_fixed(self) -> bool:
         return self.get_packet_size_type() in {
@@ -80,13 +80,13 @@ class Data3918:
         return self.test_configuration.tid_allocation_scope
 
     def get_mc_payload_type_xoa(self) -> "PayloadType":
-        return self.mc_definition.stream_definition.payload_type.value.xoa
+        return self.mc_definition.stream_definition.payload_type.xoa
 
     def get_mc_payload_pattern(self) -> str:
         return self.mc_definition.stream_definition.payload_pattern
 
     def get_uc_payload_type_xoa(self) -> "PayloadType":
-        return self.mc_definition.uc_flow_def.stream_definition.payload_type.value.xoa
+        return self.mc_definition.uc_flow_def.stream_definition.payload_type.xoa
 
     def get_uc_payload_pattern(self) -> str:
         return self.mc_definition.uc_flow_def.stream_definition.payload_pattern

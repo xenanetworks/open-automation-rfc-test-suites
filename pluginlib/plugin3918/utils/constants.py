@@ -1,6 +1,12 @@
+from msilib.schema import Property
 import os
 from enum import Enum
-
+from xoa_driver.enums import (
+    LatencyMode as XLatencyMode,
+    LengthType,
+    ProtocolOption as XProtocolOption,
+    PayloadType as XPayloadType,
+)
 
 DEFAULT_SEGMENT_PATH = os.path.abspath(
     os.path.join(
@@ -10,20 +16,81 @@ DEFAULT_SEGMENT_PATH = os.path.abspath(
 )
 
 
+MIXED_DEFAULT_WEIGHTS = [0, 0, 0, 0, 57, 3, 5, 1, 2, 5, 1, 4, 4, 18, 0, 0]
+MIXED_PACKET_SIZE = [
+    56,
+    60,
+    64,
+    70,
+    78,
+    92,
+    256,
+    496,
+    512,
+    570,
+    576,
+    594,
+    1438,
+    1518,
+    9216,
+    16360,
+]
+STANDARD_TPLD_LENGTH = 20
+MICRO_TPLD_LENGTH = 6
+ETHERNET_FCS_LENGTH = 4
+MIN_PAYLOAD_LENGTH = 2
+
+STANDARD_TPLD_TOTAL_LENGTH = (
+    STANDARD_TPLD_LENGTH + MIN_PAYLOAD_LENGTH + ETHERNET_FCS_LENGTH
+)
+MICRO_TPLD_TOTAL_LENGTH = MICRO_TPLD_LENGTH + ETHERNET_FCS_LENGTH
+MIN_REFRESH_TIMER_INTERNAL = 100.0
+
+HW_PACKET_MIN_SIZE = 64
+HW_PACKET_MAX_SIZE = 1500
+
+IP_V4_MULTICAST_MAC_BASE_ADDRESS = "0x01005e000000"
+IP_V6_MULTICAST_MAC_BASE_ADDRESS = "0x333300000000"
+
+IGMP_V2_JOIN = 0x16
+IGMP_V2_LEAVE = 0x17
+MLD_V1_REPORT = 0x83
+MLD_V1_DONE = 0x84
+MLD_V2_REPORT = 0x8F
+
+ALL_ROUTERS_MULTICAST_GROUP_V2 = "224.0.0.2"
+ALL_ROUTERS_MULTICAST_GROUP_V3 = "224.0.0.22"
+IPV6_LINK_SCOPE_ALL_MLD_ROUTERS_ADDRESS = "FF02::16"
+ICMP_V6_IP_PROTOCOL = 0x3A
+IP_V6_OPTION_ROUTER_ALERT = 0x05
+IP_V6_OPTION_HOP_BY_HOP = 0x00
+
+
+ETHER_TYPE_NULL = [0x00, 0x00]
+ETHER_TYPE_NONE = [0xFF, 0xFF]
+ETHER_TYPE_VLAN_TAGGED = [0x81, 0x00]
+ETHER_TYPE_VLAN_QIN_Q = [0x91, 0x00]
+ETHER_TYPE_MPLS_UNICAST = [0x88, 0x47]
+ETHER_TYPE_MPLS_MULTICAST = [0x88, 0x48]
+ETHER_TYPE_IPV4 = [0x08, 0x00]
+ETHER_TYPE_IPV6 = [0x86, 0xDD]
+ETHER_TYPE_ARP = [0x08, 0x06]
+
+IP_V4_OPTION_ROUTER_ALERT = 0x94
+MIN_PACKET_LENGTH = 60
+
+IEEE_DEFAULT_LIST = [64, 128, 256, 512, 1024, 1280, 1518]
+
+TRIGGER_PACKET_SIZE = 64
+
+FILTER_M0M1_L0L1 = 196611
+
+
 class MulticastRole(Enum):
     MC_SOURCE = "mc_source"  # AnyMember("McSource", "mc_source")
     MC_DESTINATION = "mc_destination"  # AnyMember("McDestination", "mc_destination")
     UC_BURDEN = "uc_burden"  # AnyMember("UcBurden", "uc_burden")
     UNDEFINED = "undefined"  # AnyMember("Undefined", "undefined")
-
-
-def from_legacy_multicast_role(string: str) -> str:
-    return {
-        "McSource": "mc_source",
-        "McDestination": "mc_destination",
-        "UcBurden": "uc_burden",
-        "Undefined": "undefined",
-    }.get(string, string)
 
 
 class TestTopology(Enum):
@@ -32,40 +99,16 @@ class TestTopology(Enum):
     MESH = "mesh"  # AnyMember("MESH", "mesh")
 
 
-def from_legacy_test_topology(string: str) -> str:
-    return {
-        "PAIRS": "pairs",
-        "BLOCKS": "blocks",
-        "MESH": "mesh",
-    }.get(string, string)
-
-
 class TrafficDirection(Enum):
     EAST_TO_WEST = "east_to_west"  # AnyMember("EAST_TO_WEST", "east_to_west")
     WEST_TO_EAST = "west_to_east"  # AnyMember("WEST_TO_EAST", "west_to_east")
     BIDIRECTION = "bidir"  # AnyMember("BIDIR", "bidir")
 
 
-def from_legacy_traffic_direction(string: str) -> str:
-    return {
-        "EAST_TO_WEST": "east_to_west",
-        "WEST_TO_EAST": "west_to_east",
-        "BIDIR": "bidir",
-    }.get(string, string)
-
-
 class IgmpVersion(Enum):
     IGMP_V1 = "igmp_v1"  # AnyMember("IGMP_V1", "igmp_v1")
     IGMP_V2_OR_MLD_V1 = "igmp_v2_or_mld_v1"  # AnyMember("IGMP_V2", "igmp_v2_or_mld_v1")
     IGMP_V3_OR_MLD_V2 = "igmp_v3_or_mld_v2"  # AnyMember("IGMP_V3", "igmp_v3_or_mld_v2")
-
-
-def from_legacy_igmp_version(string: str) -> str:
-    return {
-        "IGMP_V1": "igmp_v1",
-        "IGMP_V2": "igmp_v2_or_mld_v1",
-        "IGMP_V3": "igmp_v3_or_mld_v2",
-    }.get(string, string)
 
 
 class IPVersion(Enum):
@@ -122,7 +165,7 @@ class ProtocolOption(Enum):
         "tcp_check"  # AnyMember("TCPCHECK", "tcp_check", ProtocolOption.TCPCHECK)
     )
     UDP = "udp"  # AnyMember("UDP", "udp", ProtocolOption.UDP)
-    UDPCHECK = "udpcheck"  # AnyMember("UDPCHECK", "udpcheck", ProtocolOption.UDPCHECK)
+    UDPCHECK = "udp_check"  # AnyMember("UDPCHECK", "udpcheck", ProtocolOption.UDPCHECK)
     VLAN = "vlan"  # AnyMember("VLAN", "vlan", ProtocolOption.VLAN)
     VXLAN = "vxlan"  # AnyMember("VXLAN", "vxlan", ProtocolOption.VXLAN)
 
@@ -191,6 +234,50 @@ class ProtocolOption(Enum):
     RAW_63 = "raw_63"  # AnyMember(f"RAW_63", f"raw_63", ProtocolOption[f"RAW_63"])
     RAW_64 = "raw_64"  # AnyMember(f"RAW_64", f"raw_64", ProtocolOption[f"RAW_64"])
 
+    @property
+    def xoa(self) -> XProtocolOption:
+        dic = {
+            ProtocolOption.ARP: XProtocolOption.ARP,
+            ProtocolOption.ETHERNET: XProtocolOption.ETHERNET,
+            ProtocolOption.FC: XProtocolOption.FC,
+            ProtocolOption.FCOE: XProtocolOption.FCOE,
+            ProtocolOption.FCOETAIL: XProtocolOption.FCOETAIL,
+            ProtocolOption.GRE_CHECK: XProtocolOption.GRE_CHECK,
+            ProtocolOption.GRE_NOCHECK: XProtocolOption.GRE_NOCHECK,
+            ProtocolOption.GTP: XProtocolOption.GTP,
+            ProtocolOption.ICMP: XProtocolOption.ICMP,
+            ProtocolOption.ICMPV6: XProtocolOption.ICMP,
+            ProtocolOption.IGMPV1: XProtocolOption.IGMPV1,
+            ProtocolOption.IGMPV2: XProtocolOption.IGMPV2,
+            ProtocolOption.IGMPV3L0: XProtocolOption.IGMPV3L0,
+            ProtocolOption.IGMPV3L1: XProtocolOption.IGMPV3L1,
+            ProtocolOption.IPV4: XProtocolOption.IP,
+            ProtocolOption.IPV6: XProtocolOption.IPV6,
+            ProtocolOption.LLC: XProtocolOption.LLC,
+            ProtocolOption.MACCTRL: XProtocolOption.MACCTRL,
+            ProtocolOption.MPLS: XProtocolOption.MPLS,
+            ProtocolOption.NVGRE: XProtocolOption.NVGRE,
+            ProtocolOption.PBBTAG: XProtocolOption.PBBTAG,
+            ProtocolOption.RTCP: XProtocolOption.RTCP,
+            ProtocolOption.RTP: XProtocolOption.RTP,
+            ProtocolOption.SCTP: XProtocolOption.SCTP,
+            ProtocolOption.SNAP: XProtocolOption.SNAP,
+            ProtocolOption.STP: XProtocolOption.STP,
+            ProtocolOption.TCP: XProtocolOption.TCP,
+            ProtocolOption.TCPCHECK: XProtocolOption.TCPCHECK,
+            ProtocolOption.UDP: XProtocolOption.UDP,
+            ProtocolOption.UDPCHECK: XProtocolOption.UDPCHECK,
+            ProtocolOption.VLAN: XProtocolOption.VLAN,
+            ProtocolOption.VXLAN: XProtocolOption.VXLAN,
+        }
+        dic.update(
+            {
+                ProtocolOption[f"RAW_{i}"]: XProtocolOption[f"RAW_{i}"]
+                for i in range(1, 65)
+            }
+        )
+        return dic[self]
+
 
 def from_legacy_protocol_option(string: str) -> str:
     return {
@@ -239,23 +326,9 @@ class PortRateCapProfile(Enum):
     CUSTOM = "custom_rate_cap"  # AnyMember("Custom Rate Cap", "custom_rate_cap")
 
 
-def from_legacy_port_rate_cap_profile(string: str) -> str:
-    return {
-        "Physical Port Rate": "physical_port_rate",
-        "Custom Rate Cap": "custom_rate_cap",
-    }.get(string, string)
-
-
 class RateType(Enum):
     PPS = "pps"  # AnyMember("Pps", "pps")
     FRACTION = "fraction"  # AnyMember("Fraction", "fraction")
-
-
-def from_legacy_rate_type(string: str) -> str:
-    return {
-        "Fraction": "fraction",
-        "Pps": "pps",
-    }.get(string, string)
 
 
 class PortRateCapUnit(Enum):
@@ -264,14 +337,14 @@ class PortRateCapUnit(Enum):
     KBPS = "1e3_bps"  # AnyMember("Kbps", "1e3_bps")
     BPS = "bps"  # AnyMember("bps", "bps")
 
-
-def from_legacy_port_rate_cap_unit(string: str) -> str:
-    return {
-        "Gbps": "1e9_bps",
-        "Mbps": "1e6_bps",
-        "Kbps": "1e3_bps",
-        "bps": "bps",
-    }.get(string, string)
+    @property
+    def scale(self) -> float:
+        return {
+            PortRateCapUnit.GBPS: 1e9,
+            PortRateCapUnit.MBPS: 1e6,
+            PortRateCapUnit.KBPS: 1e3,
+            PortRateCapUnit.BPS: 1,
+        }[self]
 
 
 class FlowCreationType(Enum):
@@ -285,6 +358,15 @@ class LatencyMode(Enum):
     FIRST2FIRST = "first_to_first"  # AnyMember("First_To_First", "first_to_first", LatencyMode.FIRST2FIRST)
     LAST2FIRST = "last_to_first"  # AnyMember("Last_To_First", "last_to_first", LatencyMode.LAST2FIRST)
 
+    @property
+    def xoa(self) -> XLatencyMode:
+        return {
+            LatencyMode.FIRST2LAST: XLatencyMode.FIRST2LAST,
+            LatencyMode.LAST2LAST: XLatencyMode.LAST2LAST,
+            LatencyMode.FIRST2FIRST: XLatencyMode.FIRST2FIRST,
+            LatencyMode.LAST2FIRST: XLatencyMode.LAST2FIRST,
+        }[self]
+
 
 class TidAllocationScope(Enum):
     CONFIGURATION_SCOPE = "config_scope"  # AnyMember("ConfigScope", "config_scope")
@@ -296,14 +378,6 @@ class MdiMdixMode(Enum):
     AUTO = "auto"  # AnyMember("AUTO", "auto", MDIXMode.AUTO)
     MDI = "mdi"  # AnyMember("MDI", "mdi", MDIXMode.MDI)
     MDIX = "mdix"  # AnyMember("MDIX", "mdix", MDIXMode.MDIX)
-
-
-def from_legacy_mdi_mdix_mode(string: str) -> str:
-    return {
-        "AUTO": "auto",
-        "MDI": "mdi",
-        "MDIX": "mdix",
-    }.get(string, string)
 
 
 class PortSpeedMode(Enum):
@@ -353,13 +427,6 @@ class BRRMode(Enum):
     SLAVE = "slave"  # AnyMember("SLAVE", "slave", BRRMode.SLAVE)
 
 
-def from_legacy_brr_mode(string: str) -> str:
-    return {
-        "MASTER": "master",
-        "SLAVE": "slave",
-    }.get(string, string)
-
-
 class PacketSizeType(Enum):
     IEEE_DEFAULT = (
         "ietf_default"  # AnyMember("IEEEDefault", "ietf_default", LengthType.FIXED)
@@ -373,19 +440,31 @@ class PacketSizeType(Enum):
     RANDOM = "random"  # AnyMember("Random", "random", LengthType.RANDOM)
     MIX = "mixed_sizes"  # AnyMember("MixedSizes", "mixed_sizes", LengthType.MIX)
 
+    @property
+    def xoa(self) -> LengthType:
+        return {
+            PacketSizeType.IEEE_DEFAULT: LengthType.FIXED,
+            PacketSizeType.CUSTOM_SIZES: LengthType.FIXED,
+            PacketSizeType.RANGE: LengthType.FIXED,
+            PacketSizeType.INCREMENTING: LengthType.INCREMENTING,
+            PacketSizeType.BUTTERFLY: LengthType.BUTTERFLY,
+            PacketSizeType.RANDOM: LengthType.RANDOM,
+            PacketSizeType.MIX: LengthType.MIX,
+        }[self]
+
 
 class PayloadType(Enum):
     PATTERN = "pattern"  # AnyMember("Pattern", "pattern", PayloadType.PATTERN)
     INCREMENTING = "incrementing"  # AnyMember("Incrementing", "incrementing", PayloadType.INCREMENTING)
     PRBS = "prbs"  # AnyMember("PRBS", "prbs", PayloadType.PRBS)
 
-
-def from_legacy_payload_type(string: str) -> str:
-    return {
-        "Pattern": "pattern",
-        "Incrementing": "incrementing",
-        "PRBS": "prbs",
-    }.get(string, string)
+    @property
+    def xoa(self) -> XPayloadType:
+        return {
+            PayloadType.PATTERN: XPayloadType.PATTERN,
+            PayloadType.INCREMENTING: XPayloadType.INCREMENTING,
+            PayloadType.PRBS: XPayloadType.PRBS,
+        }[self]
 
 
 class GroupCountSel(Enum):
@@ -397,86 +476,6 @@ class StreamTypeInfo(Enum):
     MULTICAST = "multicast"
     UNICAST_NOT_BURDEN = "unicast_not_burden"
     UNICAST_BURDEN = "unicast_burden"
-
-
-# class SourcePortType(Enum):
-#     MC_AND_UC_NOT_BURDENS = "multicast_and_unicast_not_burden"
-#     MC_AND_UC_BURDENS = "multicast_and_unicast_burden"
-#     MC = "multicast"
-
-MIXED_DEFAULT_WEIGHTS = [0, 0, 0, 0, 57, 3, 5, 1, 2, 5, 1, 4, 4, 18, 0, 0]
-MIXED_PACKET_SIZE = [
-    56,
-    60,
-    64,
-    70,
-    78,
-    92,
-    256,
-    496,
-    512,
-    570,
-    576,
-    594,
-    1438,
-    1518,
-    9216,
-    16360,
-]
-STANDARD_TPLD_LENGTH = 20
-MICRO_TPLD_LENGTH = 6
-ETHERNET_FCS_LENGTH = 4
-MIN_PAYLOAD_LENGTH = 2
-
-STANDARD_TPLD_TOTAL_LENGTH = (
-    STANDARD_TPLD_LENGTH + MIN_PAYLOAD_LENGTH + ETHERNET_FCS_LENGTH
-)
-MICRO_TPLD_TOTAL_LENGTH = MICRO_TPLD_LENGTH + ETHERNET_FCS_LENGTH
-MIN_REFRESH_TIMER_INTERNAL = 100.0
-
-HW_PACKET_MIN_SIZE = 64
-HW_PACKET_MAX_SIZE = 1500
-
-
-IP_V4_MULTICAST_MAC_BASE_ADDRESS = "0x01005e000000"
-IP_V6_MULTICAST_MAC_BASE_ADDRESS = "0x333300000000"
-
-
-IGMP_V2_JOIN = 0x16
-IGMP_V2_LEAVE = 0x17
-MLD_V1_REPORT = 0x83
-MLD_V1_DONE = 0x84
-MLD_V2_REPORT = 0x8F
-
-ALL_ROUTERS_MULTICAST_GROUP_V2 = "224.0.0.2"
-ALL_ROUTERS_MULTICAST_GROUP_V3 = "224.0.0.22"
-IPV6_LINK_SCOPE_ALL_MLD_ROUTERS_ADDRESS = "FF02::16"
-ICMP_V6_IP_PROTOCOL = 0x3A
-IP_V6_OPTION_ROUTER_ALERT = 0x05
-IP_V6_OPTION_HOP_BY_HOP = 0x00
-
-
-ETHER_TYPE_NULL = [0x00, 0x00]
-ETHER_TYPE_NONE = [0xFF, 0xFF]
-ETHER_TYPE_VLAN_TAGGED = [0x81, 0x00]
-ETHER_TYPE_VLAN_QIN_Q = [0x91, 0x00]
-ETHER_TYPE_MPLS_UNICAST = [0x88, 0x47]
-ETHER_TYPE_MPLS_MULTICAST = [0x88, 0x48]
-ETHER_TYPE_IPV4 = [0x08, 0x00]
-ETHER_TYPE_IPV6 = [0x86, 0xDD]
-ETHER_TYPE_ARP = [0x08, 0x06]
-
-IP_V4_OPTION_ROUTER_ALERT = 0x94
-MIN_PACKET_LENGTH = 60
-
-IEEE_DEFAULT_LIST = [64, 128, 256, 512, 1024, 1280, 1518]
-
-TRIGGER_PACKET_SIZE = 64
-
-
-class TestState(Enum):
-    L3_LEARNING = 3
-    RUNNING_TEST = 5
 
 
 class IGMPv1Type(Enum):
@@ -498,16 +497,7 @@ class IgmpRequestType(Enum):
     LEAVE = IGMP_V2_LEAVE
 
 
-class StartTrafficMode(Enum):
-    MC_PORTS = "MC_PORTS"
-    MC_AND_BURDEN_PORTS = "MC_AND_BURDEN_PORTS"
-    ALL_PORTS = "ALL_PORTS"
-
-
 class ResultState(Enum):
     PENDING = "Pending"
     PASS = "Pass"
     FAIL = "Fail"
-
-
-FILTER_M0M1_L0L1 = 196611

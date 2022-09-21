@@ -25,7 +25,7 @@ async def test():
         info = c.get_test_suite_info("RFC-3918")
         new_data = converter(TestSuiteType.RFC3918, app_data, info["schema"])
     test_id = c.start_test_suite(
-        "RFC-3918", json.loads(new_data), debug_connection=True
+        "RFC-3918", json.loads(new_data), debug_connection=False
     )
     # async for msg in c.listen_changes(test_id):
     #     print(msg)
