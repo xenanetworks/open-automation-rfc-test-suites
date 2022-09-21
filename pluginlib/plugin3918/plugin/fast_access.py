@@ -15,8 +15,8 @@ from ..model.mc_uc_definition import McDefinition, UcFlowDefinition
 from ..model.test_suit import TestConfiguration3918
 from ..model.test_type_config import MulticastGroupCapacity
 from ..utils.constants import (
-    RPacketSizeType,
-    RTidAllocationScope,
+    PacketSizeType,
+    TidAllocationScope,
 )
 
 if TYPE_CHECKING:
@@ -45,7 +45,7 @@ class Data3918:
     def get_latency_mode_xoa(self) -> "LatencyMode":
         return self.test_configuration.latency_mode.value.xoa
 
-    def get_packet_size_type(self) -> RPacketSizeType:
+    def get_packet_size_type(self) -> PacketSizeType:
         return self.test_configuration.frame_sizes.packet_size_type
 
     def get_packet_size_type_xoa(self) -> "LengthType":
@@ -53,13 +53,13 @@ class Data3918:
 
     def is_packet_size_type_fixed(self) -> bool:
         return self.get_packet_size_type() in {
-            RPacketSizeType.IEEE_DEFAULT,
-            RPacketSizeType.CUSTOM_SIZES,
-            RPacketSizeType.RANGE,
+            PacketSizeType.IEEE_DEFAULT,
+            PacketSizeType.CUSTOM_SIZES,
+            PacketSizeType.RANGE,
         }
 
     def is_packet_size_type_mixed_sizes(self) -> bool:
-        return self.get_packet_size_type() == RPacketSizeType.MIX
+        return self.get_packet_size_type() == PacketSizeType.MIX
 
     def get_mixed_sizes_weights(self) -> List[int]:
         return self.test_configuration.frame_sizes.mixed_sizes_weights
@@ -76,7 +76,7 @@ class Data3918:
     def get_sync_off_duration(self) -> int:
         return self.test_configuration.sync_off_duration
 
-    def get_tid_allocation_scope(self) -> RTidAllocationScope:
+    def get_tid_allocation_scope(self) -> TidAllocationScope:
         return self.test_configuration.tid_allocation_scope
 
     def get_mc_payload_type_xoa(self) -> "PayloadType":

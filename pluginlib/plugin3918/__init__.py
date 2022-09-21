@@ -1,8 +1,8 @@
-from valhalla_core.types import PluginAbstract
+from xoa_core.types import PluginAbstract
 from .utils.constants import (
     MICRO_TPLD_TOTAL_LENGTH,
     STANDARD_TPLD_TOTAL_LENGTH,
-    RMulticastRole,
+    MulticastRole,
 )
 from .plugin.config_checker import ConfigChecker
 from .plugin.type_aggregated_multicast_throughput_test import AggregatedThroughputTest
@@ -83,9 +83,9 @@ class Model3918(BaseModel):
         for vs in values["ports_configuration"].values():
             roles.append(vs.multicast_role)
         dic = Counter(roles)
-        if dic[RMulticastRole.MC_SOURCE] != 1:
+        if dic[MulticastRole.MC_SOURCE] != 1:
             raise NotOneMcSource()
-        if dic[RMulticastRole.MC_DESTINATION] < 1:
+        if dic[MulticastRole.MC_DESTINATION] < 1:
             raise NoMcDestination()
         if any(
             [
@@ -95,7 +95,7 @@ class Model3918(BaseModel):
                 is not None,
             ]
         ):
-            if dic[RMulticastRole.UC_BURDEN] < 2:
+            if dic[MulticastRole.UC_BURDEN] < 2:
                 raise LeastTwoUcBurden()
         return values
 

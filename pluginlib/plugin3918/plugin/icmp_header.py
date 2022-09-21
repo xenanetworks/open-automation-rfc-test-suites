@@ -26,8 +26,8 @@ from ..utils.constants import (
     STANDARD_TPLD_TOTAL_LENGTH,
     IGMPv3GroupRecordTypes,
     IgmpRequestType,
-    RIgmpVersion,
-    RProtocolOption,
+    IgmpVersion,
+    ProtocolOption,
 )
 
 
@@ -38,7 +38,7 @@ class IgmpMld:
         dest_ip_address: Union[NewIPv4Address, NewIPv6Address],
     ) -> HeaderSegment:
         return (
-            ProtocolChange(RProtocolOption.IGMPV1)
+            ProtocolChange(ProtocolOption.IGMPV1)
             .change_segment("Type", IGMPv1Type.REPORT.value, ParseMode.BIT)
             .change_segment("Group Address", dest_ip_address.bytearrays, ParseMode.BYTE)
             .header
@@ -51,7 +51,7 @@ class IgmpMld:
         dest_ip_address: Union[NewIPv4Address, NewIPv6Address],
     ) -> HeaderSegment:
         return (
-            ProtocolChange(RProtocolOption.IGMPV2)
+            ProtocolChange(ProtocolOption.IGMPV2)
             .change_segment("Type", request_type.value, ParseMode.BIT)
             .change_segment("Group Address", dest_ip_address.bytearrays, ParseMode.BYTE)
             .header
@@ -85,7 +85,7 @@ class IgmpMld:
         address_count = int(use_src)
         add_length = len(mc_source_ip_address.bytearrays) if use_src else 0
         group_segment_org = (
-            ProtocolChange(RProtocolOption.IGMPV3_GR)
+            ProtocolChange(ProtocolOption.IGMPV3_GR)
             .change_segment("Record Type", message_type)
             .change_segment("Number of Sources", address_count)
             .change_segment(
@@ -103,7 +103,7 @@ class IgmpMld:
             group_segment_with_ip = group_segment_raw
 
         igmp_segment_org = (
-            ProtocolChange(RProtocolOption.IGMPV3_MR)
+            ProtocolChange(ProtocolOption.IGMPV3_MR)
             .change_segment("Group Record Count", 1)
             .bytearrays
         )
@@ -114,7 +114,7 @@ class IgmpMld:
             igmp_segment_raw[: -len(group_segment_with_ip)] + group_segment_with_ip
         )
         return HeaderSegment(
-            segment_type=RProtocolOption.IGMPV3_MR, segment_value=igmp_segment.hex()
+            segment_type=ProtocolOption.IGMPV3_MR, segment_value=igmp_segment.hex()
         )
 
     @classmethod
@@ -128,11 +128,11 @@ class IgmpMld:
         mc_dest_mac: MacAddress,
     ) -> str:
         mc_ip = group_ip_address
-        if mc_definition.igmp_version == RIgmpVersion.IGMP_V1:
+        if mc_definition.igmp_version == IgmpVersion.IGMP_V1:
             if request_type == IgmpRequestType.LEAVE:
                 return ""
             igmp_header = cls.gen_igmpv1_header(mc_ip)
-        elif mc_definition.igmp_version == RIgmpVersion.IGMP_V2_OR_MLD_V1:
+        elif mc_definition.igmp_version == IgmpVersion.IGMP_V2_OR_MLD_V1:
             if (
                 request_type == IgmpRequestType.LEAVE
                 and mc_definition.force_leave_to_all_routers_group
@@ -150,13 +150,13 @@ class IgmpMld:
         vlan_headers = [
             hs
             for hs in mc_definition.stream_definition.header_segments
-            if hs.segment_type == RProtocolOption.VLAN
+            if hs.segment_type == ProtocolOption.VLAN
         ]
         ether_type = bytearray(
             ETHER_TYPE_VLAN_TAGGED if vlan_headers else ETHER_TYPE_IPV4
         )
         ethernet_header = (
-            ProtocolChange(RProtocolOption.ETHERNET)
+            ProtocolChange(ProtocolOption.ETHERNET)
             .change_segment(
                 "Dst MAC addr",
                 get_multicast_mac_for_ip(mc_ip).bytearrays,
@@ -173,7 +173,7 @@ class IgmpMld:
 
         ip_total_length = 20 + 4 + igmp_header.byte_length
         ip_header = (
-            ProtocolChange(RProtocolOption.IPV4)
+            ProtocolChange(ProtocolOption.IPV4)
             .change_segment("Header Length", 0x06)
             .change_segment("Total Length", ip_total_length)
             .change_segment("DSCP", 0x30)
@@ -205,10 +205,10 @@ class IgmpMld:
         source_mac_address: MacAddress,
     ) -> str:
         src_address_bytes = get_link_local_uc_ipv6_address(source_mac_address)
-        if mc_definition.igmp_version == RIgmpVersion.IGMP_V2_OR_MLD_V1:
+        if mc_definition.igmp_version == IgmpVersion.IGMP_V2_OR_MLD_V1:
             dest_ip_address = group_ip_address
             icmp_header = cls.build_mld_v1_header(request_type, group_ip_address)
-        elif mc_definition.igmp_version == RIgmpVersion.IGMP_V3_OR_MLD_V2:
+        elif mc_definition.igmp_version == IgmpVersion.IGMP_V3_OR_MLD_V2:
             dest_ip_address = NewIPv6Address(IPV6_LINK_SCOPE_ALL_MLD_ROUTERS_ADDRESS)
             icmp_header = cls.build_mld_v2_header(
                 request_type,
@@ -240,7 +240,7 @@ class IgmpMld:
         )
         payload_length = icmp_header.byte_length + len(ip_option_segment)
         ip_header = (
-            ProtocolChange(RProtocolOption.IPV6)
+            ProtocolChange(ProtocolOption.IPV6)
             .change_segment("Traffic Class", 0)
             .change_segment("Payload Length", payload_length)
             .change_segment("Next Header", IP_V6_OPTION_HOP_BY_HOP)
@@ -253,7 +253,7 @@ class IgmpMld:
         ip_header.segment_value = ip_header.segment_value + ip_option_segment.hex()
 
         ether_header = (
-            ProtocolChange(RProtocolOption.ETHERNET)
+            ProtocolChange(ProtocolOption.ETHERNET)
             .change_segment(
                 "Dst MAC addr",
                 get_multicast_mac_for_ip(dest_ip_address).bytearrays,
@@ -280,7 +280,7 @@ class IgmpMld:
             MLD_V1_REPORT if request_type == IgmpRequestType.JOIN else MLD_V1_DONE
         )
         icmp_header = (
-            ProtocolChange(RProtocolOption.ICMPV6)
+            ProtocolChange(ProtocolOption.ICMPV6)
             .change_segment("Type", mld_type)
             .change_segment("Code", 0)
         ).header
@@ -305,7 +305,7 @@ class IgmpMld:
         add_length = len(source_address_bytes) if use_source_address else 0
 
         group_record_value = (
-            ProtocolChange(RProtocolOption.MLDV2_AR)
+            ProtocolChange(ProtocolOption.MLDV2_AR)
             .change_segment("Record Type", message_type)
             .change_segment("Number of Sources", address_count)
             .change_segment(
@@ -318,7 +318,7 @@ class IgmpMld:
             ] = source_address_bytes
 
         igmp_header = (
-            ProtocolChange(RProtocolOption.ICMPV6)
+            ProtocolChange(ProtocolOption.ICMPV6)
             .change_segment("Type", MLD_V2_REPORT)
             .change_segment("Message", 1)
             .header

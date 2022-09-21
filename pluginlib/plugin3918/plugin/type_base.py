@@ -21,10 +21,10 @@ from ..utils.constants import (
     HW_PACKET_MIN_SIZE,
     STANDARD_TPLD_TOTAL_LENGTH,
     IgmpRequestType,
-    RIPVersion,
-    RPortRateCapProfile,
-    RPortSpeedMode,
-    RRateType,
+    IPVersion,
+    PortRateCapProfile,
+    PortSpeedMode,
+    RateType,
     StreamTypeInfo,
     ResultState,
 )
@@ -272,13 +272,13 @@ class BaseTestType:
 
     def get_used_port_speed(self, port_instance: PortInstance) -> float:
         physical_port_speed = port_instance.port_speed
-        if port_instance.config.port_speed_mode != RPortSpeedMode.AUTO:
+        if port_instance.config.port_speed_mode != PortSpeedMode.AUTO:
             selected_speed = min(
                 port_instance.config.port_speed_mode.scale, physical_port_speed
             )
         else:
             selected_speed = physical_port_speed
-        if port_instance.config.port_rate_cap_profile == RPortRateCapProfile.CUSTOM:
+        if port_instance.config.port_rate_cap_profile == PortRateCapProfile.CUSTOM:
             capped_speed = min(port_instance.config.cap_port_rate, selected_speed)
         else:
             capped_speed = selected_speed
@@ -320,7 +320,7 @@ class BaseTestType:
 
             mc_def = self.model_data.mc_definition
             rate_type = mc_def.stream_definition.rate_type
-            if rate_type == RRateType.FRACTION:
+            if rate_type == RateType.FRACTION:
                 fraction = (
                     self.bout_info.rate * mc_def.stream_definition.rate_fraction / 100.0
                 )
@@ -360,7 +360,7 @@ class BaseTestType:
         self,
         src_instance: "PortInstance",
         dest_instance: "PortInstance",
-        ip_version: RIPVersion,
+        ip_version: IPVersion,
     ) -> MacAddress:
         dmac = MacAddress()
         if (
@@ -396,7 +396,7 @@ class BaseTestType:
         self,
         src_instance: "PortInstance",
         dest_instance: "PortInstance",
-        ip_version: RIPVersion,
+        ip_version: IPVersion,
     ) -> MacAddress:
         if self.model_data.get_use_gateway_mac():
             dmac = self.get_dmac_address_for_port_l3(
@@ -414,7 +414,7 @@ class BaseTestType:
                 stream = send_mc.src_instance.port.streams.obtain(send_mc.stream_index)
                 mc_def = self.model_data.mc_definition
                 rate_type = mc_def.stream_definition.rate_type
-                if rate_type == RRateType.FRACTION:
+                if rate_type == RateType.FRACTION:
                     fraction = (
                         self.bout_info.rate
                         * mc_def.stream_definition.rate_fraction

@@ -3,14 +3,14 @@ from pydantic import BaseModel, NonNegativeInt
 from ..utils.errors import IpEmpty, NoIpSegment, NoRole
 
 from ..utils.constants import (
-    RBRRMode,
-    RIPVersion,
-    RMdiMdixMode,
-    RPortRateCapProfile,
-    RMulticastRole,
-    RPortRateCapUnit,
-    RPortSpeedMode,
-    RProtocolOption,
+    BRRMode,
+    IPVersion,
+    MdiMdixMode,
+    PortRateCapProfile,
+    MulticastRole,
+    PortRateCapUnit,
+    PortSpeedMode,
+    ProtocolOption,
 )
 from ..utils.field import MacAddress, NewIPv4Address, NewIPv6Address, Prefix
 from .protocol_segments import ProtocolSegmentProfileConfig
@@ -25,7 +25,7 @@ class IPV6AddressProperties(BaseModel):
     public_routing_prefix: Prefix = Prefix(24)
     gateway: NewIPv6Address = NewIPv6Address("::")
     remote_loop_address: NewIPv6Address = NewIPv6Address("::")
-    ip_version: RIPVersion = RIPVersion.IPV6
+    ip_version: IPVersion = IPVersion.IPV6
 
     @staticmethod
     def is_ip_zero(ip_address: NewIPv6Address) -> bool:
@@ -53,7 +53,7 @@ class IPV4AddressProperties(BaseModel):
     public_routing_prefix: Prefix = Prefix(24)
     gateway: NewIPv4Address = NewIPv4Address("0.0.0.0")
     remote_loop_address: NewIPv4Address = NewIPv4Address("0.0.0.0")
-    ip_version: RIPVersion = RIPVersion.IPV4
+    ip_version: IPVersion = IPVersion.IPV4
 
     @staticmethod
     def is_ip_zero(ip_address: NewIPv4Address) -> bool:
@@ -78,19 +78,19 @@ class PortConfiguration(BaseModel):
     port_slot: str
     port_config_slot: str = ""
     # port_group: PortGroup
-    port_speed_mode: RPortSpeedMode
+    port_speed_mode: PortSpeedMode
 
     # PeerNegotiation
     auto_neg_enabled: bool
     anlt_enabled: bool
-    mdi_mdix_mode: RMdiMdixMode
-    broadr_reach_mode: RBRRMode
+    mdi_mdix_mode: MdiMdixMode
+    broadr_reach_mode: BRRMode
 
     # PortRateCap
     # port_rate_cap_enabled: bool
     port_rate_cap_value: float
-    port_rate_cap_profile: RPortRateCapProfile
-    port_rate_cap_unit: RPortRateCapUnit
+    port_rate_cap_profile: PortRateCapProfile
+    port_rate_cap_unit: PortRateCapUnit
 
     # PhysicalPortProperties
     inter_frame_gap: NonNegativeInt
@@ -110,7 +110,7 @@ class PortConfiguration(BaseModel):
     is_rx_port: bool = True
 
     profile: ProtocolSegmentProfileConfig
-    multicast_role: RMulticastRole
+    multicast_role: MulticastRole
 
     @validator("ip_gateway_mac_address", "remote_loop_mac_address", pre=True)
     def validate_mac(cls, v):
@@ -118,7 +118,7 @@ class PortConfiguration(BaseModel):
 
     @validator("multicast_role", pre=True)
     def validate_multicast_role(cls, v, values):
-        if v == RMulticastRole.UNDEFINED:
+        if v == MulticastRole.UNDEFINED:
             raise NoRole(values["port_slot"])
         return v
 
@@ -126,11 +126,11 @@ class PortConfiguration(BaseModel):
     def validate_ip(cls, v, values):
         has_ip_segment = False
         segment_types = [i.segment_type for i in v.header_segments]
-        if RProtocolOption.IPV4 in segment_types:
+        if ProtocolOption.IPV4 in segment_types:
             has_ip_segment = True
             if values["ipv4_properties"].address in {NewIPv4Address("0.0.0.0"), ""}:
                 raise IpEmpty(values["port_slot"], "IPv4")
-        elif RProtocolOption.IPV6 in segment_types:
+        elif ProtocolOption.IPV6 in segment_types:
             has_ip_segment = True
             if values["ipv6_properties"].address in {NewIPv6Address("::"), ""}:
                 raise IpEmpty(values["port_slot"], "IPv6")

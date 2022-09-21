@@ -1,21 +1,21 @@
 from typing import Union
 from pydantic import BaseModel, validator
 
-from ..utils.constants import RIPVersion, RIgmpVersion, RTestTopology, RTrafficDirection
+from ..utils.constants import IPVersion, IgmpVersion, TestTopology, TrafficDirection
 from .protocol_segments import ProtocolSegmentProfileConfig
 from ..utils.field import NewIPv4Address, NewIPv6Address
 
 
 class UcFlowDefinition(BaseModel):
     comment: str
-    topology: RTestTopology
-    direction: RTrafficDirection
+    topology: TestTopology
+    direction: TrafficDirection
     stream_definition: ProtocolSegmentProfileConfig
 
 
 class McDefinition(BaseModel):
     comments: str
-    igmp_version: RIgmpVersion
+    igmp_version: IgmpVersion
     igmp_join_interval: int
     igmp_leave_interval: int
     use_igmp_shaping: bool
@@ -33,7 +33,7 @@ class McDefinition(BaseModel):
     def mc_ip_start_address(self) -> Union[NewIPv4Address, NewIPv6Address]:
         return (
             self.mc_ip_v4_start_address
-            if self.stream_definition.ip_version == RIPVersion.IPV4
+            if self.stream_definition.ip_version == IPVersion.IPV4
             else self.mc_ip_v6_start_address
         )
 

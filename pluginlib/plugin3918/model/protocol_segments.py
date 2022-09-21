@@ -1,5 +1,6 @@
 from copy import deepcopy
 from enum import Enum
+import json
 import os, re
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 from typing_extensions import Self
@@ -9,11 +10,12 @@ from xoa_driver.enums import ProtocolOption as XProtocolOption
 from ..utils.errors import NoIpSegment
 from ..utils.constants import (
     DEFAULT_SEGMENT_PATH,
-    RIPVersion,
-    RPayloadType,
-    RProtocolOption,
-    RRateType,
+    IPVersion,
+    PayloadType,
+    ProtocolOption,
+    RateType,
     MIN_PACKET_LENGTH,
+    from_legacy_protocol_option,
 )
 
 
@@ -44,7 +46,7 @@ class FieldDefinition(BaseModel):
 class SegmentDefinition(BaseModel):
     name: str = Field(alias="Name")
     description: str = Field(alias="Description")
-    segment_type: RProtocolOption = Field(alias="SegmentType")
+    segment_type: ProtocolOption = Field(alias="SegmentType")
     enclosed_type_index: Optional[int] = Field(alias="EnclosedTypeIndex")
     checksum_offset: Optional[int] = Field(alias="ChecksumOffset")
     field_definitions: List[FieldDefinition] = Field(alias="ProtocolFields")
@@ -116,9 +118,9 @@ class ParseMode(Enum):
 
 
 class ProtocolChange:
-    def __init__(self, protocol: Union[RProtocolOption, str]) -> None:
+    def __init__(self, protocol: Union[ProtocolOption, str]) -> None:
         self.segment_def = type(self).get_segment_definition_by_protocol(
-            RProtocolOption(protocol)
+            ProtocolOption(protocol)
         )
         self.value_bin = self.segment_def.default_value_bin
 
@@ -146,14 +148,14 @@ class ProtocolChange:
         value: str,
     ) -> bytearray:
         segment = header_segments[index]
-        if segment.segment_type != RProtocolOption.ICMPV6:
+        if segment.segment_type != ProtocolOption.ICMPV6:
             patched_value = bytearray.fromhex(value)
             offset_num = (
                 ProtocolChange.get_segment_definition_by_protocol(
                     segment.segment_type
                 ).checksum_offset
                 or -1
-                if segment.segment_type.value.legacy.lower() in DEFAULT_SEGMENT_DIC
+                if segment.segment_type.value in DEFAULT_SEGMENT_DIC
                 else -1
             )
             if offset_num != -1:
@@ -343,16 +345,16 @@ class ProtocolChange:
 
     @classmethod
     def get_segment_definition_by_protocol(
-        cls, protocol: RProtocolOption
+        cls, protocol: ProtocolOption
     ) -> SegmentDefinition:
-        protocol_str = protocol.value.legacy.lower()
+        protocol_str = protocol.value
         return cls.get_segment_definition_by_string(protocol_str)
 
     @classmethod
     def get_segment_definition_by_ip_version(
-        cls, protocol: RIPVersion
+        cls, protocol: IPVersion
     ) -> SegmentDefinition:
-        return cls.get_segment_definition_by_string(protocol.value.legacy.lower())
+        return cls.get_segment_definition_by_string(protocol.value)
 
     @classmethod
     def patch_bin_list(cls, int_01_list: List[int], patch_to_length: int) -> List[int]:
@@ -366,12 +368,12 @@ class ProtocolChange:
         return result
 
     @classmethod
-    def get_ip_field_byte_offset(cls, ip_version: RIPVersion) -> int:
+    def get_ip_field_byte_offset(cls, ip_version: IPVersion) -> int:
         for field_def in cls.get_segment_definition_by_ip_version(
             ip_version
         ).field_definitions:
-            if (ip_version == RIPVersion.IPV4 and field_def.name == "Dest IP Addr") or (
-                ip_version == RIPVersion.IPV6 and field_def.name == "Dest IPv6 Addr"
+            if (ip_version == IPVersion.IPV4 and field_def.name == "Dest IP Addr") or (
+                ip_version == IPVersion.IPV6 and field_def.name == "Dest IPv6 Addr"
             ):
                 return field_def.byte_offset
         raise Exception(f"Cannot find byte offset of '{ip_version}'")
@@ -385,11 +387,13 @@ def load_segment_map(
         filepath = os.path.join(DEFAULT_SEGMENT_PATH, i)
         if os.path.isfile(filepath) and filepath.endswith(".json"):
             try:
-                value = SegmentDefinition.parse_file(filepath, encoding="utf-8")
-                key = value.segment_type.value.legacy.lower()
-            except ValueError:
+                with open(filepath, "r") as f:
+                    data = json.load(f)
+                    data["SegmentType"] = from_legacy_protocol_option(data["SegmentType"])
+                value = SegmentDefinition.parse_obj(data)
+                key = value.segment_type.value
+            except:
                 continue
-
             dic[key] = value
     return dic
 
@@ -439,20 +443,20 @@ class FieldValueRange(BaseModel):
 
 
 class HeaderSegment(BaseModel):
-    segment_type: RProtocolOption
+    segment_type: ProtocolOption
     segment_value: str
 
-    @property
-    def byte_length(self) -> int:
-        return len(self.segment_value) // 2
+    # @property
+    # def byte_length(self) -> int:
+    #     return len(self.segment_value) // 2
 
 
 class ProtocolSegmentProfileConfig(BaseModel):
     description: str = ""
     header_segments: List[HeaderSegment] = []
-    payload_type: RPayloadType
+    payload_type: PayloadType
     payload_pattern: str
-    rate_type: RRateType
+    rate_type: RateType
     rate_fraction: float
     rate_pps: float
 
@@ -473,21 +477,21 @@ class ProtocolSegmentProfileConfig(BaseModel):
         return [h.segment_type.value.xoa for h in self.header_segments]
 
     @property
-    def ip_version(self) -> RIPVersion:
+    def ip_version(self) -> IPVersion:
         for header_segment in self.header_segments:
-            if RProtocolOption.IPV4 == header_segment.segment_type:
-                return RIPVersion.IPV4
-            elif RProtocolOption.IPV6 == header_segment.segment_type:
-                return RIPVersion.IPV6
+            if ProtocolOption.IPV4 == header_segment.segment_type:
+                return IPVersion.IPV4
+            elif ProtocolOption.IPV6 == header_segment.segment_type:
+                return IPVersion.IPV6
         raise NoIpSegment("No IP segment found")
 
     @property
     def segment_offset_for_ip(self) -> int:
         offset = 0
         for header_segment in self.header_segments:
-            if RProtocolOption.IPV4 == header_segment.segment_type:
+            if ProtocolOption.IPV4 == header_segment.segment_type:
                 return offset
-            elif RProtocolOption.IPV6 == header_segment.segment_type:
+            elif ProtocolOption.IPV6 == header_segment.segment_type:
                 return offset
             offset += len(header_segment.segment_value) // 2
         return -1

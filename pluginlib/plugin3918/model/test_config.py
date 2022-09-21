@@ -12,7 +12,7 @@ from pydantic import (
 from ..utils.constants import (
     MIXED_DEFAULT_WEIGHTS,
     MIXED_PACKET_SIZE,
-    RPacketSizeType,
+    PacketSizeType,
     IEEE_DEFAULT_LIST
 )
 from ..utils.field import NonNegativeDecimal
@@ -36,7 +36,7 @@ class FrameSizesOptions(BaseModel):
 
 class FrameSizeConfiguration(BaseModel):
     # FrameSizes
-    packet_size_type: RPacketSizeType
+    packet_size_type: PacketSizeType
     # FixedSizesPerTrial
     custom_packet_sizes: List[NonNegativeInt]
     fixed_packet_start_size: NonNegativeInt
@@ -51,7 +51,7 @@ class FrameSizeConfiguration(BaseModel):
     @validator("mixed_sizes_weights", pre=True, always=True)
     def is_mixed_weights_valid(cls, v, values):
         if "packet_size_type" in values:
-            if values["packet_size_type"] == RPacketSizeType.MIX:
+            if values["packet_size_type"] == PacketSizeType.MIX:
                 if not v or len(v) != len(MIXED_DEFAULT_WEIGHTS):
                     raise ConfigError(
                         f"Not enough mixed weights; there should be {len(MIXED_DEFAULT_WEIGHTS)} number of mixed weights!"
@@ -75,7 +75,7 @@ class FrameSizeConfiguration(BaseModel):
     @property
     def mixed_average_packet_size(self) -> int:
         v = 0
-        if self.packet_size_type == RPacketSizeType.MIX:
+        if self.packet_size_type == PacketSizeType.MIX:
             weighted_size = 0.0
             for index, size in enumerate(self.mixed_packet_length):
                 weight = self.mixed_sizes_weights[index]
@@ -86,14 +86,14 @@ class FrameSizeConfiguration(BaseModel):
     @property
     def packet_size_list(self) -> List[int]:
         packet_size_type = self.packet_size_type
-        if packet_size_type == RPacketSizeType.IEEE_DEFAULT:
+        if packet_size_type == PacketSizeType.IEEE_DEFAULT:
             return IEEE_DEFAULT_LIST
-        elif packet_size_type == RPacketSizeType.CUSTOM_SIZES:
+        elif packet_size_type == PacketSizeType.CUSTOM_SIZES:
             return list(sorted(self.custom_packet_sizes))
-        elif packet_size_type == RPacketSizeType.MIX:
+        elif packet_size_type == PacketSizeType.MIX:
             return [self.mixed_average_packet_size]
 
-        elif packet_size_type == RPacketSizeType.RANGE:
+        elif packet_size_type == PacketSizeType.RANGE:
             return list(
                 range(
                     self.fixed_packet_start_size,
@@ -103,9 +103,9 @@ class FrameSizeConfiguration(BaseModel):
             )
 
         elif packet_size_type in {
-            RPacketSizeType.INCREMENTING,
-            RPacketSizeType.BUTTERFLY,
-            RPacketSizeType.RANDOM,
+            PacketSizeType.INCREMENTING,
+            PacketSizeType.BUTTERFLY,
+            PacketSizeType.RANDOM,
         }:
             return [(self.varying_packet_min_size + self.varying_packet_max_size) // 2]
         return []

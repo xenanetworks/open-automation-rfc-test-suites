@@ -1,4 +1,4 @@
-from ..utils.constants import RPacketSizeType
+from ..utils.constants import PacketSizeType
 from .resource_manager import ResourceManager
 from ..utils.errors import (
     CustomMixLengthUnsupported,
@@ -41,6 +41,6 @@ class ConfigChecker:
                     )
             elif (
                 self.data.test_configuration.frame_sizes.packet_size_type
-                == RPacketSizeType.MIX
+                == PacketSizeType.MIX
             ):
                 raise CustomMixLengthUnsupported(src_instance.name)

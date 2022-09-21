@@ -6,7 +6,7 @@ from xoa_driver import testers as driver_testers, ports as driver_port, enums
 from xoa_driver.utils import apply
 from ..utils.field import MacAddress
 from ..model.port_config import PortConfiguration
-from ..utils.constants import RIPVersion, RMulticastRole, StreamTypeInfo
+from ..utils.constants import IPVersion, MulticastRole, StreamTypeInfo
 from ..model.port_identity import PortIdentity
 from .test_result import (
     BoutInfo,
@@ -46,9 +46,9 @@ NOT_AUTONEG_SUPPORTED = (
 
 def get_ip_property(
     port_config: PortConfiguration,
-    ip_version: RIPVersion,
+    ip_version: IPVersion,
 ):
-    if ip_version == RIPVersion.IPV4:
+    if ip_version == IPVersion.IPV4:
         ip_property = port_config.ipv4_properties
     else:
         ip_property = port_config.ipv6_properties
@@ -58,7 +58,7 @@ def get_ip_property(
 def need_gateway_mac(
     src_config: PortConfiguration,
     dest_config: PortConfiguration,
-    ip_version: RIPVersion,
+    ip_version: IPVersion,
 ) -> bool:
     src_ip_property = get_ip_property(src_config, ip_version)
     src_gateway = src_ip_property.gateway
@@ -70,7 +70,7 @@ def need_gateway_mac(
 def is_in_same_subnet(
     src_config: PortConfiguration,
     dest_config: PortConfiguration,
-    ip_version: RIPVersion,
+    ip_version: IPVersion,
 ) -> bool:
     src_ip_property = get_ip_property(src_config, ip_version)
     dest_ip_property = get_ip_property(dest_config, ip_version)
@@ -458,13 +458,13 @@ class ResourceManager:
 
         await gather(*self.testers(), return_exceptions=True)
         for port_config in self.cfg.ports_configuration.values():
-            if port_config.multicast_role == RMulticastRole.MC_SOURCE:
+            if port_config.multicast_role == MulticastRole.MC_SOURCE:
                 srcs.append(port_config)
-            if port_config.multicast_role == RMulticastRole.MC_DESTINATION:
+            if port_config.multicast_role == MulticastRole.MC_DESTINATION:
                 dests.append(port_config)
-            if port_config.multicast_role == RMulticastRole.UC_BURDEN:
+            if port_config.multicast_role == MulticastRole.UC_BURDEN:
                 burdens.append(port_config)
-            if port_config.multicast_role != RMulticastRole.UC_BURDEN:
+            if port_config.multicast_role != MulticastRole.UC_BURDEN:
                 not_burdens.append(port_config)
             port_instance = self.__get_instance_by_config(port_config)
             self._port_instances[port_instance.name] = port_instance
