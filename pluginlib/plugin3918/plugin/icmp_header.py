@@ -1,7 +1,8 @@
 from typing import Union
 from ..model.mc_uc_definition import McDefinition
+from ..model.protocol_segments import HeaderSegment
 from ..utils.field import MacAddress, NewIPv4Address, NewIPv6Address
-from ..model.protocol_segments import HeaderSegment, ParseMode, ProtocolChange
+from .protocol_change import ParseMode, ProtocolChange
 from ..plugin.mc_operations import (
     get_link_local_uc_ipv6_address,
     get_multicast_mac_for_ip,

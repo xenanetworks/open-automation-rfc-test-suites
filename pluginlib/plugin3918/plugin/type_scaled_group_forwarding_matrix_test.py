@@ -52,6 +52,7 @@ class ScaledGroupThroughputTest(BaseTestType):
             self.model_data.set_group_count_end(group_count_end)
 
     async def get_final_counters(self) -> bool:
+        self.bout_info.set_is_final(True)
         self.bout_info.set_result_state(ResultState.PASS)
         await self.read_counters()
         return True

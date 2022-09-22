@@ -13,9 +13,9 @@ from xoa_driver.lli import commands
 from xoa_driver.misc import Token
 from ..utils.field import MacAddress, NewIPv6Address
 from ..utils.scheduler import schedule
-from ..model.protocol_segments import ProtocolChange
 from ..plugin.mc_operations import get_multicast_mac_for_ip
 from .icmp_header import IgmpMld
+from .protocol_change import ProtocolChange
 from ..utils.constants import (
     HW_PACKET_MAX_SIZE,
     HW_PACKET_MIN_SIZE,
@@ -38,7 +38,6 @@ from ..plugin.resource_manager import (
 from ..utils.errors import LossSync, UcTypeError, UnableToObtainDmac
 from .id_control import IDControl
 from .l3_learning import (
-    get_packet_header_inner,
     make_address_collection,
     send_gateway_learning_request,
 )
@@ -452,7 +451,7 @@ class BaseTestType:
 
             dmac = get_multicast_mac_for_ip(mc_start_address)
             addr_coll = make_address_collection(mc_start_address, src_instance, dmac)
-            packet_header = get_packet_header_inner(
+            packet_header = ProtocolChange.get_packet_header_inner(
                 addr_coll,
                 stream_config.header_segments,
                 src_instance.can_tcp_checksum,
@@ -527,7 +526,7 @@ class BaseTestType:
             dmac = self.get_dmac_address(src_instance, dest_instance, ip_version)
             min_val, max_val = self.find_packet_sizes()
             addr_coll = make_address_collection(dest_ip, src_instance, dmac)
-            packet_header = get_packet_header_inner(
+            packet_header = ProtocolChange.get_packet_header_inner(
                 addr_coll, stream_config.header_segments, src_instance.can_tcp_checksum
             )
 
