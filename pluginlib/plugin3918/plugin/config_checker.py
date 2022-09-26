@@ -6,7 +6,6 @@ from ..utils.errors import (
     MixPacketLegnthTooSmall,
 )
 from typing import TYPE_CHECKING
-from xoa_driver.utils import apply
 
 if TYPE_CHECKING:
     from ...plugin3918 import Model3918

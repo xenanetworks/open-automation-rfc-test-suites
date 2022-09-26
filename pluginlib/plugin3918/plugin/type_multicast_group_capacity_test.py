@@ -100,9 +100,6 @@ class MulticastGroupCapacityTest(BaseTestType):
 
         self.capture_switch.set_capture_check_in_progress(False)
 
-    # def trigger_delay_timer(self) -> None:
-    #     # TODO
-    #     pass
 
     async def setup_capacity_capture(self):
         await schedule(1, "s", self.check_capacity)
@@ -112,8 +109,6 @@ class MulticastGroupCapacityTest(BaseTestType):
             await (self.perform_join_capture_check())
         test_passed = self.check_capacity_result()
         if test_passed:
-            # self.stop_capture_poll_timer()
-            # self.trigger_delay_timer()
             return True
         else:
             await self.init_basic_igmp_capture()

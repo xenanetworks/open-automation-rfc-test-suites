@@ -1,5 +1,5 @@
 from asyncio import gather, sleep, Lock as AsyncLock
-from typing import TYPE_CHECKING, Iterable, Generator, List, Tuple
+from typing import TYPE_CHECKING, Dict, Iterable, Generator, List, Protocol as Interface, Tuple
 from xoa_driver.utils import apply
 from xoa_driver.enums import (
     TPLDMode,
@@ -791,3 +791,11 @@ class BaseTestType:
                 port_instance.test_result.rx_data_after_leave_timestamp = (
                     extra.time_captured
                 )
+
+
+    @classmethod
+    def display(cls, displayer: "IDisplay", result: Dict) -> None:
+        displayer.display()
+
+
+class IDisplay(Interface):

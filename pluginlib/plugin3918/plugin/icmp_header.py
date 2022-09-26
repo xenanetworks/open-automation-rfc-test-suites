@@ -7,8 +7,6 @@ from ..plugin.mc_operations import (
     get_link_local_uc_ipv6_address,
     get_multicast_mac_for_ip,
 )
-
-
 from ..utils.constants import (
     ALL_ROUTERS_MULTICAST_GROUP_V2,
     ALL_ROUTERS_MULTICAST_GROUP_V3,
@@ -24,7 +22,6 @@ from ..utils.constants import (
     MLD_V1_REPORT,
     MLD_V2_REPORT,
     IGMPv1Type,
-    STANDARD_TPLD_TOTAL_LENGTH,
     IGMPv3GroupRecordTypes,
     IgmpRequestType,
     IgmpVersion,

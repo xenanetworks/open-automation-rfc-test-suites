@@ -32,10 +32,9 @@ def generate_table(results: Dict) -> List[Table]:
     return all_tables
 
 
-def display(result):
+def display(result: Dict) -> None:
     console.clear()
     tables = generate_table(result)
     for table in tables:
-        with Live(console=console, screen=False, refresh_per_second=1) as live:        
+        with Live(console=console, screen=False, refresh_per_second=1) as live:
             live.update(table)
-

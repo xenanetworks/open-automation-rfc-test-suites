@@ -32,12 +32,6 @@ class FieldDefinition(BaseModel):
         byte_length = self.bit_length // 8 + offset
         return byte_length
 
-    # @validator("byte_length")
-    # def set_byte_length(cls, v):
-    #     offset = 1 if v % 8 > 0 else 0
-    #     byte_length = v // 8 + offset
-    #     return byte_length
-
 
 class SegmentDefinition(BaseModel):
     name: str = Field(alias="Name")

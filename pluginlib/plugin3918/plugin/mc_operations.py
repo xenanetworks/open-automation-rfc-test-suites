@@ -1,5 +1,6 @@
 from ..utils.field import NewIPv4Address, NewIPv6Address, MacAddress
 from ..utils.constants import (
+    IPVersion,
     IP_V4_MULTICAST_MAC_BASE_ADDRESS,
     IP_V6_MULTICAST_MAC_BASE_ADDRESS,
 )
@@ -8,7 +9,7 @@ from typing import Union
 
 def get_multicast_mac_for_ip(mc_ip_address: Union[NewIPv4Address, NewIPv6Address]):
     ip_address_bytes = mc_ip_address.int_list
-    if mc_ip_address.version == 4:
+    if IPVersion(mc_ip_address.version) == IPVersion.IPV4:
         mac_address = MacAddress(IP_V4_MULTICAST_MAC_BASE_ADDRESS)
         m_dic = {
             1: ip_address_bytes[1] & 0x7F,

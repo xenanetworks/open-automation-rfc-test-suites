@@ -1,7 +1,7 @@
 from asyncio import sleep
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 from xoa_driver import utils
 from .test_result import AddressCollection
 from ..utils.constants import (
@@ -21,8 +21,6 @@ from .protocol_change import ProtocolChange
 class PortArpRefreshData:
     ip_version: IPVersion
     port_config: PortConfiguration
-    # source_ip_address: Union[IPv4Address, IPv6Address]
-    # source_mac_address: MacAddress
     stream_config: str
     gateway_mac: MacAddress = MacAddress("00:00:00:00:00:00")
 
@@ -42,8 +40,6 @@ def add_address_refresh_entry(
     address_refresh_map: Dict[str, List["PortArpRefreshData"]],
     port_config: "PortConfiguration",
     ip_version: IPVersion,
-    # src_ip_address: Union[IPv4Address, IPv6Address],
-    # source_mac_address: MacAddress,
     stream_config,
 ) -> Dict[str, List["PortArpRefreshData"]]:
     if not port_config.port_slot in address_refresh_map:
@@ -51,41 +47,12 @@ def add_address_refresh_entry(
     new_entry = PortArpRefreshData(
         ip_version=ip_version,
         port_config=port_config,
-        # source_ip_address=src_ip_address,
-        # source_mac_address=source_mac_address,
         stream_config=stream_config,
     )
     if new_entry not in address_refresh_map[port_config.port_slot]:
         address_refresh_map[port_config.port_slot].append(new_entry)
 
     return address_refresh_map
-
-
-# def wrap_add_16(data: bytearray, offset_num: int) -> bytearray:
-#     # Needs validation
-#     checksum = 0
-#     data[offset_num + 0] = 0
-#     data[offset_num + 1] = 0
-#     for i in range(0, len(data), 2):
-#         w = (data[i + 0] << 8) + data[i + 1]
-#         checksum += w
-#         if checksum > 0xFFFF:
-#             checksum = (1 + checksum) & 0xFFFF  # add carry back in as lsb
-#     data[offset_num + 0] = 0xFF + 1 + (~(checksum >> 8))
-#     data[offset_num + 1] = 0xFF + 1 + (~(checksum & 0xFF))
-#     return data
-
-
-# def calculate_checksum(
-#     segment: "HeaderSegment",
-#     segment_dic: Dict[str, "SegmentDefinition"],
-#     patched_value: bytearray,
-# ) -> bytearray:
-#     key = segment.segment_type.value
-#     offset_num = segment_dic[key].checksum_offset if key in segment_dic else -1
-#     if offset_num and offset_num != -1:
-#         return wrap_add_16(patched_value, offset_num)
-#     return patched_value
 
 
 def make_address_collection(

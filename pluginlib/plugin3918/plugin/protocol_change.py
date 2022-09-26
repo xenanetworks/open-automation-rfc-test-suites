@@ -169,9 +169,6 @@ class ProtocolChange:
             patched_value = cls.get_segment_value(
                 header_segments, segment_index, addr_coll, can_tcp_checksum
             )
-            # real_value = calculate_checksum(
-            #     segment, DEFAULT_SEGMENT_DIC, bytearray.fromhex(patched_value)
-            # )
             real_value = ProtocolChange.calculate_checksum(
                 header_segments, segment_index, patched_value
             )

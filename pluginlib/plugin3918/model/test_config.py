@@ -1,4 +1,3 @@
-from decimal import Decimal
 from typing import List
 from pydantic import (
     ConfigError,
@@ -13,10 +12,8 @@ from ..utils.constants import (
     MIXED_DEFAULT_WEIGHTS,
     MIXED_PACKET_SIZE,
     PacketSizeType,
-    IEEE_DEFAULT_LIST
+    IEEE_DEFAULT_LIST,
 )
-from ..utils.field import NonNegativeDecimal
-
 
 
 class FrameSizesOptions(BaseModel):

@@ -440,12 +440,7 @@ class ResourceManager:
         port_obj = tester_obj.modules.obtain(port_identity.module_index).ports.obtain(
             port_identity.port_index
         )
-        return PortInstance(
-            port_identity.name,
-            port_obj,
-            tester_obj,
-            port_config,
-        )
+        return PortInstance(port_identity.name, port_obj, tester_obj, port_config)
 
     async def __connect(self):
         srcs: List[PortConfiguration] = []

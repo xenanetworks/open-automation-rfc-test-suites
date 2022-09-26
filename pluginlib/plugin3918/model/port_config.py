@@ -1,4 +1,3 @@
-from typing import Union
 from pydantic import BaseModel, NonNegativeInt
 from ..utils.errors import IpEmpty, NoIpSegment, NoRole
 
