@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, List
 from asyncio import sleep
 from ..utils.constants import ResultState
-from ..utils.print_result import display
+from ..utils.print_result import T3918Displayer
 from .type_base import BaseTestType
 from .resource_manager import ResourceManager
 
@@ -100,4 +100,4 @@ class MulticastLatencyTest(BaseTestType):
                     f"Jitter({jitter_unit.value })": f"{d.test_result.jitter_counters.average / jitter_unit.scale}/{d.test_result.jitter_counters.minimum / jitter_unit.scale}/{d.test_result.jitter_counters.maximum / jitter_unit.scale}",
                 }
             )
-        display(totals)
+        self.display(T3918Displayer, totals)

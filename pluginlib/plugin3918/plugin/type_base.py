@@ -1,5 +1,12 @@
 from asyncio import gather, sleep, Lock as AsyncLock
-from typing import TYPE_CHECKING, Dict, Iterable, Generator, List, Protocol as Interface, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Iterable,
+    Generator,
+    List,
+    Tuple,
+)
 from xoa_driver.utils import apply
 from xoa_driver.enums import (
     TPLDMode,
@@ -13,6 +20,7 @@ from xoa_driver.lli import commands
 from xoa_driver.misc import Token
 from ..utils.field import MacAddress, NewIPv6Address
 from ..utils.scheduler import schedule
+from ..utils.print_result import IDisplay
 from ..plugin.mc_operations import get_multicast_mac_for_ip
 from .icmp_header import IgmpMld
 from .protocol_change import ProtocolChange
@@ -792,10 +800,6 @@ class BaseTestType:
                     extra.time_captured
                 )
 
-
     @classmethod
     def display(cls, displayer: "IDisplay", result: Dict) -> None:
-        displayer.display()
-
-
-class IDisplay(Interface):
+        displayer.display(result)

@@ -9,7 +9,7 @@ from xoa_driver.enums import (
     PacketType,
 )
 from ..utils.constants import FILTER_M0M1_L0L1, TRIGGER_PACKET_SIZE
-from ..utils.print_result import display
+from ..utils.print_result import T3918Displayer
 from .type_base import BaseTestType
 from .resource_manager import ResourceManager
 
@@ -179,4 +179,4 @@ class GroupJoinLeaveDelayTest(BaseTestType):
                     / self.model_data.get_latency_unit().scale,
                 }
             )
-        display(totals)
+        self.display(T3918Displayer, totals)

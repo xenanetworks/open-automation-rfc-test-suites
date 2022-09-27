@@ -5,7 +5,7 @@ from xoa_driver.utils import apply
 from .resource_manager import PortInstance, ResourceManager
 from .type_base import BaseTestType
 from ..utils.constants import ResultState
-from ..utils.print_result import display
+from ..utils.print_result import T3918Displayer
 from ..utils.scheduler import schedule
 from ..utils.driver_enhance import pause_batch_apply
 
@@ -187,4 +187,4 @@ class MulticastGroupCapacityTest(BaseTestType):
                     "Rx Group Count#": d.test_result.rx_mc_group_count,
                 }
             )
-        display(totals)
+        self.display(T3918Displayer, totals)

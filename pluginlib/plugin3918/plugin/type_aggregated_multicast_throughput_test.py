@@ -1,7 +1,7 @@
 from asyncio import sleep
 from typing import TYPE_CHECKING, List
 from ..utils.constants import ResultState, StreamTypeInfo
-from ..utils.print_result import display
+from ..utils.print_result import T3918Displayer
 from .type_base import BaseTestType
 from .resource_manager import ResourceManager
 
@@ -140,4 +140,4 @@ class AggregatedThroughputTest(BaseTestType):
                     "Rx Rate(Bit/s)": r.bps,
                 }
             )
-        display(totals)
+        self.display(T3918Displayer, totals)

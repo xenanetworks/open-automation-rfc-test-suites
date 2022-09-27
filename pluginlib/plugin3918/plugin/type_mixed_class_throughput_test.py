@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List
 from .resource_manager import ResourceManager
 from .type_base import BaseTestType
 from ..utils.constants import ResultState, StreamTypeInfo
-from ..utils.print_result import display
+from ..utils.print_result import T3918Displayer
 
 if TYPE_CHECKING:
     from ...plugin3918 import Model3918
@@ -148,4 +148,4 @@ class MixedClassThroughputTest(BaseTestType):
                     "MC Rx Rate(Bit/s)": r.bps,
                 }
             )
-        display(totals)
+        self.display(T3918Displayer, totals)

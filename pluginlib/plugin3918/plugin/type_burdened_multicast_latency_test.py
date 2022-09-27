@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List
 from ..utils.constants import ResultState, StreamTypeInfo
 from .resource_manager import ResourceManager
 from .type_base import BaseTestType
-from ..utils.print_result import display
+from ..utils.print_result import T3918Displayer
 
 if TYPE_CHECKING:
     from ...plugin3918 import Model3918
@@ -100,5 +100,4 @@ class BurdenedMulticastLatencyTest(BaseTestType):
                     f"Jitter({jitter_unit.value})": f"{d.test_result.jitter_counters.average / jitter_unit.scale}/{d.test_result.jitter_counters.minimum / jitter_unit.scale}/{d.test_result.jitter_counters.maximum / jitter_unit.scale}",
                 }
             )
-        display(totals)
-        
+        self.display(T3918Displayer, totals)

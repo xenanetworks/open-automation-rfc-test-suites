@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List
 from .resource_manager import ResourceManager
 from .type_base import BaseTestType
 from ..utils.constants import StreamTypeInfo
-from ..utils.print_result import display
+from ..utils.print_result import T3918Displayer
 
 if TYPE_CHECKING:
     from ...plugin3918 import Model3918
@@ -108,4 +108,4 @@ class BurdenedGroupJoinDelayTest(BaseTestType):
                     "Join Delay(msec)": d.test_result.join_delay / self.model_data.get_latency_unit().scale ,
                 }
             )
-        display(totals)     
+        self.display(T3918Displayer, totals)  

@@ -2,7 +2,7 @@ from asyncio import sleep
 from typing import TYPE_CHECKING, List
 from .type_base import BaseTestType
 from ..utils.constants import ResultState
-from ..utils.print_result import display
+from ..utils.print_result import T3918Displayer
 from .resource_manager import ResourceManager
 
 if TYPE_CHECKING:
@@ -116,4 +116,4 @@ class ScaledGroupThroughputTest(BaseTestType):
                     "Rx Rate(Bit/s)": r.bps,
                 }
             )
-        display(totals)
+        self.display(T3918Displayer, totals)
