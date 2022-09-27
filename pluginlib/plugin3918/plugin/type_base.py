@@ -693,7 +693,8 @@ class BaseTestType:
 
     async def send_mac_learning_packets(self) -> None:
         tokens = []
-        for port_ins in self.resource_manager.port_instances():
+        p_instance = self.resource_manager.port_instances()
+        for port_ins in p_instance:
             dmac = MacAddress("FF:FF:FF:FF:FF:FF")
             smac = port_ins.native_mac_address
             ether_type = "FFFF"
@@ -701,7 +702,8 @@ class BaseTestType:
             learning_packet = f"{dmac.hexstring}{smac.hexstring}{ether_type}{payload}"
             tokens.append(port_ins.port.tx_single_pkt.send.set(learning_packet))
         await apply(*tokens)
-        await sleep(2)
+        # in case of the router cannot handle so many mac learning packets
+        await sleep(len(p_instance))
 
     async def start_counter_poll(self) -> None:
         self.counter_poll_active = True

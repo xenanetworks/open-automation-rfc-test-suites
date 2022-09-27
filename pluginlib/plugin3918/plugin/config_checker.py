@@ -22,7 +22,6 @@ class ConfigChecker:
     async def _check_min_max_packet_length(self):
         min_mix = self.data.test_configuration.frame_sizes.mixed_length_config.min
         max_mix = self.data.test_configuration.frame_sizes.mixed_length_config.max
-        # tokens = []
         for src_instance in self.resource_manager.mc_src_ports():
             port_can_mix_length = False  # TODO: 替换成真实值
             if port_can_mix_length:

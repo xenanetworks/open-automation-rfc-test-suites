@@ -9,7 +9,8 @@ from typing import Union
 
 def get_multicast_mac_for_ip(mc_ip_address: Union[NewIPv4Address, NewIPv6Address]):
     ip_address_bytes = mc_ip_address.int_list
-    if IPVersion(mc_ip_address.version) == IPVersion.IPV4:
+    ip_version = IPVersion.IPV4 if mc_ip_address.version == 4 else IPVersion.IPV6
+    if ip_version == IPVersion.IPV4:
         mac_address = MacAddress(IP_V4_MULTICAST_MAC_BASE_ADDRESS)
         m_dic = {
             1: ip_address_bytes[1] & 0x7F,

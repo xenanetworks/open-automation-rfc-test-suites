@@ -45,7 +45,6 @@ class BurdenedGroupJoinDelayTest(BaseTestType):
             await self.setup_uc_stream_rates(False)
             await self.send_igmp_leave()
             await self.init_basic_igmp_capture()
-            await self.stop_traffic()
             await self.clear_port_stats()
             await self.start_traffic(False, True)
             await self.start_counter_poll()
@@ -105,7 +104,8 @@ class BurdenedGroupJoinDelayTest(BaseTestType):
                     "Destination Port Name": d.name,
                     "MC Rx Packets": r.frames,
                     "MC Rx Rate(Bit/s)": r.bps,
-                    "Join Delay(msec)": d.test_result.join_delay / self.model_data.get_latency_unit().scale ,
+                    "Join Delay(msec)": d.test_result.join_delay
+                    / self.model_data.get_latency_unit().scale,
                 }
             )
-        self.display(T3918Displayer, totals)  
+        self.display(T3918Displayer, totals)

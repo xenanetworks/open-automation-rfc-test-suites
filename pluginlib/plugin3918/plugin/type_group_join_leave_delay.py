@@ -44,7 +44,7 @@ class GroupJoinLeaveDelayTest(BaseTestType):
             await self.setup_mc_stream_rates()
             await self.init_basic_igmp_capture()
             await self.clear_port_stats()
-            await self.start_traffic(False, False)
+            await self.start_traffic(False, True)
             await self.start_counter_poll()
             await sleep(self.model_data.get_traffic_to_join_delay())
             await self.stop_capture_and_get_stats()

@@ -1,13 +1,12 @@
 from asyncio import sleep, gather
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Dict, List, Set
-from xoa_driver.utils import apply
+from xoa_driver.utils import apply, apply_iter
 from .resource_manager import PortInstance, ResourceManager
 from .type_base import BaseTestType
 from ..utils.constants import ResultState
 from ..utils.print_result import T3918Displayer
 from ..utils.scheduler import schedule
-from ..utils.driver_enhance import pause_batch_apply
 
 if TYPE_CHECKING:
     from ...plugin3918 import Model3918
@@ -88,34 +87,35 @@ class MulticastGroupCapacityTest(BaseTestType):
             packet_tokens = (
                 obtained_capture.packet.get() for obtained_capture in stats
             )
-            async for packet_result in pause_batch_apply(75, 0, packet_tokens):
+            async for packet_result in apply_iter(*packet_tokens):
                 address_string = "".join(packet_result.hex_data[3:6]).replace("0x", "")
                 address_value = int(address_string, 16)
                 if dest_instance not in self.multicast_group_check_map:
                     self.multicast_group_check_map[dest_instance] = set()
                 self.multicast_group_check_map[dest_instance].add(address_value)
                 # live set rx_mc_group_count
-                group_count = len(self.multicast_group_check_map[dest_instance])
-                dest_instance.test_result.set_rx_mc_group_count(group_count)
+            group_count = len(self.multicast_group_check_map[dest_instance])
+            dest_instance.test_result.set_rx_mc_group_count(group_count)
 
         self.capture_switch.set_capture_check_in_progress(False)
 
-
     async def setup_capacity_capture(self):
+        self.capture_switch.capture_check_enabled = True
         await schedule(1, "s", self.check_capacity)
 
     async def check_capacity(self, count: int) -> bool:
+        if not self.capture_switch.capture_check_enabled:
+            return True
         if count > 1:
-            await (self.perform_join_capture_check())
+            await self.perform_join_capture_check()
         test_passed = self.check_capacity_result()
         if test_passed:
             return True
         else:
             await self.init_basic_igmp_capture()
-            return self.test_stopped()
+            return not self.capture_switch.capture_check_enabled
 
     async def add_iteration_step(self) -> None:
-
         sweep_list = self.model_data.get_sweep_value_list()
         for rate in sweep_list:
             self.bout_info.set_rate(rate)
@@ -131,13 +131,15 @@ class MulticastGroupCapacityTest(BaseTestType):
             await sleep(1)
             await self.stop_traffic()
             await sleep(1)
-            await self.stop_traffic()
             await self.clear_port_stats()
-            await self.start_traffic(False, True)
             await self.start_counter_poll()
+            await self.start_traffic(False, True)
             await self.setup_capacity_capture()
             await sleep(self.model_data.get_duration_value())
+            self.stop_capture_poll_timer()
+            await self.stop_traffic()
             await sleep(self.model_data.get_delay_after_stop())
+            self.stop_counter_poll()
             await self.send_igmp_leave()
             await sleep(self.model_data.get_delay_after_leave())
             await self.get_final_counters()
