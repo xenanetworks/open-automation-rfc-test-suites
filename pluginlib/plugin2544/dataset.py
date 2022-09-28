@@ -1,5 +1,5 @@
 from decimal import getcontext
-from typing import Dict, Tuple, TYPE_CHECKING
+from typing import Dict, Tuple
 from pydantic import BaseModel, validator
 from .utils import exceptions, constants as const
 from .model import (
@@ -49,7 +49,7 @@ class PluginModel2544(BaseModel):  # Main Model
         if "protocol_segments" in values:
             for _, port_config in v.items():
                 profile_id = port_config.profile_id
-                port_config.set_profile(values["protocol_segments"][profile_id])
+                port_config.set_profile(values["protocol_segments"][profile_id].copy(deep=True))
         return v
 
     @validator("ports_configuration", always=True)
