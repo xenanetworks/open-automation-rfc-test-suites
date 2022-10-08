@@ -237,7 +237,7 @@ class SegmentField(BaseModel):
 
 class ProtocolSegment(BaseModel):
     segment_type: SegmentType
-    fields: list[SegmentField]
+    fields: List[SegmentField]
     checksum_offset: Optional[int]
 
     def __init__(self, **data: Any) -> None:
@@ -300,7 +300,7 @@ class ProtocolSegment(BaseModel):
 
 
 class ProtocolSegmentProfileConfig(BaseModel):
-    header_segments: list[ProtocolSegment] = []
+    header_segments: List[ProtocolSegment] = []
 
     def __getitem__(self, segment_type: SegmentType) -> List[ProtocolSegment]:
         return [segment for segment in self.header_segments if segment.segment_type == segment_type]

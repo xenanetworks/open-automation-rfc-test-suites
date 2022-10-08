@@ -1,16 +1,10 @@
-from __future__ import annotations
 import asyncio
 import json
+import platform
 import pydantic
 from pathlib import Path
-from typing import (
-    Any,
-    cast,
-)
-from xoa_core import (
-    types,
-    controller,
-)
+from typing import Any, cast, Dict
+from xoa_core import types, controller
 from loguru import logger
 
 from xoa_converter.entry import converter
@@ -25,25 +19,32 @@ JSON_PATH = BASE_PATH / "test" / "hello.json"
 T_SUITE_NAME = "RFC-2544"
 
 
+def set_windows_loop_policy():
+    plat = platform.system().lower()
+
+    if plat == "windows":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+
 async def subscribe(ctrl: controller.MainController, source: str) -> None:
     async for msg in ctrl.listen_changes(source):
         logger.debug(msg)
 
 
-async def start_test(ctrl: controller.MainController, config: dict[str, Any], test_suite_name: str) -> None:
-    try:
-        exec_id = ctrl.start_test_suite(test_suite_name, config, debug_connection=DEBUG)
-    except Exception as err:
-        logger.error(err)
-    else:
-        await subscribe(ctrl, exec_id)
+async def start_test(
+    ctrl: controller.MainController, config: Dict[str, Any], test_suite_name: str
+) -> None:
+    exec_id = ctrl.start_test_suite(test_suite_name, config, debug_connection=DEBUG)
+    await subscribe(ctrl, exec_id)
 
 
 async def main() -> None:
     new = [
         # types.Credentials( product=types.EProductType.VALKYRIE, host="87.61.110.114", password=cast(pydantic.SecretStr, "xena")),
         types.Credentials(
-            product=types.EProductType.VALKYRIE, host="192.168.1.198", password=cast(pydantic.SecretStr, "xena")
+            product=types.EProductType.VALKYRIE,
+            host="192.168.1.198",
+            password=cast(pydantic.SecretStr, "xena"),
         ),
         # types.Credentials(
         #     product=types.EProductType.VALKYRIE, host="192.168.1.197", password=cast(pydantic.SecretStr, "xena")
@@ -68,4 +69,5 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    set_windows_loop_policy()
     asyncio.run(main())
