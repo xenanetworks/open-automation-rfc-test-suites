@@ -64,7 +64,9 @@ class SegmentDefinition(BaseModel):
         result = []
         modulus = len(self.default_value_bin) % step
         if modulus:
-            default_value_bin = (step - modulus) * [0] + self.default_value_bin
+            default_value_bin = [
+                0 for _ in range(step - modulus)
+            ] + self.default_value_bin
         else:
             default_value_bin = self.default_value_bin
         for i in range(0, len(default_value_bin), step):
@@ -93,10 +95,10 @@ class SegmentDefinition(BaseModel):
                     all_bits += list(int(i) for i in bits)
 
             else:
-                bits = [0] * f.bit_length
+                bits = [0 for _ in range(f.bit_length)]
                 all_bits += bits
             if all_bits_length - len(all_bits) >= 1:
-                all_bits += [0] * (all_bits_length - len(all_bits))
+                all_bits += [0 for _ in range(all_bits_length - len(all_bits))]
 
         return all_bits
 

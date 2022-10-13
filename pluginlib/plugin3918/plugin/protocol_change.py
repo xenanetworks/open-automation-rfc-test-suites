@@ -347,7 +347,7 @@ class ProtocolChange:
         assert field_def, f'Cannot find the field named "{key}". '
         bit_offset = field_def.bit_offset
         bit_length = field_def.bit_length
-        new_value = [0] * bit_length
+        new_value = [0 for _ in range(bit_length)]
         if isinstance(value, (str, list, bytearray, bytes)):
             if mode_enum == ParseMode.BIT:
                 new_value = [int(i) for i in value]
@@ -398,7 +398,7 @@ class ProtocolChange:
         if len(int_01_list) > patch_to_length:
             result = int_01_list[-patch_to_length:]
         elif modulus:
-            result = (patch_to_length - modulus) * [0] + int_01_list
+            result = [0 for _ in range(patch_to_length - modulus)] + int_01_list
         else:
             result = int_01_list
         return result

@@ -32,7 +32,9 @@ def get_multicast_mac_for_ip(mc_ip_address: Union[NewIPv4Address, NewIPv6Address
 
 
 def get_link_local_uc_ipv6_address(mac_address: MacAddress) -> bytearray:
-    return bytearray([0xFE, 0x80] + 6 * [0]) + get_eui64_ident_from_mac(mac_address)
+    return bytearray([0xFE, 0x80] + [0 for _ in range(6)]) + get_eui64_ident_from_mac(
+        mac_address
+    )
 
 
 def get_eui64_ident_from_mac(mac_address: MacAddress) -> bytearray:

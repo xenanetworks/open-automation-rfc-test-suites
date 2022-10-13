@@ -91,7 +91,7 @@ class IgmpMld:
             )
             .bytearrays
         )
-        group_segment_raw = group_segment_org + bytearray([0] * add_length)
+        group_segment_raw = group_segment_org + bytearray(add_length)
         if use_src:
             group_segment_with_ip = (
                 group_segment_raw[: -len(mc_source_ip_address.bytearrays)]
@@ -105,9 +105,7 @@ class IgmpMld:
             .change_segment("Group Record Count", 1)
             .bytearrays
         )
-        igmp_segment_raw = igmp_segment_org + bytearray(
-            [0] * len(group_segment_with_ip)
-        )
+        igmp_segment_raw = igmp_segment_org + bytearray(len(group_segment_with_ip))
         igmp_segment = (
             igmp_segment_raw[: -len(group_segment_with_ip)] + group_segment_with_ip
         )
