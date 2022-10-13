@@ -12,7 +12,7 @@ from ..utils.constants import (
     ProtocolOption,
 )
 from ..utils.field import MacAddress, NewIPv4Address, NewIPv6Address, Prefix
-from .protocol_segments import ProtocolSegmentProfileConfig
+from .protocol_segments import ProtocolSegmentProfileConfigure
 from decimal import Decimal
 from pydantic import validator
 
@@ -108,7 +108,7 @@ class PortConfiguration(BaseModel):
     is_tx_port: bool = True
     is_rx_port: bool = True
 
-    profile: ProtocolSegmentProfileConfig
+    profile: ProtocolSegmentProfileConfigure
     multicast_role: MulticastRole
 
     @validator("ip_gateway_mac_address", "remote_loop_mac_address", pre=True)

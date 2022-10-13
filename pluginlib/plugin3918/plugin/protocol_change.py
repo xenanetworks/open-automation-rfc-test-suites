@@ -190,7 +190,6 @@ class ProtocolChange:
                 ProtocolChange.get_segment_definition_by_protocol(
                     segment.segment_type
                 ).checksum_offset
-                or -1
                 if segment.segment_type.value in DEFAULT_SEGMENT_DIC
                 else -1
             )

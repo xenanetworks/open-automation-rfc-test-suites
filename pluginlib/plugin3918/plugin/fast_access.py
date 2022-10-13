@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING, Dict, List
-from ..model.protocol_segments import ProtocolSegmentProfileConfig
+from ..model.protocol_segments import ProtocolSegmentProfileConfigure
 from ..model.test_type_config import (
     AggregatedMulticastThroughput,
     BaseOptionsType,
@@ -182,10 +182,10 @@ class Data3918:
     def get_delay_after_leave(self) -> int:
         return 2
 
-    def get_mc_config(self) -> ProtocolSegmentProfileConfig:
+    def get_mc_config(self) -> ProtocolSegmentProfileConfigure:
         return self.mc_definition.stream_definition
 
-    def get_uc_config(self) -> ProtocolSegmentProfileConfig:
+    def get_uc_config(self) -> ProtocolSegmentProfileConfigure:
         return self.mc_definition.uc_flow_def.stream_definition
 
     def get_uc_def(self) -> UcFlowDefinition:

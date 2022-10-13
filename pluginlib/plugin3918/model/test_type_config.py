@@ -1,6 +1,5 @@
 from typing import List, Generator, Optional, TypeVar
 from pydantic import BaseModel
-
 from ..utils.constants import GroupCountSel
 
 

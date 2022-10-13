@@ -43,7 +43,9 @@ class FrameSizeConfiguration(BaseModel):
     varying_packet_min_size: NonNegativeInt
     varying_packet_max_size: NonNegativeInt
     mixed_sizes_weights: List[NonNegativeInt] = MIXED_DEFAULT_WEIGHTS
-    mixed_length_config: FrameSizesOptions = FrameSizesOptions()
+    mixed_length_config: FrameSizesOptions = FrameSizesOptions(
+        field_0=56, field_1=60, field_14=9216, field_15=16360
+    )
 
     @validator("mixed_sizes_weights", pre=True, always=True)
     def is_mixed_weights_valid(cls, v, values):

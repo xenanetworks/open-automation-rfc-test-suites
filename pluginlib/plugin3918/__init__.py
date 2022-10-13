@@ -23,7 +23,7 @@ from .model.test_type_config import (
 from .model.test_suit import TestConfiguration3918
 from .model.mc_uc_definition import McDefinition
 from .model.port_config import PortConfiguration
-from .model.protocol_segments import ProtocolSegmentProfileConfig
+from .model.protocol_segments import ProtocolSegmentProfileConfigure
 from .utils.errors import (
     IPAddressMissing,
     LeastTwoUcBurden,
@@ -54,7 +54,7 @@ def _check_header_length(
 
 class Model3918(BaseModel):
     mc_definition: McDefinition
-    protocol_segments: Dict[str, ProtocolSegmentProfileConfig]
+    protocol_segments: Dict[str, ProtocolSegmentProfileConfigure]
     ports_configuration: Dict[str, PortConfiguration]
     test_configuration: TestConfiguration3918
     test_types_configuration: TestTypeConfiguration3918

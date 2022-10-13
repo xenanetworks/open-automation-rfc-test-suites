@@ -1,18 +1,9 @@
-from msilib.schema import Property
-import os
 from enum import Enum
 from xoa_driver.enums import (
     LatencyMode as XLatencyMode,
     LengthType,
     ProtocolOption as XProtocolOption,
     PayloadType as XPayloadType,
-)
-
-DEFAULT_SEGMENT_PATH = os.path.abspath(
-    os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-        "reference/segment_refs",
-    )
 )
 
 
@@ -277,46 +268,6 @@ class ProtocolOption(Enum):
             }
         )
         return dic[self]
-
-
-def from_legacy_protocol_option(string: str) -> str:
-    return {
-        "ARP": "arp",
-        "ETHERNET": "ethernet",
-        "FC": "fc",
-        "FCOEHEAD": "fcoe",
-        "FCOETAIL": "fcoetail",
-        "GRE_CHECK": "gre_check",
-        "GRE_NOCHECK": "gre_nocheck",
-        "GTP": "gtp",
-        "ICMP": "icmp",
-        "ICMPV6": "icmpv6",
-        "IGMPV1": "igmpv1",
-        "IGMPV2": "igmpv2",
-        "MLDV2_AR": "mldv2_ar",
-        "IGMPV3_GR": "igmpv3_gr",
-        "IGMPV3_MR": "igmpv3_mr",
-        "IGMPV3L0": "igmpv3l0",
-        "IGMPV3L1": "igmpv3l1",
-        "IP": "ipv4",
-        "IPv6": "ipv6",
-        "LLC": "llc",
-        "MACCTRL": "macctrl",
-        "MPLS": "mpls",
-        "NVGRE": "nvgre",
-        "PBBTAG": "pbbtag",
-        "RTCP": "rtcp",
-        "RTP": "rtp",
-        "SCTP": "sctp",
-        "SNAP": "snap",
-        "STP": "stp",
-        "TCP": "tcp",
-        "TCPCHECK": "tcp_check",
-        "UDP": "udp",
-        "UDPCHECK": "udpcheck",
-        "VLAN": "vlan",
-        "VXLAN": "vxlan",
-    }.get(string, string)
 
 
 class PortRateCapProfile(Enum):
