@@ -16,10 +16,7 @@ class ConfigChecker:
         self.data = data
         self.resource_manager = resource_manager
 
-    async def check_config(self) -> None:
-        await self._check_min_max_packet_length()
-
-    async def _check_min_max_packet_length(self):
+    def check_config(self) -> None:
         min_mix = self.data.test_configuration.frame_sizes.mixed_length_config.min
         max_mix = self.data.test_configuration.frame_sizes.mixed_length_config.max
         for src_instance in self.resource_manager.mc_src_ports():

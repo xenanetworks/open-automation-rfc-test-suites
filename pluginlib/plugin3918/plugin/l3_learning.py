@@ -1,4 +1,4 @@
-from asyncio import sleep
+from asyncio import sleep, gather
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
 from xoa_driver import utils
@@ -79,8 +79,7 @@ async def send_arp_learning_request(
     stream_config: "ProtocolSegmentProfileConfigure",
 ):
     await port_instance.port.streams.server_sync()
-    for s in port_instance.port.streams:
-        await s.delete()
+    await gather(*[s.delete() for s in port_instance.port.streams])        
     stream = await port_instance.port.streams.create()
     await sleep(3)
     addr_coll = make_address_collection(target_ip_address, port_instance)

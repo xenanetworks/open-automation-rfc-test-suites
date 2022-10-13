@@ -120,5 +120,5 @@ class TestSuite3918(PluginAbstract["Model3918"]):
         resource_manager = await ResourceManager(
             self.testers, self.port_identities, self.cfg
         )
-        await ConfigChecker(self.cfg, resource_manager).check_config()
+        ConfigChecker(self.cfg, resource_manager).check_config()
         await self.run_test_cases(resource_manager)
