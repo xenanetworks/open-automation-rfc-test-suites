@@ -9,8 +9,7 @@ from xoa_driver.enums import (
     PacketType,
 )
 from ..utils.constants import FILTER_M0M1_L0L1, TRIGGER_PACKET_SIZE
-from ..utils.print_result import T3918Displayer
-from .type_base import BaseTestType
+from .type_base import BaseTestType, PPipeFacade
 from .resource_manager import ResourceManager
 
 if TYPE_CHECKING:
@@ -18,8 +17,13 @@ if TYPE_CHECKING:
 
 
 class GroupJoinLeaveDelayTest(BaseTestType):
-    def __init__(self, cfg: "Model3918", resource_manager: "ResourceManager") -> None:
-        super().__init__(cfg, resource_manager)
+    def __init__(
+        self,
+        xoa_out: "PPipeFacade",
+        cfg: "Model3918",
+        resource_manager: "ResourceManager",
+    ) -> None:
+        super().__init__(xoa_out, cfg, resource_manager)
         group_join_leave_delay = cfg.test_types_configuration.group_join_leave_delay
         if group_join_leave_delay:
             self.model_data.set_test_type_operation(group_join_leave_delay)
@@ -179,4 +183,4 @@ class GroupJoinLeaveDelayTest(BaseTestType):
                     / self.model_data.get_latency_unit().scale,
                 }
             )
-        self.display(T3918Displayer, totals)
+        self.display(totals)

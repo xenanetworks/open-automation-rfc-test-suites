@@ -2,16 +2,18 @@ from asyncio import sleep
 from typing import TYPE_CHECKING, List
 from ..utils.constants import ResultState, StreamTypeInfo
 from .resource_manager import ResourceManager
-from .type_base import BaseTestType
-from ..utils.print_result import T3918Displayer
+from .type_base import BaseTestType,PPipeFacade
 
 if TYPE_CHECKING:
     from ...plugin3918 import Model3918
 
 
 class BurdenedMulticastLatencyTest(BaseTestType):
-    def __init__(self, cfg: "Model3918", resource_manager: "ResourceManager") -> None:
-        super().__init__(cfg, resource_manager)
+    def __init__(   self,
+        xoa_out: "PPipeFacade",
+        cfg: "Model3918",
+        resource_manager: "ResourceManager",) -> None:
+        super().__init__(xoa_out,cfg, resource_manager)
         self.src_port_type = StreamTypeInfo.UNICAST_BURDEN
         burdened_multicast_latency = (
             cfg.test_types_configuration.burdened_multicast_latency
@@ -100,4 +102,4 @@ class BurdenedMulticastLatencyTest(BaseTestType):
                     f"Jitter({jitter_unit.value})": f"{d.test_result.jitter_counters.average / jitter_unit.scale}/{d.test_result.jitter_counters.minimum / jitter_unit.scale}/{d.test_result.jitter_counters.maximum / jitter_unit.scale}",
                 }
             )
-        self.display(T3918Displayer, totals)
+        self.display(totals)

@@ -6,6 +6,8 @@ from typing import (
     Generator,
     List,
     Tuple,
+    Union,
+    Protocol as Interface,
 )
 from xoa_driver.utils import apply
 from xoa_driver.enums import (
@@ -20,7 +22,6 @@ from xoa_driver.lli import commands
 from xoa_driver.misc import Token
 from ..utils.field import MacAddress, NewIPv6Address
 from ..utils.scheduler import schedule
-from ..utils.print_result import IDisplay
 from ..plugin.mc_operations import get_multicast_mac_for_ip
 from .icmp_header import IgmpMld
 from .protocol_change import ProtocolChange
@@ -45,19 +46,27 @@ from ..plugin.resource_manager import (
 )
 from ..utils.errors import LossSync, UcTypeError, UnableToObtainDmac
 from .id_control import IDControl
-from .l3_learning import (
-    make_address_collection,
-    send_gateway_learning_request,
-)
+from .l3_learning import make_address_collection, send_gateway_learning_request
 from .fast_access import Data3918
 from .test_result import BoutInfo
 
 if TYPE_CHECKING:
     from ...plugin3918 import Model3918
+    from pydantic import BaseModel
+
+
+class PPipeFacade(Interface):
+    def send_statistics(self, data: Union[Dict, "BaseModel"]) -> None:
+        """Method used for push statistics data into the messages pipe for future distribution"""
 
 
 class BaseTestType:
-    def __init__(self, cfg: "Model3918", resource_manager: "ResourceManager") -> None:
+    def __init__(
+        self,
+        xoa_out: "PPipeFacade",
+        cfg: "Model3918",
+        resource_manager: "ResourceManager",
+    ) -> None:
         self.model_data = Data3918(cfg.test_configuration, cfg.mc_definition)
         self.resource_manager = resource_manager
         self.max_capacity_map = {}
@@ -77,6 +86,7 @@ class BaseTestType:
         self.want_igmp_request_tx_time = False
         self.counter_poll_active = False
         self.src_port_type = StreamTypeInfo.MULTICAST
+        self.xoa_out = xoa_out
 
     def enabled(self) -> bool:
         return self.model_data.has_test_types_configuration()
@@ -802,6 +812,5 @@ class BaseTestType:
                     extra.time_captured
                 )
 
-    @classmethod
-    def display(cls, displayer: "IDisplay", result: Dict) -> None:
-        displayer.display(result)
+    def display(self, result: Dict) -> None:
+        self.xoa_out.send_statistics(result)

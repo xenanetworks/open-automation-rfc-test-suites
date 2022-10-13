@@ -1,8 +1,7 @@
 from asyncio import sleep
 from typing import TYPE_CHECKING, List
 from ..utils.constants import ResultState, StreamTypeInfo
-from ..utils.print_result import T3918Displayer
-from .type_base import BaseTestType
+from .type_base import BaseTestType, PPipeFacade
 from .resource_manager import ResourceManager
 
 if TYPE_CHECKING:
@@ -10,8 +9,13 @@ if TYPE_CHECKING:
 
 
 class AggregatedThroughputTest(BaseTestType):
-    def __init__(self, cfg: "Model3918", resource_manager: "ResourceManager") -> None:
-        super().__init__(cfg, resource_manager)
+    def __init__(
+        self,
+        xoa_out: "PPipeFacade",
+        cfg: "Model3918",
+        resource_manager: "ResourceManager",
+    ) -> None:
+        super().__init__(xoa_out, cfg, resource_manager)
         self.src_port_type = StreamTypeInfo.MULTICAST
         aggregated_multicast_throughput = (
             cfg.test_types_configuration.aggregated_multicast_throughput
@@ -48,10 +52,7 @@ class AggregatedThroughputTest(BaseTestType):
         return self.model_data.get_group_count_list()
 
     def get_iteration_count(self) -> range:
-        return range(
-            1,
-            self.model_data.get_iterations() + 1,
-        )
+        return range(1, self.model_data.get_iterations() + 1)
 
     async def init_trial(self) -> None:
         self.bout_info.set_rate(self.model_data.get_rate_option_initial())
@@ -140,4 +141,4 @@ class AggregatedThroughputTest(BaseTestType):
                     "Rx Rate(Bit/s)": r.bps,
                 }
             )
-        self.display(T3918Displayer, totals)
+        self.display(totals)

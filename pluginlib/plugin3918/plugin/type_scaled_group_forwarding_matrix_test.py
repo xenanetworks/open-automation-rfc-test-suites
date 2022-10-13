@@ -1,8 +1,7 @@
 from asyncio import sleep
 from typing import TYPE_CHECKING, List
-from .type_base import BaseTestType
+from .type_base import BaseTestType, PPipeFacade
 from ..utils.constants import ResultState
-from ..utils.print_result import T3918Displayer
 from .resource_manager import ResourceManager
 
 if TYPE_CHECKING:
@@ -10,8 +9,13 @@ if TYPE_CHECKING:
 
 
 class ScaledGroupThroughputTest(BaseTestType):
-    def __init__(self, cfg: "Model3918", resource_manager: "ResourceManager") -> None:
-        super().__init__(cfg, resource_manager)
+    def __init__(
+        self,
+        xoa_out: "PPipeFacade",
+        cfg: "Model3918",
+        resource_manager: "ResourceManager",
+    ) -> None:
+        super().__init__(xoa_out, cfg, resource_manager)
         scaled_group_forwarding_matrix = (
             cfg.test_types_configuration.scaled_group_forwarding_matrix
         )
@@ -116,4 +120,4 @@ class ScaledGroupThroughputTest(BaseTestType):
                     "Rx Rate(Bit/s)": r.bps,
                 }
             )
-        self.display(T3918Displayer, totals)
+        self.display(totals)

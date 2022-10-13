@@ -112,7 +112,7 @@ class TestSuite3918(PluginAbstract["Model3918"]):
             BurdenedGroupJoinDelayTest,
             BurdenedMulticastLatencyTest,
         ):
-            test = test_case_class(self.cfg, resource_manager)
+            test = test_case_class(self.xoa_out, self.cfg, resource_manager )
             if test.enabled():
                 await test.run()
 

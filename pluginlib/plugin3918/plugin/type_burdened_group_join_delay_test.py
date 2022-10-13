@@ -1,17 +1,21 @@
 from asyncio import sleep, gather
 from typing import TYPE_CHECKING, List
 from .resource_manager import ResourceManager
-from .type_base import BaseTestType
+from .type_base import BaseTestType, PPipeFacade
 from ..utils.constants import StreamTypeInfo
-from ..utils.print_result import T3918Displayer
 
 if TYPE_CHECKING:
     from ...plugin3918 import Model3918
 
 
 class BurdenedGroupJoinDelayTest(BaseTestType):
-    def __init__(self, cfg: "Model3918", resource_manager: "ResourceManager") -> None:
-        super().__init__(cfg, resource_manager)
+    def __init__(
+        self,
+        xoa_out: "PPipeFacade",
+        cfg: "Model3918",
+        resource_manager: "ResourceManager",
+    ) -> None:
+        super().__init__(xoa_out, cfg, resource_manager)
         self.src_port_type = StreamTypeInfo.UNICAST_BURDEN
         self.want_igmp_request_tx_time = True
         burdened_group_join_delay = (
@@ -21,10 +25,7 @@ class BurdenedGroupJoinDelayTest(BaseTestType):
             self.model_data.set_test_type_operation(burdened_group_join_delay)
 
     def get_iteration_count(self) -> range:
-        return range(
-            1,
-            self.model_data.get_iterations() + 1,
-        )
+        return range(1, self.model_data.get_iterations() + 1)
 
     def get_group_count_list(self) -> List[int]:
         return [1]
@@ -108,4 +109,4 @@ class BurdenedGroupJoinDelayTest(BaseTestType):
                     / self.model_data.get_latency_unit().scale,
                 }
             )
-        self.display(T3918Displayer, totals)
+        self.display(totals)

@@ -3,9 +3,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Dict, List, Set
 from xoa_driver.utils import apply, apply_iter
 from .resource_manager import PortInstance, ResourceManager
-from .type_base import BaseTestType
+from .type_base import BaseTestType, PPipeFacade
 from ..utils.constants import ResultState
-from ..utils.print_result import T3918Displayer
 from ..utils.scheduler import schedule
 
 if TYPE_CHECKING:
@@ -25,8 +24,13 @@ class CaptureSwitch:
 
 
 class MulticastGroupCapacityTest(BaseTestType):
-    def __init__(self, cfg: "Model3918", resource_manager: "ResourceManager") -> None:
-        super().__init__(cfg, resource_manager)
+    def __init__(
+        self,
+        xoa_out: "PPipeFacade",
+        cfg: "Model3918",
+        resource_manager: "ResourceManager",
+    ) -> None:
+        super().__init__(xoa_out, cfg, resource_manager)
 
         self.capture_switch = CaptureSwitch(False, False)
         multicast_group_capacity = cfg.test_types_configuration.multicast_group_capacity
@@ -189,4 +193,4 @@ class MulticastGroupCapacityTest(BaseTestType):
                     "Rx Group Count#": d.test_result.rx_mc_group_count,
                 }
             )
-        self.display(T3918Displayer, totals)
+        self.display(totals)

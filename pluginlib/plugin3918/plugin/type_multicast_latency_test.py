@@ -1,17 +1,22 @@
 from typing import TYPE_CHECKING, List
 from asyncio import sleep
 from ..utils.constants import ResultState
-from ..utils.print_result import T3918Displayer
 from .type_base import BaseTestType
 from .resource_manager import ResourceManager
+from .type_base import PPipeFacade
 
 if TYPE_CHECKING:
     from ...plugin3918 import Model3918
 
 
 class MulticastLatencyTest(BaseTestType):
-    def __init__(self, cfg: "Model3918", resource_manager: "ResourceManager") -> None:
-        super().__init__(cfg, resource_manager)
+    def __init__(
+        self,
+        xoa_out: "PPipeFacade",
+        cfg: "Model3918",
+        resource_manager: "ResourceManager",
+    ) -> None:
+        super().__init__(xoa_out, cfg, resource_manager)
         multicast_latency = cfg.test_types_configuration.multicast_latency
         if multicast_latency:
             self.model_data.set_test_type_operation(multicast_latency)
@@ -100,4 +105,4 @@ class MulticastLatencyTest(BaseTestType):
                     f"Jitter({jitter_unit.value })": f"{d.test_result.jitter_counters.average / jitter_unit.scale}/{d.test_result.jitter_counters.minimum / jitter_unit.scale}/{d.test_result.jitter_counters.maximum / jitter_unit.scale}",
                 }
             )
-        self.display(T3918Displayer, totals)
+        self.display(totals)

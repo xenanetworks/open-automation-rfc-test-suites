@@ -1,27 +1,28 @@
 from asyncio import sleep
 from typing import TYPE_CHECKING, List
 from .resource_manager import ResourceManager
-from .type_base import BaseTestType
+from .type_base import BaseTestType, PPipeFacade
 from ..utils.constants import ResultState, StreamTypeInfo
-from ..utils.print_result import T3918Displayer
 
 if TYPE_CHECKING:
     from ...plugin3918 import Model3918
 
 
 class MixedClassThroughputTest(BaseTestType):
-    def __init__(self, cfg: "Model3918", resource_manager: "ResourceManager") -> None:
-        super().__init__(cfg, resource_manager)
+    def __init__(
+        self,
+        xoa_out: "PPipeFacade",
+        cfg: "Model3918",
+        resource_manager: "ResourceManager",
+    ) -> None:
+        super().__init__(xoa_out, cfg, resource_manager)
         self.src_port_type = StreamTypeInfo.UNICAST_NOT_BURDEN
         mixed_class_throughput = cfg.test_types_configuration.mixed_class_throughput
         if mixed_class_throughput:
             self.model_data.set_test_type_operation(mixed_class_throughput)
 
     def get_iteration_count(self) -> range:
-        return range(
-            1,
-            self.model_data.get_iterations() + 1,
-        )
+        return range(1, self.model_data.get_iterations() + 1)
 
     def get_group_count_list(self) -> List[int]:
         return self.model_data.get_group_count_list()
@@ -148,4 +149,4 @@ class MixedClassThroughputTest(BaseTestType):
                     "MC Rx Rate(Bit/s)": r.bps,
                 }
             )
-        self.display(T3918Displayer, totals)
+        self.display(totals)
