@@ -11,24 +11,6 @@ class Enum(CaseSensitiveEnum):
                     return member
 
 
-# queue message action code
-ADD_ACTION = "ADD"
-DEL_ACTION = "DEL"
-GET_ALL_TESTERS = "ALL"
-UPDATE_ACTION = "UPDATE"
-
-OWNER = "xoa-manager"
-
-REQUEST_ID_LIMIT = 0xFFFFFFFF
-
-
-ACTIVE_MODE = "ACTIVE"
-PASSIVE_MODE = "PASSIVE"
-
-
-SUCCESS = 1
-FAIL = 2
-
 MICRO_TPLD_LENGTH = 6
 ETHERNET_FCS_LENGTH = 4
 STANDARD_TPLD_LENGTH = 20
@@ -38,8 +20,8 @@ STANDARD_TPLD_TOTAL_LENGTH = (
     STANDARD_TPLD_LENGTH + MIN_PAYLOAD_LENGTH + ETHERNET_FCS_LENGTH
 )
 MIN_REFRESH_TIMER_INTERNAL = 100.0
-DEFAULT_PACKET_SIZE_LIST = [64, 128, 256, 512, 1024, 1280, 1518]
-MIXED_PACKET_SIZE = [
+DEFAULT_PACKET_SIZE_LIST = (64, 128, 256, 512, 1024, 1280, 1518)
+MIXED_PACKET_SIZE = (
     56,
     60,
     64,
@@ -56,14 +38,10 @@ MIXED_PACKET_SIZE = [
     1518,
     9216,
     16360,
-]
-MIXED_DEFAULT_WEIGHTS = [0, 0, 0, 0, 57, 3, 5, 1, 2, 5, 1, 4, 4, 18, 0, 0]
-MIXED_PACKET_CONFIG_LENGTH_INDICES = [0, 1, 14, 15]
-IMIX_AVERAGE = 463.501953
+)
+MIXED_DEFAULT_WEIGHTS = (0, 0, 0, 0, 57, 3, 5, 1, 2, 5, 1, 4, 4, 18, 0, 0)
+MIXED_PACKET_CONFIG_LENGTH_INDICES = (0, 1, 14, 15)
 MAX_PACKET_LIMIT_VALUE = 0x7FFFFFFF
-MAX_MASK_BIT_LENGTH = 16
-UNREACH_BYTE_VALUE = 256
-SEARCH_SEGMENT_PATH = f'segment_refs/*.json'
 
 STANDARD_SEGMENT_VALUE = (128, 256, 512, 1024, 2048)
 
@@ -85,7 +63,6 @@ AutoNegPorts = (
     ports.POdin10G5S6PCU_b,
     ports.POdin10G3S6PCU,
     ports.POdin10G3S2PCU,
-
 )
 
 
@@ -221,56 +198,15 @@ class DurationUnit(Enum):
 
     @property
     def scale(self) -> int:
-        if self == type(self).FRAME:
-            return 1
-        elif self == type(self).K_FRAME:
-            return 1_000
-        elif self == type(self).M_FRAME:
-            return 1_000_000
-        elif self == type(self).G_FRAME:
-            return 1_000_000_000
-        elif self == type(self).SECOND:
-            return 1
-        elif self == type(self).MINUTE:
-            return 60
-        elif self == type(self).HOUR:
-            return 3600
-        raise ValueError("No scale!")
-
-
-class DurationTimeUnit(Enum):
-    SECOND = "seconds"
-    MINUTE = "minutes"
-    HOUR = "hours"
-
-    @property
-    def scale(self) -> int:
-        if self == type(self).SECOND:
-            return 1
-        elif self == type(self).MINUTE:
-            return 60
-        elif self == type(self).HOUR:
-            return 3600
-        raise ValueError("No scale!")
-
-
-class DurationFrameUnit(Enum):
-    FRAME = "frames"
-    K_FRAME = "10e3_frames"
-    M_FRAME = "10e6_frames"
-    G_FRAME = "10e9_frames"
-
-    @property
-    def scale(self) -> int:
-        if self == type(self).FRAME:
-            return 1
-        elif self == type(self).K_FRAME:
-            return 1_000
-        elif self == type(self).M_FRAME:
-            return 1_000_000
-        elif self == type(self).G_FRAME:
-            return 1_000_000_000
-        raise ValueError("No scale!")
+        return {
+            DurationUnit.FRAME: 1,
+            DurationUnit.K_FRAME: 1_000,
+            DurationUnit.M_FRAME: 1_000_000,
+            DurationUnit.G_FRAME: 1_000_000_000,
+            DurationUnit.SECOND: 1,
+            DurationUnit.MINUTE: 60,
+            DurationUnit.HOUR: 3600,
+        }[self]
 
 
 class TestType(Enum):

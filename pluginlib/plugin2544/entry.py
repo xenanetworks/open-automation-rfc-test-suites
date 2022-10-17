@@ -5,12 +5,10 @@ from decimal import getcontext
 from .plugin.config_checkers import check_test_type_config
 from .plugin.tc_base import TestCaseProcessor
 from .plugin.test_resource import ResourceManager
-from .utils import constants as const
 from .utils.field import NonNegativeDecimal
 
 if TYPE_CHECKING:
     from .dataset import PluginModel2544
-from .utils.logger import logger
 
 getcontext().prec = 12
 
@@ -75,7 +73,7 @@ class TestSuite2544(PluginAbstract["PluginModel2544"]):
                 break
 
     async def __post_test(self) -> None:
-        logger.info("test finish")
+        pass
         # TODO: wait for callback exception catch
         # await asyncio.gather(*[port_struct.clear() for port_struct in self.control_ports])
 
@@ -83,5 +81,3 @@ class TestSuite2544(PluginAbstract["PluginModel2544"]):
         await self.__pre_test()
         await self.__do_test()
         await self.__post_test()
-
-

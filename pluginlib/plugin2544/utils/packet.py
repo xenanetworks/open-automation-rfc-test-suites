@@ -6,9 +6,8 @@ from .field import MacAddress, IPv4Address, IPv6Address
 from .traffic_definitions import EtherType, NextHeaderOption
 
 
-class Padding(str):
-    def __new__(cls, num) -> str:
-        return "0" * num
+def padding(num) -> str:
+    return "0" * num
 
 
 class Packet:
@@ -183,5 +182,5 @@ class ARPPacket(Packet):
         return (
             Ether(smac=self.smac, dmac=self.dmac, type=EtherType.ARP).hexstring
             + self.hexstring
-            + Padding(44)
+            + padding(44)
         )

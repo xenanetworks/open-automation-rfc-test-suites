@@ -21,7 +21,6 @@ from .statistics import (
     StreamStatisticData,
 )
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
-from ..utils.logger import logger
 from ..utils import constants as const, protocol_segments as ps, exceptions
 
 if TYPE_CHECKING:
@@ -88,12 +87,6 @@ class PRStream:
             ),
         )
 
-    # def update_rx_port_statistic(self) -> None:
-    #     before = self.rx_port.statistic.rx_counter.frames
-    #     self.rx_port.statistic.aggregate_rx_statistic(self.statistic)
-    #     logger.info(
-    #         f"{before} -> {self.rx_port.statistic.rx_counter.frames} current: {self.statistic.rx_stream_counter.frames}"
-    #     )
 
 
 class StreamStruct:
@@ -257,9 +250,6 @@ class StreamStruct:
         )
 
         # polling TX and RX statistic not at the same time, may cause the rx statistic larger than tx statistic
-        logger.info(
-            f"handling: {self._tx_port.port_identity.name} -> {self.rx_port.port_identity.name}"
-        )
         self._stream_statistic.tx_counter.add_stream_counter(pt_stream.statistic)
         for pr_stream in pr_streams:
             self._stream_statistic.add_pr_stream_statistic(pr_stream.statistic)

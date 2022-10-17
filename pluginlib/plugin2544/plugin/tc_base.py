@@ -2,7 +2,7 @@ import asyncio, time
 from copy import deepcopy
 import math
 from decimal import Decimal
-from typing import Dict, List, Optional, TYPE_CHECKING, Tuple
+from typing import List, Optional, Protocol, TYPE_CHECKING
 from loguru import logger
 from .tc_back_to_back import BackToBackBoutEntry
 from ..model.m_test_type_config import (
@@ -28,7 +28,11 @@ from ..utils import constants as const
 
 if TYPE_CHECKING:
     from .test_resource import ResourceManager
-    from ..utils.logger import TestSuitePipe
+
+
+class TestSuitePipe(Protocol):
+    def send_statistics(self, data) -> None:
+        ...
 
 
 class TestCaseProcessor:
@@ -85,13 +89,11 @@ class TestCaseProcessor:
         await self.resources.start_traffic(self.resources.test_conf.use_port_sync_start)
         await schedule_arp_refresh(self.resources, self.address_refresh_handler)
 
-    async def collect(
-        self, params: StatisticParams, data_format: Dict
-    ) -> FinalStatistic:
+    async def collect(self, params: StatisticParams) -> FinalStatistic:
         while True:
             start_time = time.time()
             data = await aggregate_data(self.resources, params, is_final=False)
-            self.xoa_out.send_statistics(data.json(include=data_format))
+            self.xoa_out.send_statistics(data)
             if self.resources.should_quit(start_time, params.duration):
                 break
             await asyncio.sleep(const.INTERVAL_SEND_STATISTICS)
@@ -119,10 +121,10 @@ class TestCaseProcessor:
             self.resources.set_rate(rate_percent)
             await self.add_learning_steps(current_packet_size)
             await self.start_test(test_type_conf, current_packet_size)
-            result = await self.collect(params, test_type_conf.format)
+            result = await self.collect(params)
             await self.resources.set_tx_time_limit(0)
             result.tx_rate_nominal_percent = tx_rate_nominal_percent
-            self._add_result(True, test_type_conf.format, result)
+            self._add_result(True, result)
 
     async def _frame_loss(
         self, test_type_conf: FrameLossRateTest, current_packet_size, repetition
@@ -138,10 +140,10 @@ class TestCaseProcessor:
                 repetition=repetition,
                 duration=test_type_conf.common_options.actual_duration,
             )
-            result = await self.collect(params, test_type_conf.format)
+            result = await self.collect(params)
             await self.resources.set_tx_time_limit(0)
             is_test_passed = check_if_frame_loss_success(test_type_conf, result)
-            self._add_result(is_test_passed, test_type_conf.format, result)
+            self._add_result(is_test_passed, result)
 
     async def _throughput(
         self, test_type_conf: ThroughputTest, current_packet_size, repetition
@@ -169,7 +171,7 @@ class TestCaseProcessor:
                 boundary.update_rate()
             params.rate_percent = boundaries[0].rate
             await self.start_test(test_type_conf, current_packet_size)
-            result = await self.collect(params, test_type_conf.format)
+            result = await self.collect(params)
             await self.resources.set_tx_time_limit(0)
         if not test_type_conf.rate_iteration_options.result_scope.is_per_source_port:
             final = boundaries[0].best_final_result
@@ -202,7 +204,7 @@ class TestCaseProcessor:
                 ],
                 # stream_data=aggregate_stream_result(resource),
             )
-        self._add_result(test_passed, test_type_conf.format, final)
+        self._add_result(test_passed, final)
 
     async def _back_to_back(
         self, test_type_conf: BackToBackTest, current_packet_size, repetition
@@ -231,10 +233,9 @@ class TestCaseProcessor:
                     break
                 await self._setup_packet_limit(boundaries)
                 await self.start_test(test_type_conf, current_packet_size)
-                result = await self.collect(params, test_type_conf.format)
+                result = await self.collect(params)
             self._add_result(
                 all(boundary.port_test_passed for boundary in boundaries),
-                test_type_conf.format,
                 result,
             )
 
@@ -256,7 +257,6 @@ class TestCaseProcessor:
         if final:
             final.repetition = "avg"
             final.avg(len(statistic_lists))
-            logger.info(final.json(include=test_type_conf.format, indent=2))
         return final
 
     def _average_per_frame_size(
@@ -286,7 +286,7 @@ class TestCaseProcessor:
                 self._average_per_frame_size(test_type_conf, f)
 
     def _add_result(
-        self, is_test_passed: bool, data_format: Dict, result: Optional[FinalStatistic]
+        self, is_test_passed: bool, result: Optional[FinalStatistic]
     ) -> None:
         if not (result and result.is_final):
             return
@@ -308,9 +308,7 @@ class TestCaseProcessor:
         self.test_results[result.test_case_type][result.frame_size][
             result.tx_rate_percent
         ].append(result)
-        res = result.json(include=data_format, indent=2)
-        self.xoa_out.send_statistics(res)
-        logger.info(res)
+        self.xoa_out.send_statistics(result)
 
     async def _setup_packet_limit(self, boundaries: List[BackToBackBoutEntry]) -> None:
         for port_index, port_struct in enumerate(self.resources.port_structs):

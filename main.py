@@ -6,6 +6,9 @@ from pathlib import Path
 from typing import Any, cast, Dict
 from xoa_core import types, controller
 from loguru import logger
+import sys
+
+sys.path.append("D:/Working/open-automation-config-converter")
 
 from xoa_converter.entry import converter
 from xoa_converter.types import TestSuiteType
@@ -28,7 +31,7 @@ def set_windows_loop_policy():
 
 async def subscribe(ctrl: controller.MainController, source: str) -> None:
     async for msg in ctrl.listen_changes(source):
-        logger.debug(msg)
+        logger.debug(msg.json())
 
 
 async def start_test(
@@ -40,16 +43,11 @@ async def start_test(
 
 async def main() -> None:
     new = [
-        # types.Credentials( product=types.EProductType.VALKYRIE, host="87.61.110.114", password=cast(pydantic.SecretStr, "xena")),
         types.Credentials(
             product=types.EProductType.VALKYRIE,
             host="192.168.1.198",
             password=cast(pydantic.SecretStr, "xena"),
         ),
-        # types.Credentials(
-        #     product=types.EProductType.VALKYRIE, host="192.168.1.197", password=cast(pydantic.SecretStr, "xena")
-        # ),
-        # types.Credentials( product=types.EProductType.VALKYRIE, host="87.61.110.118", password=cast(pydantic.SecretStr, "xena")),
     ]
     c = await controller.MainController()
     c.register_lib(str(PLUGINS_PATH))

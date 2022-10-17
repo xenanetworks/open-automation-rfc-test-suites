@@ -81,7 +81,6 @@ class ThroughputBoutEntry:
         self.rate = self.next
         for port_struct in self._port_structs:
             port_struct.set_rate(self.rate)
-            # logger.info(f"{port_struct.port_identity.name}  rate to {self.rate}")
 
     def update_boundary(self, result: Optional[FinalStatistic]) -> None:
         self._port_should_continue =self._port_test_passed= False

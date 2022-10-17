@@ -177,9 +177,7 @@ class AddressRefreshHandler:
         self.index = 0
         self.refresh_burst_size = 1
         self.tokens: List["misc.Token"] = []
-        self.address_refresh_tokens: List[
-            Tuple["misc.Token", bool]
-        ] = address_refresh_tokens
+        self.address_refresh_tokens = address_refresh_tokens
         self.interval = 0.0  # unit: second
         self.refresh_period = refresh_period
         self.state = const.TestState.L3_LEARNING

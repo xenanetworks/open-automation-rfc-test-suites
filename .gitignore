@@ -7,3 +7,5 @@ config.py
 *.dat
 *.dir
 /env
+.python-version
+.vscode

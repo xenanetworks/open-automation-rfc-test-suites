@@ -22,56 +22,6 @@ def is_same_ipnetwork(port_struct: "PortStruct", peer_struct: "PortStruct") -> b
     return port_properties.network == peer_properties.network
 
 
-def get_pair_address(
-    port_struct: "PortStruct", peer_struct: "PortStruct", use_gateway_mac_as_dmac: bool
-) -> Tuple[Union["field.IPv4Address", "field.IPv6Address"], "const.ARPSenarioType"]:
-    port_conf = port_struct.port_conf
-    ip_properties = port_conf.ip_properties
-
-    if not ip_properties:
-        raise ValueError("Please check IP properties")
-    peer_conf = peer_struct.port_conf
-    peer_ip_properties = peer_conf.ip_properties
-    if not peer_ip_properties:
-        raise ValueError("Please check peer IP properties")
-    senario_type = const.ARPSenarioType.DEFAULT
-    destination_ip = peer_ip_properties.address
-    peer_conf = peer_struct.port_conf
-    if use_gateway_mac_as_dmac and port_conf.profile.protocol_version.is_l3:
-        if (
-            not is_same_ipnetwork(port_struct, peer_struct)
-            and not ip_properties.gateway == peer_ip_properties.gateway
-        ):
-            destination_ip = ip_properties.gateway
-            senario_type = const.ARPSenarioType.GATEWAY
-        elif ip_properties.gateway.is_empty and ip_properties.remote_loop_address:
-            destination_ip = ip_properties.remote_loop_address
-            senario_type = const.ARPSenarioType.REMOTE
-        else:
-            destination_ip = peer_ip_properties.public_address
-            senario_type = const.ARPSenarioType.PUBLIC
-    return destination_ip, senario_type
-
-
-def is_byte_values_zero(array: bytearray, start: int = 0, length: int = 0) -> bool:
-    length = length or len(array)
-
-    if len(array) < start + length:
-        return False
-
-    for i in range(start, start + length):
-        if array[i] != 0:
-            return False
-    return True
-
-
-def copy_to(src: bytearray, dest: bytearray, start_from: int) -> None:
-    length = len(src)
-    if start_from < 0:
-        start_from = len(dest) + start_from
-    dest[start_from : start_from + length] = src
-
-
 class TPLDControl:
     # TPLD is relative to test port index
     def __init__(self, tid_scope: "const.TidAllocationScope") -> None:
@@ -112,8 +62,7 @@ def is_peer_port(
         return port_config.is_pair(peer_config) and peer_config.is_pair(port_config)
     elif topology.is_mesh_topology:
         return port_config != peer_config
-    else:
-        return port_config.port_group != peer_config.port_group
+    return port_config.port_group != peer_config.port_group
 
 
 def get_peers_for_source(

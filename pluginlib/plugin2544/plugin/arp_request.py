@@ -19,10 +19,13 @@ async def set_arp_request(
     use_gateway_mac_as_dmac: bool,
 ) -> "MacAddress":
 
-    if (
-        not use_gateway_mac_as_dmac
-        or not port_struct.port_conf.profile.protocol_version.is_l3
-        or is_same_ipnetwork(port_struct, peer_struct)
+    if any(
+        (
+            not use_gateway_mac_as_dmac,
+            port_struct.port_conf.ip_properties.gateway.is_empty,
+            not port_struct.port_conf.profile.protocol_version.is_l3,
+            is_same_ipnetwork(port_struct, peer_struct),
+        )
     ):
         # return an empty Macaddress if no arp mac
         return MacAddress()
@@ -54,7 +57,7 @@ def get_packet_header(
         src_addr = IPv6Address(source_ip)
         dst_addr = IPv6Address(destination_ip)
         ip_header = IPV6Packet(source_ip=src_addr, destination_ip=dst_addr)
-    mac_address = port_struct.properties.native_mac_address 
+    mac_address = port_struct.properties.native_mac_address
     packet_header = (
         Ether(smac=mac_address, type=ether_type).hexstring + ip_header.hexstring
     )

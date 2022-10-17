@@ -7,13 +7,9 @@ from pydantic import (
     NonNegativeInt,
     PositiveInt,
 )
-
-from ..utils import output_format
-
 from ..utils.constants import (
-    DurationFrameUnit,
     DurationType,
-    DurationTimeUnit,
+    DurationUnit,
     SearchType,
     RateResultScopeType,
     TestType,
@@ -27,12 +23,12 @@ from ..utils import constants
 class CommonOptions(BaseModel):
     duration_type: DurationType
     duration: Decimal
-    duration_unit: Union[DurationFrameUnit, DurationTimeUnit]
+    duration_unit: DurationUnit  # Union[DurationFrameUnit, DurationTimeUnit]
     iterations: PositiveInt
 
     @validator("duration_unit", always=True)
     def validate_duration(cls, v, values):
-        
+
         if "duration_type" in values and not values["duration_type"].is_time_duration:
             cur = values["duration"] * v.scale
             if cur > constants.MAX_PACKET_LIMIT_VALUE:
@@ -56,7 +52,7 @@ class RateIterationOptions(BaseModel):
     def check_if_larger_than_maximun(cls, v: Decimal, values) -> Decimal:
         if "maximum_value_pct" in values:
             if v > values["maximum_value_pct"]:
-                raise exceptions.RateRestriction(v, values["maximum_value_pct"])
+                raise exceptions.RateRestriction(float(v), values["maximum_value_pct"])
         return v
 
 
@@ -71,18 +67,6 @@ class ThroughputTest(BaseModel):
     acceptable_loss_pct: float
     collect_latency_jitter: bool
     # additional_statisics: List[AdditionalStatisticsOption]
-    _output_format: Dict = output_format.THROUGHPUT_COMMON
-
-    @property
-    def format(self) -> Dict:
-        if self.rate_iteration_options.result_scope.is_per_source_port:
-            f = output_format.THROUGHPUT_PER_PORT
-        else:
-            f = output_format.THROUGHPUT_COMMON
-        if self.collect_latency_jitter:
-            f["port_data"]["__all__"]["latency"] = {"average", "minimum", "maximum"}
-            f["port_data"]["__all__"]["jitter"] = {"average", "minimum", "maximum"}
-        return f
 
 
 class RateSweepOptions(BaseModel):
@@ -138,10 +122,6 @@ class LatencyTest(BaseModel):
     use_relative_to_throughput: bool
     throughput: Decimal = Decimal("0")
 
-    @property
-    def format(self):
-        return output_format.LATENCY_OUTPUT
-
 
 class FrameLossRateTest(BaseModel):
     test_type: TestType
@@ -159,20 +139,12 @@ class FrameLossRateTest(BaseModel):
     acceptable_loss_pct: float
     acceptable_loss_type: AcceptableLossType
 
-    @property
-    def format(self) -> Dict:
-        return output_format.FRAME_LOSS_OUTPUT
-
 
 class BackToBackTest(BaseModel):
     test_type: TestType
     enabled: bool
     common_options: CommonOptions
     rate_sweep_options: RateSweepOptions
-
-    @property
-    def format(self) -> Dict:
-        return output_format.BACKTOBACKOUTPUT
 
 
 AllTestType = Union[ThroughputTest, LatencyTest, FrameLossRateTest, BackToBackTest]
