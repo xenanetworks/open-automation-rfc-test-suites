@@ -1,5 +1,5 @@
 from decimal import getcontext
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 from pydantic import BaseModel, validator
 from .utils import exceptions, constants as const
 from .model import (
@@ -22,35 +22,33 @@ class PluginModel2544(BaseModel):  # Main Model
     ports_configuration: PortConfType
     test_types_configuration: TestTypesConfiguration
 
-    @validator("ports_configuration", always=True)
-    def set_ports_rx_tx_type(
-        cls, port_configs: "PortConfType", values
-    ) -> "PortConfType":
-        if "test_configuration" in values:
-            direction = values["test_configuration"].direction
-            for config_index, port_config in port_configs.items():
-                port_config.set_name(config_index)
-                if port_config.is_loop:
-                    continue
-                elif direction == const.TrafficDirection.EAST_TO_WEST:
-                    if port_config.port_group.is_east:
-                        port_config.set_rx_port(False)
-                    elif port_config.port_group.is_west:
-                        port_config.set_tx_port(False)
-                elif direction == const.TrafficDirection.WEST_TO_EAST:
-                    if port_config.port_group.is_east:
-                        port_config.set_tx_port(False)
-                    elif port_config.port_group.is_west:
-                        port_config.set_rx_port(False)
-        return port_configs
+    def set_ports_rx_tx_type(self) -> None:
+        direction = self.test_configuration.direction
+        for config_index, port_config in self.ports_configuration.items():
+            port_config.set_name(config_index)
+            if port_config.is_loop:
+                continue
+            elif direction == const.TrafficDirection.EAST_TO_WEST:
+                if port_config.port_group.is_east:
+                    port_config.set_rx_port(False)
+                elif port_config.port_group.is_west:
+                    port_config.set_tx_port(False)
+            elif direction == const.TrafficDirection.WEST_TO_EAST:
+                if port_config.port_group.is_east:
+                    port_config.set_tx_port(False)
+                elif port_config.port_group.is_west:
+                    port_config.set_rx_port(False)
 
-    @validator("ports_configuration", always=True)
-    def set_profile(cls, v: "PortConfType", values) -> "PortConfType":
-        if "protocol_segments" in values:
-            for _, port_config in v.items():
-                profile_id = port_config.profile_id
-                port_config.set_profile(values["protocol_segments"][profile_id].copy(deep=True))
-        return v
+    def set_profile(self) -> None:
+        for port_config in self.ports_configuration.values():
+            profile_id = port_config.profile_id
+            port_config.set_profile(self.protocol_segments[profile_id].copy(deep=True))
+
+    def __init__(self, **data: Any):
+        super().__init__(**data)
+        self.set_ports_rx_tx_type()
+        self.check_port_groups_and_peers()
+        self.set_profile()
 
     @validator("ports_configuration", always=True)
     def check_ip_properties(cls, v: "PortConfType") -> "PortConfType":
@@ -73,25 +71,21 @@ class PluginModel2544(BaseModel):  # Main Model
                 raise exceptions.PortConfigNotEnough(require_ports)
         return v
 
-    @validator("ports_configuration", always=True)
-    def check_port_groups_and_peers(cls, v: "PortConfType", values) -> "PortConfType":
-        if "test_configuration" in values:
-            topology: const.TestTopology = values["test_configuration"].topology
-            ports_in_east = 0
-            ports_in_west = 0
-            uses_port_peer = topology.is_pair_topology
-            for _, port_config in v.items():
-                if not topology.is_mesh_topology:
-                    ports_in_east, ports_in_west = cls.count_port_group(
-                        port_config, uses_port_peer, ports_in_east, ports_in_west
-                    )
-                if uses_port_peer:
-                    cls.check_port_peer(port_config, v)
+    def check_port_groups_and_peers(self) -> None:
+        topology = self.test_configuration.topology
+        ports_in_east = ports_in_west = 0
+        uses_port_peer = topology.is_pair_topology
+        for port_config in self.ports_configuration.values():
             if not topology.is_mesh_topology:
-                for i, group in (ports_in_east, "East"), (ports_in_west, "West"):
-                    if not i:
-                        raise exceptions.PortGroupError(group)
-        return v
+                ports_in_east, ports_in_west = self.count_port_group(
+                    port_config, uses_port_peer, ports_in_east, ports_in_west
+                )
+            if uses_port_peer:
+                self.check_port_peer(port_config, self.ports_configuration)
+        if not topology.is_mesh_topology:
+            for i, group in (ports_in_east, "East"), (ports_in_west, "West"):
+                if not i:
+                    raise exceptions.PortGroupError(group)
 
     @validator("ports_configuration", always=True)
     def check_modifier_mode_and_segments(
