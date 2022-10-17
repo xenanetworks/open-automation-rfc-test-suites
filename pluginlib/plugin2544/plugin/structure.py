@@ -2,7 +2,7 @@ import asyncio
 from decimal import Decimal
 from typing import List, TYPE_CHECKING, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
-from xoa_driver import enums, misc, utils
+from xoa_driver import enums, misc, utils as driver_utils
 from .common import gen_macaddress
 from .data_model import (
     ArpRefreshData,
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity
     from xoa_driver import ports as xoa_ports, testers as xoa_testers
     from xoa_driver.lli import commands
-    from ..utils.logger import TestSuitePipe
+    from ..utils.interfaces import TestSuitePipe
     from ..model import (
         FrameSizeConfiguration,
         TestConfiguration,
@@ -52,26 +52,18 @@ class PortStruct:
         self.properties = Properties()
         self.lock = asyncio.Lock()
         self._stream_structs: List["StreamStruct"] = []
-        self._statistic: "Statistic" = Statistic()  # type ignore
+        self._statistic = Statistic()  # type ignore
 
     def set_should_stop_on_los(self, value: bool) -> None:
         self._should_stop_on_los = value
 
     @property
-    def port_identity(self):
+    def port_identity(self) -> "PortIdentity":
         return self._port_identity
 
     @property
     def capabilities(self) -> "commands.P_CAPABILITIES.GetDataAttr":
         return self._port.info.capabilities
-
-    @property
-    def port_statistic(self):
-        return self._port.statistics
-
-    # @property
-    # def sync_status(self) -> bool:
-    #     return self._sync_status
 
     async def _change_sync_status(
         self,
@@ -86,7 +78,7 @@ class PortStruct:
 
     async def _change_traffic_status(
         self,
-        port: "xoa_ports.GenericL23Port",
+        _port: "xoa_ports.GenericL23Port",
         get_attr: "commands.P_TRAFFIC.GetDataAttr",
     ) -> None:
         self.properties.traffic_status = bool(get_attr.on_off)
@@ -97,7 +89,7 @@ class PortStruct:
 
     async def _change_physical_port_speed(
         self,
-        port: "xoa_ports.GenericL23Port",
+        _port: "xoa_ports.GenericL23Port",
         get_attr: "commands.P_SPEED.GetDataAttr",
     ) -> None:
         self.properties.physical_port_speed = get_attr.port_speed * 1e6
@@ -206,10 +198,6 @@ class PortStruct:
                 position = int(k.split("_")[-1])
                 await self._port.mix.lengths[position].set(v)
 
-    # def get_mac_address(self) -> "MacAddress":
-    #     return self.properties.native_mac_address
-    # return MacAddress((await self._port.net_config.mac_address.get()).mac_address)
-
     async def send_packet(self, packet: str) -> None:
         await self._port.tx_single_pkt.send.set(packet)
 
@@ -235,14 +223,14 @@ class PortStruct:
         tokens.append(self._port.reservation.set_reserve())
         tokens.append(self._port.reset.set())
 
-        (sync, traffic, mac, port_speed, *_) = await utils.apply(*tokens)
+        (sync, traffic, mac, port_speed, *_) = await driver_utils.apply(*tokens)
         self.properties.sync_status = bool(sync.sync_status)
         self.properties.traffic_status = bool(traffic.on_off)
         self.properties.native_mac_address = MacAddress(mac.mac_address)
         self.properties.physical_port_speed = port_speed.port_speed * 1e6
 
     async def clear_statistic(self) -> None:
-        await utils.apply(
+        await driver_utils.apply(
             self._port.statistics.tx.clear.set(), self._port.statistics.rx.clear.set()
         )
 
@@ -258,8 +246,6 @@ class PortStruct:
 
     def set_traffic(self, traffic_state: enums.StartOrStop):
         return self._port.traffic.state.set(traffic_state)
-        # if not traffic_state:  # after stop traffic need to sleep 1 s
-        #     await asyncio.sleep(1)
 
     async def set_arp_trucks(self, arp_datas: Set["RXTableData"]) -> None:
         arp_chunk: List["misc.ArpChunk"] = []
@@ -288,7 +274,7 @@ class PortStruct:
         await self._port.ndp_rx_table.set(ndp_chunk)
 
     async def set_reply(self) -> None:
-        await utils.apply(
+        await driver_utils.apply(
             self._port.net_config.ipv4.arp_reply.set_on(),  # P_ARPREPLY
             self._port.net_config.ipv6.arp_reply.set_on(),  # P_ARPV6REPLY
             self._port.net_config.ipv4.ping_reply.set_on(),  # P_PINGREPLY
@@ -335,18 +321,12 @@ class PortStruct:
     def local_states(self):
         return self._port.local_states
 
-    # async def get_physics_speed(self) -> float:
-    #     return (await self._port.speed.current.get()).port_speed * 1e6
-
     async def clear(self) -> None:
-        await utils.apply(*self.free())
+        await driver_utils.apply(*self.free())
         await self._tester.session.logoff()
 
     async def create_stream(self):
         return await self._port.streams.create()
-
-    # async def get_sync_status(self) -> bool:
-    #     return bool((await self._port.sync_status.get()).sync_status)
 
     async def get_traffic_status(self) -> bool:
         return bool((await self._port.traffic.state.get()).on_off)
@@ -396,7 +376,6 @@ class PortStruct:
     @property
     def protocol_version(self) -> const.PortProtocolVersion:
         return const.PortProtocolVersion[self._port_conf.profile.protocol_version.name]
-
 
     def add_stream(
         self,
@@ -490,7 +469,7 @@ class PortStruct:
         return NonNegativeDecimal(str(self.send_port_speed))
 
     async def query(self) -> None:
-        extra = self.port_statistic.rx.extra.get()
+        extra = self._port.statistics.rx.extra.get()
         stream_tasks = [stream_struct.query() for stream_struct in self.stream_structs]
         extra_tasks = [extra] if self.port_conf.is_rx_port else []
         results = await asyncio.gather(*extra_tasks, *stream_tasks)

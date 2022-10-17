@@ -61,7 +61,9 @@ class PluginModel2544(BaseModel):  # Main Model
         return v
 
     @validator("ports_configuration", always=True)
-    def check_port_count(cls, v: "PortConfType", values) -> "PortConfType":
+    def check_port_count(
+        cls, v: "PortConfType", values: Dict[str, Any]
+    ) -> "PortConfType":
         require_ports = 2
         if "test_configuration" in values:
             topology: const.TestTopology = values["test_configuration"].topology
@@ -89,7 +91,7 @@ class PluginModel2544(BaseModel):  # Main Model
 
     @validator("ports_configuration", always=True)
     def check_modifier_mode_and_segments(
-        cls, v: "PortConfType", values
+        cls, v: "PortConfType", values: Dict[str, Any]
     ) -> "PortConfType":
         if "test_configuration" in values:
             flow_creation_type = values["test_configuration"].flow_creation_type
@@ -101,7 +103,9 @@ class PluginModel2544(BaseModel):  # Main Model
         return v
 
     @validator("ports_configuration", always=True)
-    def check_port_group(cls, v, values):
+    def check_port_group(
+        cls, v: "PortConfiguration", values: Dict[str, Any]
+    ) -> "PortConfiguration":
         if "ports_configuration" in values and "test_configuration" in values:
             for k, p in values["ports_configuration"].items():
                 if (
@@ -128,9 +132,9 @@ class PluginModel2544(BaseModel):  # Main Model
 
     @validator("test_types_configuration", always=True)
     def check_result_scope(
-        cls, v: "TestTypesConfiguration", values
+        cls, v: "TestTypesConfiguration", values: Dict[str, Any]
     ) -> "TestTypesConfiguration":
-        if not "test_configuration" in values:
+        if "test_configuration" not in values:
             return v
         if (
             v.throughput_test.enabled
@@ -164,7 +168,7 @@ class PluginModel2544(BaseModel):  # Main Model
     def check_port_peer(
         port_config: "PortConfiguration",
         ports_configuration: Dict[str, "PortConfiguration"],
-    ):
+    ) -> None:
         peer_config_slot = port_config.peer_config_slot
         if not peer_config_slot or peer_config_slot not in ports_configuration:
             raise exceptions.PortPeerNeeded()
@@ -188,12 +192,3 @@ class PluginModel2544(BaseModel):  # Main Model
             [p.ip_properties.gateway for p in self.ports_configuration.values()]
         )
         return len(gateways) == 1
-
-    # @property
-    # def has_l3(self) -> bool:
-    #     return any(
-    #         [
-    #             conf.profile.protocol_version.is_l3
-    #             for conf in self.ports_configuration.values()
-    #         ]
-    #     )

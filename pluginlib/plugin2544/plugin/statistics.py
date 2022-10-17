@@ -1,9 +1,8 @@
 import math
 from decimal import Decimal
-from typing import List, Union, TYPE_CHECKING
-from pydantic import BaseModel, Field, validator
+from typing import Any, Dict, List, Union, TYPE_CHECKING
+from pydantic import BaseModel, validator
 from operator import attrgetter
-from .data_model import AddressCollection
 from ..utils import constants as const
 
 if TYPE_CHECKING:
@@ -24,7 +23,7 @@ class DelayData(BaseModel):
     is_valid: bool = True
 
     @validator("average", "minimum", "maximum", always=True)
-    def check_is_valid(cls, v, values):
+    def check_is_valid(cls, v: int, values: Dict[str, Any]) -> int:
         if v == values["counter_type"].value:
             values["is_valid"] = False
             return 0
@@ -38,11 +37,11 @@ class DelayCounter(AvgMinMax):
     class Config:
         underscore_attrs_are_private = True
 
-    def sum(self, other: "DelayCounter"):
+    def sum(self, other: "DelayCounter") -> None:
         for name, value in self:
             setattr(self, name, value + attrgetter(name)(other))
 
-    def avg(self, count: int):
+    def avg(self, count: int) -> None:
         for name, value in self:
             setattr(self, name, math.floor(Decimal(str(value)) / Decimal(str(count))))
 
@@ -72,7 +71,7 @@ class StreamCounter(BaseModel):
     l1_bit_rate: Decimal = Decimal("0.0")
     tx_l1_bps: Decimal = Decimal("0.0")
 
-    def add_stream_counter(self, counter: "StreamCounter"):
+    def add_stream_counter(self, counter: "StreamCounter") -> None:
         """update stream counter by pr stream"""
         self.frames += counter.frames  # _cal_port_tx_frames  + _cal_port_rx_frames
         self.bps += counter.bps
@@ -85,7 +84,7 @@ class StreamCounter(BaseModel):
         duration: Decimal,
         frame_size: Decimal,
         interframe_gap: Decimal,
-    ):
+    ) -> None:
         self.frame_rate = Decimal(str(self.frames)) / duration
         self.l2_bit_rate = self.frame_rate * Decimal("8") * frame_size
         self.l1_bit_rate = (
@@ -100,9 +99,9 @@ class StreamCounter(BaseModel):
 class PRStatistic(BaseModel):
     """pr stream statistic"""
 
-    rx_stream_counter: StreamCounter =  StreamCounter()
-    latency: DelayData = DelayData(counter_type = const.CounterType.LATENCY)
-    jitter: DelayData = DelayData(counter_type = const.CounterType.JITTER)
+    rx_stream_counter: StreamCounter = StreamCounter()
+    latency: DelayData = DelayData(counter_type=const.CounterType.LATENCY)
+    jitter: DelayData = DelayData(counter_type=const.CounterType.JITTER)
     # fcs: int = 0
     live_loss_frames: int = 0
 
@@ -116,8 +115,8 @@ class StreamStatisticData(BaseModel):
     dest_port_addr: str = ""
     tx_counter: StreamCounter = StreamCounter()
     rx_counter: StreamCounter = StreamCounter()
-    latency: DelayCounter = DelayCounter(counter_type=const.CounterType.LATENCY)
-    jitter: DelayCounter = DelayCounter(counter_type=const.CounterType.JITTER)
+    latency: DelayCounter = DelayCounter()
+    jitter: DelayCounter = DelayCounter()
     # fcs: int = 0
     live_loss_frames: int = 0
     burst_frames: int = 0
@@ -151,19 +150,19 @@ class PortCounter(StreamCounter):
     class Config:
         underscore_attrs_are_private = True
 
-    def sum(self, other: "PortCounter"):
+    def sum(self, other: "PortCounter") -> None:
         for name, value in self:
             if name == "counter_type":
                 continue
             setattr(self, name, value + attrgetter(name)(other))
 
-    def avg(self, count: int):
+    def avg(self, count: int) -> None:
         for name, value in self:
             if name == "counter_type":
                 continue
             setattr(self, name, math.floor(Decimal(str(value)) / Decimal(str(count))))
 
-    def add_stream_counter(self, counter: "StreamCounter"):
+    def add_stream_counter(self, counter: "StreamCounter") -> None:
         """aggregate stream statistic"""
         self.frames += counter.frames  # _cal_port_tx_frames  + _cal_port_rx_frames
         self.bps += counter.bps
@@ -177,7 +176,7 @@ class PortCounter(StreamCounter):
         duration: Decimal,
         frame_size: Decimal,
         interframe_gap: Decimal,
-    ):
+    ) -> None:
         super().calculate_stream_rate(is_final, duration, frame_size, interframe_gap)
         self.l2_bps = math.floor(self.l2_bit_rate) if is_final else self.bps
         self.fps = math.floor(self.frame_rate) if is_final else self.pps
@@ -198,8 +197,8 @@ class Statistic(BaseModel):
     port_speed: Decimal = Decimal("0")  # for calculation use
     tx_counter: PortCounter = PortCounter(counter_type=const.PortCounterType.TX)
     rx_counter: PortCounter = PortCounter(counter_type=const.PortCounterType.RX)
-    latency: DelayCounter = DelayCounter(counter_type=const.CounterType.LATENCY)
-    jitter: DelayCounter = DelayCounter(counter_type=const.CounterType.JITTER)
+    latency: DelayCounter = DelayCounter()
+    jitter: DelayCounter = DelayCounter()
     stream_statistic: List[StreamStatisticData] = []
     fcs_error_frames: int = 0
     burst_frames: int = 0
@@ -211,18 +210,18 @@ class Statistic(BaseModel):
     tx_rate_fps_theor: int = 0
 
     @validator("tx_rate_l1_bps_theor", always=True)
-    def set_theor_l1_bps_rate(cls, v, values) -> int:
+    def set_theor_l1_bps_rate(cls, _v: int, values: Dict[str, Any]) -> int:
         return math.floor(values["port_speed"])
 
     @validator("tx_rate_fps_theor", always=True)
-    def set_theor_fps_rate(cls, v, values) -> int:
+    def set_theor_fps_rate(cls, _v: int, values: Dict[str, Any]) -> int:
         return math.floor(
             values["port_speed"]
             / Decimal("8")
             / (values["interframe_gap"] + values["frame_size"])
         )
 
-    def sum(self, other: "Statistic"):
+    def sum(self, other: "Statistic") -> None:
         self.tx_counter.sum(other.tx_counter)
         self.rx_counter.sum(other.rx_counter)
 
@@ -238,7 +237,7 @@ class Statistic(BaseModel):
             value = getattr(self, f)
             setattr(self, f, value + attrgetter(f)(other))
 
-    def avg(self, count: int):
+    def avg(self, count: int) -> None:
         self.tx_counter.avg(count)
         self.rx_counter.avg(count)
 
@@ -254,7 +253,7 @@ class Statistic(BaseModel):
             value = getattr(self, f)
             setattr(self, f, math.floor(Decimal(str(value)) / Decimal(str(count))))
 
-    def aggregate_tx_statistic(self, stream_statistic: "StreamStatisticData"):
+    def aggregate_tx_statistic(self, stream_statistic: "StreamStatisticData") -> None:
         """aggregate tx port statistic based on stream statistic"""
         self.add_tx(stream_statistic.tx_counter)
         self.add_burst_frames(stream_statistic.burst_frames)
@@ -266,7 +265,7 @@ class Statistic(BaseModel):
         )
         self.stream_statistic.append(stream_statistic)
 
-    def aggregate_rx_statistic(self, pr_statistic: "PRStatistic"):
+    def aggregate_rx_statistic(self, pr_statistic: "PRStatistic") -> None:
         """aggregate rx port statistic based on pr statistic"""
         self.add_rx(pr_statistic.rx_stream_counter)
         self.add_latency(pr_statistic.latency)
@@ -337,11 +336,11 @@ class TotalCounter(BaseModel):
         self.fps += counter.fps
         self.bytes_count += counter.bytes_count
 
-    def sum(self, other: "TotalCounter"):
+    def sum(self, other: "TotalCounter") -> None:
         for name, value in self:
             setattr(self, name, value + attrgetter(name)(other))
 
-    def avg(self, count: int):
+    def avg(self, count: int) -> None:
         for name, value in self:
             setattr(self, name, math.floor(Decimal(str(value)) / Decimal(str(count))))
 
@@ -365,7 +364,7 @@ class TotalStatistic(BaseModel):
             else:
                 setattr(self, name, value + attrgetter(name)(other))
 
-    def avg(self, count: int):
+    def avg(self, count: int) -> None:
         for name, value in self:
             if name in ["tx_counter", "rx_counter"]:
                 getattr(self, name).avg(count)
@@ -430,7 +429,9 @@ class FinalStatistic(BaseModel):
         json_encoders = {Decimal: lambda x: float("{:.3f}".format(x).rstrip("0"))}
 
     @validator("total", always=True)
-    def calculate_total(cls, v, values) -> TotalStatistic:
+    def calculate_total(
+        cls, _v: "TotalStatistic", values: Dict[str, Any]
+    ) -> TotalStatistic:
         total = TotalStatistic()
         for port_data in values["port_data"]:
             total.add(port_data)

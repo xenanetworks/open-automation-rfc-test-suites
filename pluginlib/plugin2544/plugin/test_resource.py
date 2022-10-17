@@ -13,7 +13,7 @@ from ..utils import constants as const, exceptions
 if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity
     from ..model import PortConfiguration, TestConfiguration
-    from ..utils.logger import TestSuitePipe
+    from ..utils.interfaces import TestSuitePipe
 
 
 class ResourceManager:
@@ -90,7 +90,7 @@ class ResourceManager:
         await setup_streams(self.port_structs, self.test_conf)
         await add_mac_learning_steps(self, const.MACLearningMode.ONCE)
 
-    async def stop_traffic(self):
+    async def stop_traffic(self) -> None:
         await utils.apply(
             *[
                 port_struct.set_traffic(enums.StartOrStop.STOP)
@@ -99,7 +99,7 @@ class ResourceManager:
         )
         await asyncio.sleep(const.DELAY_STOPPED_TRAFFIC)
 
-    async def setup_sweep_reduction(self):
+    async def setup_sweep_reduction(self) -> None:
         if (
             not self.test_conf.enable_speed_reduction_sweep
             or self.test_conf.topology.is_pair_topology
@@ -110,7 +110,7 @@ class ResourceManager:
             for index, port_struct in enumerate(self.port_structs)
         )
 
-    async def collect_control_ports(self):
+    async def collect_control_ports(self) -> None:
         await asyncio.gather(*self.__testers.values())
         for port_conf in self.all_confs:
             slot = port_conf.port_slot
@@ -322,22 +322,11 @@ class ResourceManager:
 
     async def collect(
         self, packet_size: Decimal, duration: Decimal, is_final: bool = False
-    ):
+    ) -> None:
         for port_struct in self.port_structs:
             port_struct.init_counter(packet_size, duration, is_final)
-        # await asyncio.gather(
-        #     *[
-        #         stream.query()
-        #         for port_struct in self.port_structs
-        #         for stream in port_struct.stream_structs
-        #     ]
-        # )
-
         await asyncio.gather(
             *[port_struct.query() for port_struct in self.port_structs]
         )
-        # for port_struct in self.port_structs:
-        #     for stream in port_struct.stream_structs:
-        #         stream.aggregate()
         for port_struct in self.port_structs:
             port_struct.statistic.calculate_rate()

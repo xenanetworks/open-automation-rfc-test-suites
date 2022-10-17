@@ -28,11 +28,7 @@ from ..utils import constants as const
 
 if TYPE_CHECKING:
     from .test_resource import ResourceManager
-
-
-class TestSuitePipe(Protocol):
-    def send_statistics(self, data) -> None:
-        ...
+    from ..utils.interfaces import TestSuitePipe
 
 
 class TestCaseProcessor:
@@ -246,7 +242,7 @@ class TestCaseProcessor:
         self._throughput_map[frame_size] = max(rate, self._throughput_map[frame_size])
 
     def _average_statistic(
-        self, test_type_conf: AllTestType, statistic_lists: List[FinalStatistic]
+        self, statistic_lists: List[FinalStatistic]
     ) -> Optional[FinalStatistic]:
         final: Optional[FinalStatistic] = None
         for statistic in statistic_lists:
@@ -268,11 +264,11 @@ class TestCaseProcessor:
             statistic_lists = []
             for s in result.values():
                 statistic_lists.extend(s)
-            self._average_statistic(test_type_conf, statistic_lists)
+            self._average_statistic(statistic_lists)
         else:
             """calculate average based on same frame size and same rate"""
             for statistic_lists in result.values():
-                self._average_statistic(test_type_conf, statistic_lists)
+                self._average_statistic(statistic_lists)
 
     def cal_average(
         self, test_type_conf: AllTestType, frame_size: Optional[Decimal] = None

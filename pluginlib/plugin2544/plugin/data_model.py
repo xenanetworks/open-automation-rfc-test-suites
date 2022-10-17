@@ -38,7 +38,9 @@ class AddressCollection:
     src_ipv6_addr: IPv6Address = IPv6Address("::")
     dst_ipv6_addr: IPv6Address = IPv6Address("::")
 
-    def get_addr_pair_by_protocol(self, protocol: PortProtocolVersion) -> Tuple:
+    def get_addr_pair_by_protocol(
+        self, protocol: PortProtocolVersion
+    ) -> Tuple[Union[IPv4Address, IPv6Address, MacAddress], ...]:
         if protocol.is_ipv4:
             return self.src_ipv4_addr, self.dst_ipv4_addr
         elif protocol.is_ipv6:

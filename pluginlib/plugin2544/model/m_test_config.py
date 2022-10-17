@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 from pydantic import (
     BaseModel,
     Field,
@@ -30,12 +30,11 @@ class FrameSizeConfiguration(BaseModel):
     varying_packet_min_size: NonNegativeInt
     varying_packet_max_size: NonNegativeInt
     mixed_length_config: FrameSizesOptions
-    mixed_sizes_weights: List[NonNegativeInt] = const.MIXED_DEFAULT_WEIGHTS
-
+    mixed_sizes_weights: List[NonNegativeInt] = list(const.MIXED_DEFAULT_WEIGHTS)
 
     @validator("mixed_sizes_weights", pre=True, always=True)
     def is_mixed_weights_valid(
-        cls, v: List[NonNegativeInt], values
+        cls, v: List[NonNegativeInt], values: Dict[str, Any]
     ) -> List[NonNegativeInt]:
         if "packet_size_type" in values:
             if values["packet_size_type"] == const.PacketSizeType.MIX:
@@ -65,21 +64,23 @@ class FrameSizeConfiguration(BaseModel):
         return int(round(weighted_size / 100.0))
 
     @property
-    def packet_size_list(self) -> Iterable[int]:
+    def packet_size_list(self) -> List[int]:
         packet_size_type = self.packet_size_type
         if packet_size_type == const.PacketSizeType.IETF_DEFAULT:
-            return const.DEFAULT_PACKET_SIZE_LIST
+            return list(const.DEFAULT_PACKET_SIZE_LIST)
         elif packet_size_type == const.PacketSizeType.CUSTOM:
             return list(sorted(self.custom_packet_sizes))
         elif packet_size_type == const.PacketSizeType.MIX:
             return [self.mixed_average_packet_size]
 
         elif packet_size_type == const.PacketSizeType.RANGE:
-            return list(range(
-                self.fixed_packet_start_size,
-                self.fixed_packet_end_size + self.fixed_packet_step_size,
-                self.fixed_packet_step_size,
-            ))
+            return list(
+                range(
+                    self.fixed_packet_start_size,
+                    self.fixed_packet_end_size + self.fixed_packet_step_size,
+                    self.fixed_packet_step_size,
+                )
+            )
 
         elif packet_size_type in {
             const.PacketSizeType.INCREMENTING,
@@ -87,21 +88,17 @@ class FrameSizeConfiguration(BaseModel):
             const.PacketSizeType.RANDOM,
         }:
 
-            return [
-                (self.varying_packet_min_size + self.varying_packet_max_size)
-                // 2
-            ]
+            return [(self.varying_packet_min_size + self.varying_packet_max_size) // 2]
         else:
             raise exceptions.FrameSizeTypeError(packet_size_type.value)
 
-
     @property
     def size_range(self) -> Tuple[int, int]:
-        if (
-            self.packet_size_type in [const.PacketSizeType.INCREMENTING,
+        if self.packet_size_type in [
+            const.PacketSizeType.INCREMENTING,
             const.PacketSizeType.RANDOM,
-            const.PacketSizeType.BUTTERFLY]
-        ):
+            const.PacketSizeType.BUTTERFLY,
+        ]:
             min_size = self.varying_packet_min_size
             max_size = self.varying_packet_max_size
         else:
@@ -173,13 +170,12 @@ class TestConfiguration(BaseModel):
     def payload_type_str_list(cls, v: str) -> str:
         if v.startswith("0x") or v.startswith("0X"):
             return v
-        else:
-            return "".join(
-                [hex(int(i)).replace("0x", "").zfill(2) for i in v.split(",")]
-            )
+        return "".join([hex(int(i)).replace("0x", "").zfill(2) for i in v.split(",")])
 
     @validator("multi_stream_config")
-    def validate_multi_stream(cls, v: MultiStreamConfig, values) -> MultiStreamConfig:
+    def validate_multi_stream(
+        cls, v: MultiStreamConfig, values: Dict[str, Any]
+    ) -> MultiStreamConfig:
         if "flow_creation_type" not in values:
             return v
         if not values["flow_creation_type"].is_stream_based and v.enable_multi_stream:

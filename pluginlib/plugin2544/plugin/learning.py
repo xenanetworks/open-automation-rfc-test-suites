@@ -9,7 +9,6 @@ from ..utils import exceptions, constants as const
 from ..utils.scheduler import schedule
 from ..utils.field import IPv4Address, IPv6Address
 from ..utils.packet import ARPPacket, MacAddress, NDPPacket
-from ..utils import constants as const
 
 
 if TYPE_CHECKING:
@@ -23,11 +22,15 @@ def get_dest_ip_modifier_addr_range(
 ) -> Optional[range]:
     header_segments = port_struct.port_conf.profile.header_segments
     for header_segment in header_segments:
-        if (not header_segment.segment_type.is_ipv4) or (not header_segment.segment_type.is_ipv6):
+        if (not header_segment.segment_type.is_ipv4) or (
+            not header_segment.segment_type.is_ipv6
+        ):
             continue
 
         for field in header_segment.fields:
-            if field.name in ("Dest IP Addr", "Dest IPv6 Addr") and (modifier := field.hw_modifier):
+            if field.name in ("Dest IP Addr", "Dest IPv6 Addr") and (
+                modifier := field.hw_modifier
+            ):
                 return range(
                     modifier.start_value,
                     modifier.stop_value + 1,
@@ -96,7 +99,7 @@ async def get_address_learning_packet(
         if not gwmac.is_empty:
             dmac = gwmac
     smac = (
-        port_struct.properties.native_mac_address 
+        port_struct.properties.native_mac_address
         if not arp_refresh_data.source_mac or arp_refresh_data.source_mac.is_empty
         else arp_refresh_data.source_mac
     )
@@ -155,11 +158,6 @@ async def setup_address_refresh(
 async def setup_address_arp_refresh(
     resources: "ResourceManager",
 ) -> "AddressRefreshHandler":  # SetupAddressArpRefresh
-    # if test_conf.multi_stream_config.enable_multi_stream:
-    #     await setup_multi_stream_address_arp_refresh(control_ports, stream_lists)
-    # else:
-    #     setup_normal_address_arp_refresh(control_ports)
-    # gateway_arp_refresh(control_ports, test_conf)
     address_refresh_tokens = await setup_address_refresh(resources)
     return AddressRefreshHandler(
         address_refresh_tokens, resources.test_conf.arp_refresh_period_second
@@ -186,7 +184,7 @@ class AddressRefreshHandler:
         packet_list = []
         if self.index >= len(self.tokens):
             self.index = 0
-        for i in range(self.refresh_burst_size):
+        for _ in range(self.refresh_burst_size):
             if self.index < len(self.tokens):
                 packet_list.append(self.tokens[self.index])
                 self.index += 1
@@ -223,7 +221,7 @@ class AddressRefreshHandler:
 
 
 async def generate_l3_learning_packets(
-    count: int,
+    _count: int,
     resources: "ResourceManager",
     address_refresh_handler: "AddressRefreshHandler",
 ) -> bool:
@@ -250,7 +248,7 @@ async def schedule_arp_refresh(
     resources: "ResourceManager",
     address_refresh_handler: Optional["AddressRefreshHandler"],
     state: const.TestState = const.TestState.RUNNING_TEST,
-):
+) -> None:
     # arp refresh jobs
     if address_refresh_handler:
         address_refresh_handler.set_current_state(state)
@@ -331,7 +329,9 @@ async def add_mac_learning_steps(
         for stream_struct in port_struct._stream_structs:
             src_hex_data = f"{none_mac}{stream_struct._addr_coll.smac.to_hexstring()}{four_f}{paddings}"
             if port_struct not in done_struct:
-                tokens = make_mac_token(port_struct, src_hex_data, mac_learning_frame_count)
+                tokens = make_mac_token(
+                    port_struct, src_hex_data, mac_learning_frame_count
+                )
                 tasks.extend(tokens)
                 done_struct.append(port_struct)
             for dest_port_struct in stream_struct._rx_ports:

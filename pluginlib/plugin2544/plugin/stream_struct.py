@@ -35,7 +35,7 @@ class PTStream:
         self.statistic = StreamCounter()
 
     async def query(self) -> None:
-        tx_frames = await self.tx_port.port_statistic.tx.obtain_from_stream(
+        tx_frames = await self.tx_port._port.statistics.tx.obtain_from_stream(
             self.stream_id
         ).get()
         self.statistic = StreamCounter(
@@ -72,7 +72,7 @@ class PRStream:
                 bytes_count=rx_frames.byte_count_since_cleared,
             ),
             # fcs=fcs.fcs_error_count,
-            loss_frames=error.non_incre_seq_event_count,
+            live_loss_frames=error.non_incre_seq_event_count,
             latency=DelayData(
                 counter_type=const.CounterType.LATENCY,
                 minimum=latency.min_val,
@@ -104,7 +104,6 @@ class StreamStruct:
         self._stream_id: int = stream_id
         self._tpldid: int = tpldid
         self._arp_mac: MacAddress = arp_mac
-        self._stream: misc.GenuineStream
         self._flow_creation_type: const.FlowCreationType = const.FlowCreationType.STREAM
         self._addr_coll: AddressCollection = AddressCollection()
         self._packet_header: bytearray = bytearray()

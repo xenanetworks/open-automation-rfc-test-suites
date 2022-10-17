@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 async def setup_streams(
     port_structs: List["PortStruct"], test_conf: "TestConfiguration"
-):
+) -> None:
     if not test_conf.flow_creation_type.is_stream_based:
         test_port_index_map = {
             port_struct.properties.test_port_index: port_struct
@@ -97,7 +97,9 @@ def add_modifier_based_stream(port_struct: "PortStruct", test_port_index_map) ->
         stream_id_counter += 1
 
 
-def add_multi_streams(port_structs: List["PortStruct"], test_conf: "TestConfiguration"):
+def add_multi_streams(
+    port_structs: List["PortStruct"], test_conf: "TestConfiguration"
+) -> None:
     offset_table = setup_offset_table(port_structs, test_conf.multi_stream_config)
     tpld_controller = TPLDControl(test_conf.tid_allocation_scope)
     for port_struct in port_structs:
@@ -134,7 +136,7 @@ def add_multi_streams(port_structs: List["PortStruct"], test_conf: "TestConfigur
 
 def add_standard_streams(
     port_structs: List["PortStruct"], test_conf: "TestConfiguration"
-):
+) -> None:
     tpld_controller = TPLDControl(test_conf.tid_allocation_scope)
     for port_struct in port_structs:
         stream_id_counter = 0

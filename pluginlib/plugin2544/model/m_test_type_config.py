@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Dict, Iterable, List, Union
+from typing import Any, Dict, Iterable, List, Union
 from pydantic import (
     BaseModel,
     Field,
@@ -27,8 +27,9 @@ class CommonOptions(BaseModel):
     iterations: PositiveInt
 
     @validator("duration_unit", always=True)
-    def validate_duration(cls, v, values):
-
+    def validate_duration(
+        cls, v: "DurationUnit", values: Dict[str, Any]
+    ) -> "DurationUnit":
         if "duration_type" in values and not values["duration_type"].is_time_duration:
             cur = values["duration"] * v.scale
             if cur > constants.MAX_PACKET_LIMIT_VALUE:
@@ -49,7 +50,9 @@ class RateIterationOptions(BaseModel):
     value_resolution_pct: Decimal = Field(ge=0.0, le=100.0)
 
     @validator("initial_value_pct", "minimum_value_pct")
-    def check_if_larger_than_maximun(cls, v: Decimal, values) -> Decimal:
+    def check_if_larger_than_maximun(
+        cls, v: Decimal, values: Dict[str, Any]
+    ) -> Decimal:
         if "maximum_value_pct" in values:
             if v > values["maximum_value_pct"]:
                 raise exceptions.RateRestriction(float(v), values["maximum_value_pct"])
@@ -160,7 +163,9 @@ class TestTypesConfiguration(BaseModel):
     available_test: List[AllTestType] = []
 
     @validator("available_test", pre=True, always=True)
-    def set_available_test(cls, v: List[AllTestType], values) -> List[AllTestType]:
+    def set_available_test(
+        cls, v: List[AllTestType], values: Dict[str, Any]
+    ) -> List[AllTestType]:
         v = []
         for test_type_config in values.values():
             if test_type_config.enabled:

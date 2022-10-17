@@ -6,7 +6,6 @@ from pydantic import (
     validator,
     NonNegativeInt,
 )
-
 from ..utils import constants as const
 from ..utils.field import MacAddress, IPv4Address, IPv6Address, Prefix
 from .m_protocol_segment import ProtocolSegmentProfileConfig
@@ -25,17 +24,25 @@ class IPV6AddressProperties(BaseModel):
     def network(self) -> IPv6Network:
         return IPv6Network(f"{self.address}/{self.routing_prefix}", strict=False)
 
-    @validator("address", "public_address", "gateway", "remote_loop_address", pre=True, allow_reuse=True)
-    def set_address(cls, v) -> IPv6Address:
+    @validator(
+        "address",
+        "public_address",
+        "gateway",
+        "remote_loop_address",
+        pre=True,
+        allow_reuse=True,
+    )
+    def set_address(cls, v: Union[str, IPv6Address]) -> IPv6Address:
         return IPv6Address(v)
 
-    @validator("routing_prefix", "public_routing_prefix", pre=True,  allow_reuse=True)
-    def set_prefix(cls, v) -> Prefix:
+    @validator("routing_prefix", "public_routing_prefix", pre=True, allow_reuse=True)
+    def set_prefix(cls, v: int) -> Prefix:
         return Prefix(v)
 
     @property
-    def dst_addr(self):
+    def dst_addr(self) -> IPv6Address:
         return self.public_address if not self.public_address.is_empty else self.address
+
 
 class IPV4AddressProperties(BaseModel):
     address: IPv4Address = IPv4Address("0.0.0.0")
@@ -50,17 +57,25 @@ class IPV4AddressProperties(BaseModel):
     def network(self) -> IPv4Network:
         return IPv4Network(f"{self.address}/{self.routing_prefix}", strict=False)
 
-    @validator("address", "public_address", "gateway", "remote_loop_address", pre=True, allow_reuse=True)
-    def set_address(cls, v) -> IPv4Address:
+    @validator(
+        "address",
+        "public_address",
+        "gateway",
+        "remote_loop_address",
+        pre=True,
+        allow_reuse=True,
+    )
+    def set_address(cls, v: Union[str, IPv4Address]) -> IPv4Address:
         return IPv4Address(v)
 
     @validator("routing_prefix", "public_routing_prefix", pre=True, allow_reuse=True)
-    def set_prefix(cls, v) -> Prefix:
+    def set_prefix(cls, v: int) -> Prefix:
         return Prefix(v)
 
     @property
-    def dst_addr(self):
+    def dst_addr(self) -> IPv4Address:
         return self.public_address if not self.public_address.is_empty else self.address
+
 
 class PortConfiguration(BaseModel):
     port_slot: str
@@ -105,8 +120,9 @@ class PortConfiguration(BaseModel):
         underscore_attrs_are_private = True
 
     @validator("ip_gateway_mac_address", pre=True)
-    def set_ip_gateway_mac_address(cls, ip_gateway_mac_address):
+    def set_ip_gateway_mac_address(cls, ip_gateway_mac_address: str) -> MacAddress:
         return MacAddress(ip_gateway_mac_address)
+
     @property
     def is_tx_port(self) -> bool:
         return self._is_tx
@@ -152,6 +168,3 @@ class PortConfiguration(BaseModel):
             return self.ipv6_properties
         else:
             return self.ipv4_properties
-
-    # def change_ip_gateway_mac_address(self, gateway_mac: MacAddress) -> None:
-    #     self.ip_gateway_mac_address = gateway_mac

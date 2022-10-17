@@ -1,7 +1,7 @@
 import re
 from enum import Enum
 from random import randint
-from typing import Any, Generator, List, Optional
+from typing import Any, Callable, Generator, List, Optional
 from pydantic import BaseModel
 from pydantic.class_validators import validator
 from xoa_driver.enums import ProtocolOption, ModifierAction
@@ -9,13 +9,13 @@ from xoa_driver.enums import ProtocolOption, ModifierAction
 
 class BinaryString(str):
     @classmethod
-    def __get_validators__(cls):
+    def __get_validators__(cls) -> Generator[Callable, None, None]:
         yield cls.validate
 
     @classmethod
-    def validate(cls, v):
+    def validate(cls, v: str) -> "BinaryString":
         if not re.search("^[01]+$", v):
-            raise ValueError('binary string must zero or one')
+            raise ValueError("binary string must zero or one")
         return cls(v)
 
     @property
@@ -141,9 +141,10 @@ class ValueRange(BaseModel):
     start_value: int
     step_value: int
     stop_value: int
-    action:ModifierActionOption
+    action: ModifierActionOption
     restart_for_each_port: bool
-    _current_count: int = 0 # counter start from 0
+    _current_count: int = 0  # counter start from 0
+
     class Config:
         underscore_attrs_are_private = True
 
@@ -182,8 +183,8 @@ class HWModifier(BaseModel):
     repeat: int
     offset: int
     action: ModifierActionOption
-    mask: str # hex string as 'FFFF'
-    _byte_segment_position: int = 0 # byte position of all header segments
+    mask: str  # hex string as 'FFFF'
+    _byte_segment_position: int = 0  # byte position of all header segments
 
     class Config:
         underscore_attrs_are_private = True
@@ -215,19 +216,23 @@ class SegmentField(BaseModel):
             return
         max_val = max(self.value_range.start_value, self.value_range.stop_value)
         theory_max = pow(2, self.bit_length)
-        if max_val >= theory_max: # why not fvr.stop_value >= can_max?
-            raise Exception('invalid value range', self.name, theory_max)
+        if max_val >= theory_max:  # why not fvr.stop_value >= can_max?
+            raise Exception("invalid value range", self.name, theory_max)
 
     def prepare(self) -> BinaryString:
         if not self.value_range:
             return self.value
 
-        value_range_str = bin( self.value_range.get_current_value() )[2:].zfill(self.bit_length)
+        value_range_str = bin(self.value_range.get_current_value())[2:].zfill(
+            self.bit_length
+        )
         return BinaryString(value_range_str)
 
     def set_field_value(self, new_value: BinaryString) -> None:
         if len(new_value) != self.bit_length:
-            raise ValueError(f'new value length {len(new_value)} not match field length {self.bit_length} ({self.name})')
+            raise ValueError(
+                f"new value length {len(new_value)} not match field length {self.bit_length} ({self.name})"
+            )
         self.value = new_value
 
     @property
@@ -251,10 +256,10 @@ class ProtocolSegment(BaseModel):
     def value_ranges(self) -> Generator[ValueRange, None, None]:
         return (f.value_range for f in self.fields if f.value_range)
 
-    @validator('checksum_offset')
-    def is_digit(cls, value):
+    @validator("checksum_offset")
+    def is_digit(cls, value: int) -> int:
         if value and not isinstance(value, int):
-            raise ValueError('checksum offset must digit')
+            raise ValueError("checksum offset must digit")
         return value
 
     def __wrap_add_16(self, data: bytearray, offset_num: int) -> bytearray:
@@ -271,11 +276,11 @@ class ProtocolSegment(BaseModel):
         return data
 
     def prepare(self) -> bytearray:
-        result = ''
+        result = ""
         for f in self.fields:
             field_binary_string = f.prepare()
             result += field_binary_string
-        result = int(result, 2).to_bytes((len(result) + 7) // 8, byteorder='big')
+        result = int(result, 2).to_bytes((len(result) + 7) // 8, byteorder="big")
         result = bytearray(result)
         if self.checksum_offset:
             result = self.__wrap_add_16(result, self.checksum_offset)
@@ -303,7 +308,11 @@ class ProtocolSegmentProfileConfig(BaseModel):
     header_segments: List[ProtocolSegment] = []
 
     def __getitem__(self, segment_type: SegmentType) -> List[ProtocolSegment]:
-        return [segment for segment in self.header_segments if segment.segment_type == segment_type]
+        return [
+            segment
+            for segment in self.header_segments
+            if segment.segment_type == segment_type
+        ]
 
     def prepare(self) -> bytearray:
         result = bytearray()
@@ -343,8 +352,10 @@ class ProtocolSegmentProfileConfig(BaseModel):
         total_bit_length = 0
         for segment in self.header_segments:
             for field in segment.fields:
-                if (modifier := field.hw_modifier):
-                    modifier.set_byte_segment_position((total_bit_length // 8) + modifier.offset)
+                if modifier := field.hw_modifier:
+                    modifier.set_byte_segment_position(
+                        (total_bit_length // 8) + modifier.offset
+                    )
                 total_bit_length += field.bit_length
 
     def __init__(self, **data: Any) -> None:
