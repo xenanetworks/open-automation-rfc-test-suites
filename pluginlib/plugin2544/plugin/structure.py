@@ -62,6 +62,10 @@ class PortStruct:
         return self._port_identity
 
     @property
+    def port_statistic(self):
+        return self._port.statistics
+
+    @property
     def capabilities(self) -> "commands.P_CAPABILITIES.GetDataAttr":
         return self._port.info.capabilities
 
