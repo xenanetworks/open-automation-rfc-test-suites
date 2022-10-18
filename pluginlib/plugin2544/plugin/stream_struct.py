@@ -259,29 +259,16 @@ class StreamStruct:
 
     async def set_packet_header(self) -> None:
         # Insert all configured header segments in order
-        for index, segment in enumerate(self._tx_port.port_conf.profile.header_segments):
+        profile = self._tx_port.port_conf.profile.copy(deep=True)
+        for index, segment in enumerate(profile.header_segments):
             if segment.segment_type.is_ethernet and index == 0:
-                ps.setup_segment_ethernet(
-                    segment,
-                    self._addr_coll.smac.to_binary_string(),
-                    self._addr_coll.dmac.to_binary_string(),
-                    self._addr_coll.arp_mac.to_binary_string(),
-                )
+                ps.setup_segment_ethernet(segment, self._addr_coll.smac, self._addr_coll.dmac, self._addr_coll.arp_mac)
             if segment.segment_type.is_ipv4:
-                ps.setup_segment_ipv4(
-                    segment,
-                    self._addr_coll.src_ipv4_addr.to_binary_string(),
-                    self._addr_coll.dst_ipv4_addr.to_binary_string(),
-                )
+                ps.setup_segment_ipv4(segment,self._addr_coll.src_ipv4_addr, self._addr_coll.dst_ipv4_addr)
             if segment.segment_type.is_ipv6:
-                ps.setup_segment_ipv6(
-                    segment,
-                    self._addr_coll.src_ipv6_addr.to_binary_string(),
-                    self._addr_coll.dst_ipv6_addr.to_binary_string(),
-                )
+                ps.setup_segment_ipv6(segment, self._addr_coll.src_ipv6_addr, self._addr_coll.dst_ipv6_addr)
 
-        header_segments = self._tx_port.port_conf.profile.prepare()
-        await self._stream.packet.header.data.set(f"0x{header_segments.hex()}")
+        await self._stream.packet.header.data.set(f"0x{profile.prepare().hex()}")
 
     async def setup_modifier(self) -> None:
         tokens = []

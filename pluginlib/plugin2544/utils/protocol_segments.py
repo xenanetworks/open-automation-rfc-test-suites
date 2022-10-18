@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING, Optional
-from ..model import BinaryString
 
 if TYPE_CHECKING:
-    from ..model import ProtocolSegment, BinaryString
+    from ..model import ProtocolSegment
+    from pluginlib.plugin2544.utils.field import IPv4Address, IPv6Address, MacAddress
 
 
 ETHERNET_ADDRESS_SRC = 'Src MAC addr'
@@ -13,21 +13,23 @@ IPV6_ADDRESS_SRC = 'Src IPv6 Addr'
 IPV6_ADDRESS_DST = 'Dest IPv6 Addr'
 
 
-def setup_segment_ethernet(segment: "ProtocolSegment", src_mac: "BinaryString", dst_mac: "BinaryString", arp_mac: Optional["BinaryString"] = None):
-    dst_mac = (dst_mac if not arp_mac or arp_mac.is_all_zero else arp_mac)
-    if not dst_mac.is_all_zero and segment[ETHERNET_ADDRESS_DST].is_all_zero:
-        segment[ETHERNET_ADDRESS_DST] = dst_mac
-    if not src_mac.is_all_zero and segment[ETHERNET_ADDRESS_SRC].is_all_zero:
-        segment[ETHERNET_ADDRESS_SRC] = src_mac
+def setup_segment_ethernet(segment: "ProtocolSegment", src_mac: "MacAddress", dst_mac: "MacAddress", arp_mac: Optional["MacAddress"] = None):
+    dst_mac = (dst_mac if not arp_mac or arp_mac.is_empty else arp_mac)
+    if not dst_mac.is_empty and segment[ETHERNET_ADDRESS_DST].is_all_zero:
+        segment[ETHERNET_ADDRESS_DST] = dst_mac.to_binary_string()
+    if not src_mac.is_empty and segment[ETHERNET_ADDRESS_SRC].is_all_zero:
+        segment[ETHERNET_ADDRESS_SRC] = src_mac.to_binary_string()
 
-def setup_segment_ipv4(segment: "ProtocolSegment", src_ipv4: "BinaryString", dst_ipv4: "BinaryString"):
+
+def setup_segment_ipv4(segment: "ProtocolSegment", src_ipv4: "IPv4Address", dst_ipv4: "IPv4Address"):
     if segment[IPV4_ADDRESS_SRC].is_all_zero:
-        segment[IPV4_ADDRESS_SRC] = src_ipv4
+        segment[IPV4_ADDRESS_SRC] = src_ipv4.to_binary_string()
     if segment[IPV4_ADDRESS_DST].is_all_zero:
-        segment[IPV4_ADDRESS_DST] = dst_ipv4
+        segment[IPV4_ADDRESS_DST] = dst_ipv4.to_binary_string()
 
-def setup_segment_ipv6(segment: "ProtocolSegment", src_ipv6: "BinaryString", dst_ipv6: "BinaryString"):
+
+def setup_segment_ipv6(segment: "ProtocolSegment", src_ipv6: "IPv6Address", dst_ipv6: "IPv6Address"):
     if segment[IPV6_ADDRESS_SRC].is_all_zero:
-        segment[IPV6_ADDRESS_SRC] = src_ipv6
+        segment[IPV6_ADDRESS_SRC] = src_ipv6.to_binary_string()
     if segment[IPV6_ADDRESS_DST].is_all_zero:
-        segment[IPV6_ADDRESS_DST] = dst_ipv6
+        segment[IPV6_ADDRESS_DST] = dst_ipv6.to_binary_string()
