@@ -1,9 +1,9 @@
 import asyncio
 from enum import Enum
-from typing import Callable
+from typing import Callable, Dict, Any
 
 
-async def empty(count: int, *args, **kw) -> bool:
+async def empty(count: int, *args: Any, **kw: Dict[str, Any]) -> bool:
     return False
 
 
@@ -24,7 +24,11 @@ class TimeType(Enum):
 
 
 async def periodical_job(
-    timing: float, unit: str = "s", do: Callable = empty, *args, **kw
+    timing: float,
+    unit: str = "s",
+    do: Callable = empty,
+    *args: Any,
+    **kw: Dict[str, Any]
 ) -> None:
     count = 0
     time_unit = TimeType(unit).scale

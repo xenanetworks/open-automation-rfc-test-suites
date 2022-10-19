@@ -57,9 +57,8 @@ def get_packet_header(
         dst_addr = IPv6Address(destination_ip)
         ip_header = IPV6Packet(source_ip=src_addr, destination_ip=dst_addr)
     mac_address = port_struct.properties.native_mac_address
-    packet_header = (
-        Ether(smac=mac_address, type=ether_type).hexstring + ip_header.hexstring
-    )
+    ether_header = Ether(smac=mac_address, type=ether_type)
+    packet_header = ether_header.hexstring + ip_header.hexstring
     return packet_header
 
 

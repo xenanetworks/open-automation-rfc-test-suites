@@ -82,7 +82,9 @@ def setup_offset_table(
     return offset_table
 
 
-def add_modifier_based_stream(port_struct: "PortStruct", test_port_index_map) -> None:
+def add_modifier_based_stream(
+    port_struct: "PortStruct", test_port_index_map: Dict[int, "PortStruct"]
+) -> None:
     if not port_struct.port_conf.is_tx_port:
         return
     stream_id_counter = 0
@@ -105,9 +107,6 @@ def add_multi_streams(
     for port_struct in port_structs:
         stream_id_counter = 0
         for peer_struct in port_struct.properties.peers:
-            # arp_mac = await set_arp_request(
-            #     port_struct, peer_struct, test_conf.use_gateway_mac_as_dmac
-            # )
             if test_conf.multi_stream_config.enable_multi_stream:
                 peer_index = peer_struct.port_identity.name
                 offsets_list = get_stream_offsets(
@@ -141,10 +140,6 @@ def add_standard_streams(
     for port_struct in port_structs:
         stream_id_counter = 0
         for peer_struct in port_struct.properties.peers:
-            # arp_mac = await set_arp_request(
-            #     port_struct, peer_struct, test_conf.use_gateway_mac_as_dmac
-            # )
-
             tpldid = tpld_controller.get_tpldid(
                 port_struct.properties.test_port_index,
                 peer_struct.properties.test_port_index,

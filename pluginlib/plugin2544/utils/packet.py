@@ -12,16 +12,6 @@ def padding(num) -> str:
 
 class Packet:
     @property
-    def hex(self):
-        """return \x00\x00\x00"""
-        pass
-
-    @property
-    def bytestring(self):
-        """return b'0000000'"""
-        pass
-
-    @property
     def hexstring(self) -> str:
         """return '0000000'"""
         packet = ""

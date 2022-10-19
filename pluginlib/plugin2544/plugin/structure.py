@@ -27,6 +27,8 @@ if TYPE_CHECKING:
         LatencyTest,
         FrameLossRateTest,
         BackToBackTest,
+        IPV4AddressProperties,
+        IPV6AddressProperties,
     )
 
 
@@ -39,9 +41,6 @@ class PortStruct:
         port_identity: "PortIdentity",
         xoa_out: "TestSuitePipe",
     ) -> None:
-
-        # self._sync_status: bool = True
-        # self._traffic_status: bool = False
         self._tester = tester
         self.port_ins = port
         self._xoa_out = xoa_out
@@ -72,7 +71,6 @@ class PortStruct:
     ) -> None:
         before = self.properties.sync_status
         after = self.properties.sync_status = bool(get_attr.sync_status)
-        # logger.warning(f"Change sync status from {before} to {after} ")
         if self._should_stop_on_los and before and not after:
             raise exceptions.LossofPortSignal(port)
 
@@ -83,8 +81,9 @@ class PortStruct:
     ) -> None:
         self.properties.traffic_status = bool(get_attr.on_off)
 
-    async def __on_reservation_status(self, port: "xoa_ports.GenericL23Port", v):
-        # raise exceptions.LossofPortOwnership(self._port)
+    async def __on_reservation_status(
+        self, port: "xoa_ports.GenericL23Port", v: "commands.P_RESERVATION.GetDataAttr"
+    ) -> None:
         pass
 
     async def _change_physical_port_speed(
@@ -201,7 +200,7 @@ class PortStruct:
     async def send_packet(self, packet: str) -> None:
         await self.port_ins.tx_single_pkt.send.set(packet)
 
-    def free(self) -> List[misc.Token]:
+    def free(self) -> List["misc.Token"]:
         return [self.port_ins.reservation.set_release()]
 
     async def prepare(self) -> None:
@@ -231,20 +230,21 @@ class PortStruct:
 
     async def clear_statistic(self) -> None:
         await driver_utils.apply(
-            self.port_ins.statistics.tx.clear.set(), self.port_ins.statistics.rx.clear.set()
+            self.port_ins.statistics.tx.clear.set(),
+            self.port_ins.statistics.rx.clear.set(),
         )
 
     async def set_tx_time_limit(self, tx_timelimit: int) -> None:
         await self.port_ins.tx_config.time_limit.set(int(tx_timelimit))
 
     async def set_gap_monitor(
-        self, gap_monitor_start_microsec, gap_monitor_stop_frames
+        self, gap_monitor_start_microsec: int, gap_monitor_stop_frames: int
     ) -> None:
         await self.port_ins.gap_monitor.set(
             gap_monitor_start_microsec, gap_monitor_stop_frames
         )
 
-    def set_traffic(self, traffic_state: enums.StartOrStop):
+    def set_traffic(self, traffic_state: "enums.StartOrStop") -> "misc.Token":
         return self.port_ins.traffic.state.set(traffic_state)
 
     async def set_arp_trucks(self, arp_datas: Set["RXTableData"]) -> None:
@@ -293,10 +293,10 @@ class PortStruct:
     async def set_pause_mode(self, pause_mode_enabled: bool):
         await self.port_ins.pause.set(on_off=enums.OnOff(int(pause_mode_enabled)))
 
-    async def set_latency_mode(self, latency_mode: const.LatencyModeStr):
+    async def set_latency_mode(self, latency_mode: "const.LatencyModeStr"):
         await self.port_ins.latency_config.mode.set(latency_mode.to_xmp())
 
-    async def set_ipv4_address(self, ipv4_properties) -> None:
+    async def set_ipv4_address(self, ipv4_properties: "IPV4AddressProperties") -> None:
         subnet_mask = ipv4_properties.routing_prefix.to_ipv4()
         await self.port_ins.net_config.ipv4.address.set(
             ipv4_address=ipv4_properties.address,
@@ -305,7 +305,7 @@ class PortStruct:
             wild="0.0.0.0",
         )
 
-    async def set_ipv6_address(self, ipv6_properties) -> None:
+    async def set_ipv6_address(self, ipv6_properties: "IPV6AddressProperties") -> None:
         await self.port_ins.net_config.ipv6.address.set(
             ipv6_address=ipv6_properties.address,
             gateway=ipv6_properties.gateway,
@@ -374,7 +374,7 @@ class PortStruct:
         self._statistic = Statistic()
 
     @property
-    def protocol_version(self) -> const.PortProtocolVersion:
+    def protocol_version(self) -> "const.PortProtocolVersion":
         return const.PortProtocolVersion[self._port_conf.profile.protocol_version.name]
 
     def add_stream(
@@ -406,7 +406,7 @@ class PortStruct:
             await self.set_ipv6_address(self._port_conf.ipv6_properties)
 
     async def set_streams_packet_size(
-        self, packet_size_type: enums.LengthType, min_size: int, max_size: int
+        self, packet_size_type: "enums.LengthType", min_size: int, max_size: int
     ) -> None:
         await asyncio.gather(
             *[
@@ -416,7 +416,7 @@ class PortStruct:
         )
 
     async def setup_port(
-        self, test_conf: "TestConfiguration", latency_mode: const.LatencyModeStr
+        self, test_conf: "TestConfiguration", latency_mode: "const.LatencyModeStr"
     ) -> None:
         if not test_conf.flow_creation_type.is_stream_based:
             mac = gen_macaddress(

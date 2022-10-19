@@ -262,7 +262,7 @@ class FECModeRequired(Exception):
 
 
 class FECModeTypeNotSupport(Exception):
-    def __init__(self, support_mode: const.FECModeStr) -> None:
+    def __init__(self, support_mode: "const.FECModeStr") -> None:
         self.msg = f"Port not supporting {support_mode} FEC Mode."
         super().__init__(self.msg)
 
@@ -326,7 +326,7 @@ class WrongTesterTypeError(Exception):
 
 
 class LossofPortOwnership(Exception):
-    def __init__(self, port: xoa_ports.GenericL23Port) -> None:
+    def __init__(self, port: "xoa_ports.GenericL23Port") -> None:
         self.msg = f"Test is stopped due to the loss of ownership of Port <module_id: {port.kind.module_id}-port_id: {port.kind.port_id}>."
         super().__init__(self.msg)
 
@@ -340,7 +340,7 @@ class LossofTester(Exception):
 
 
 class LossofPortSignal(Exception):
-    def __init__(self, port: xoa_ports.GenericL23Port) -> None:
+    def __init__(self, port: "xoa_ports.GenericL23Port") -> None:
         self.msg = f"Test is stopped due to the loss of signal (LOS) of Port <module_id: {port.kind.module_id}-port_id: {port.kind.port_id}>."
         super().__init__(self.msg)
 
@@ -364,6 +364,6 @@ class PacketLimitOverflow(Exception):
 
 
 class ModifierRangeError(Exception):
-    def __init__(self, start:int, stop:int, step:int) -> None:
+    def __init__(self, start: int, stop: int, step: int) -> None:
         self.msg = f"Modifier range configuration must meet these rules: min <= max, and (max - min) % step = 0. Your input was min = {start}, max = {stop}, and step = {step}."
         super().__init__(self.msg)

@@ -49,7 +49,10 @@ class TestCaseProcessor:
         self.address_refresh_handler = await setup_address_arp_refresh(self.resources)
 
     async def run(
-        self, test_type_conf: AllTestType, current_packet_size: Decimal, iteration: int
+        self,
+        test_type_conf: "AllTestType",
+        current_packet_size: Decimal,
+        iteration: int,
     ) -> None:
         if isinstance(test_type_conf, ThroughputTest):
             await self._throughput(test_type_conf, current_packet_size, iteration)
@@ -85,7 +88,7 @@ class TestCaseProcessor:
         await self.resources.start_traffic(self.resources.test_conf.use_port_sync_start)
         await schedule_arp_refresh(self.resources, self.address_refresh_handler)
 
-    async def collect(self, params: StatisticParams) -> FinalStatistic:
+    async def collect(self, params: "StatisticParams") -> "FinalStatistic":
         while True:
             start_time = time.time()
             data = await aggregate_data(self.resources, params, is_final=False)
@@ -99,7 +102,10 @@ class TestCaseProcessor:
         return data
 
     async def _latency(
-        self, test_type_conf: LatencyTest, current_packet_size: Decimal, repetition: int
+        self,
+        test_type_conf: "LatencyTest",
+        current_packet_size: Decimal,
+        repetition: int,
     ):
         factor = Decimal(100)
         if test_type_conf.use_relative_to_throughput and self._throughput_map:
@@ -123,7 +129,10 @@ class TestCaseProcessor:
             self._add_result(True, result)
 
     async def _frame_loss(
-        self, test_type_conf: FrameLossRateTest, current_packet_size, repetition
+        self,
+        test_type_conf: "FrameLossRateTest",
+        current_packet_size: Decimal,
+        repetition: int,
     ):
         for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
             self.resources.set_rate(rate_percent)
@@ -142,7 +151,10 @@ class TestCaseProcessor:
             self._add_result(is_test_passed, result)
 
     async def _throughput(
-        self, test_type_conf: ThroughputTest, current_packet_size, repetition
+        self,
+        test_type_conf: "ThroughputTest",
+        current_packet_size: Decimal,
+        repetition: int,
     ):
         await self.add_learning_steps(current_packet_size)
         result = None
@@ -172,7 +184,8 @@ class TestCaseProcessor:
         if not test_type_conf.rate_iteration_options.result_scope.is_per_source_port:
             final = boundaries[0].best_final_result
             # record the max throughput rate
-            self._set_throughput_for_frame_size(final.frame_size, final.tx_rate_percent)
+            if final is not None:
+                self._set_throughput_for_frame_size(final.frame_size, final.tx_rate_percent)
         else:
             # Step 1: initial counter
             for port_struct in self.resources.port_structs:
@@ -203,7 +216,10 @@ class TestCaseProcessor:
         self._add_result(test_passed, final)
 
     async def _back_to_back(
-        self, test_type_conf: BackToBackTest, current_packet_size, repetition
+        self,
+        test_type_conf: "BackToBackTest",
+        current_packet_size: Decimal,
+        repetition: int,
     ) -> None:
         result = None
         await self.add_learning_steps(current_packet_size)
@@ -256,7 +272,7 @@ class TestCaseProcessor:
         return final
 
     def _average_per_frame_size(
-        self, test_type_conf: AllTestType, frame_size: Decimal
+        self, test_type_conf: "AllTestType", frame_size: Decimal
     ) -> None:
         result = self.test_results[test_type_conf.test_type][frame_size]
         if isinstance(test_type_conf, ThroughputTest):
@@ -271,7 +287,7 @@ class TestCaseProcessor:
                 self._average_statistic(statistic_lists)
 
     def cal_average(
-        self, test_type_conf: AllTestType, frame_size: Optional[Decimal] = None
+        self, test_type_conf: "AllTestType", frame_size: Optional[Decimal] = None
     ) -> None:
         if frame_size:
             result = self.test_results[test_type_conf.test_type][frame_size]
@@ -282,7 +298,7 @@ class TestCaseProcessor:
                 self._average_per_frame_size(test_type_conf, f)
 
     def _add_result(
-        self, is_test_passed: bool, result: Optional[FinalStatistic]
+        self, is_test_passed: bool, result: Optional["FinalStatistic"]
     ) -> None:
         if not (result and result.is_final):
             return
@@ -306,7 +322,9 @@ class TestCaseProcessor:
         ].append(result)
         self.xoa_out.send_statistics(result)
 
-    async def _setup_packet_limit(self, boundaries: List[BackToBackBoutEntry]) -> None:
+    async def _setup_packet_limit(
+        self, boundaries: List["BackToBackBoutEntry"]
+    ) -> None:
         for port_index, port_struct in enumerate(self.resources.port_structs):
             for peer_struct in port_struct.properties.peers:
                 stream_info_list = [
@@ -330,7 +348,7 @@ class TestCaseProcessor:
 
 
 def check_if_frame_loss_success(
-    frame_loss_conf: "FrameLossRateTest", result: FinalStatistic
+    frame_loss_conf: "FrameLossRateTest", result: "FinalStatistic"
 ) -> bool:
     is_test_passed = True
     if frame_loss_conf.use_pass_fail_criteria:

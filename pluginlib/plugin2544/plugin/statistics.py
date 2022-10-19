@@ -102,7 +102,6 @@ class PRStatistic(BaseModel):
     rx_stream_counter: StreamCounter = StreamCounter()
     latency: DelayData = DelayData(counter_type=const.CounterType.LATENCY)
     jitter: DelayData = DelayData(counter_type=const.CounterType.JITTER)
-    # fcs: int = 0
     live_loss_frames: int = 0
 
 
@@ -117,7 +116,6 @@ class StreamStatisticData(BaseModel):
     rx_counter: StreamCounter = StreamCounter()
     latency: DelayCounter = DelayCounter()
     jitter: DelayCounter = DelayCounter()
-    # fcs: int = 0
     live_loss_frames: int = 0
     burst_frames: int = 0
 
@@ -127,7 +125,6 @@ class StreamStatisticData(BaseModel):
         self.latency.update(pr_stream_statistic.latency)
         self.jitter.update(pr_stream_statistic.jitter)
         self.live_loss_frames += pr_stream_statistic.live_loss_frames
-        # self.fcs += pr_stream_statistic.fcs
 
     def calculate(
         self, tx_port_struct: "PortStruct", rx_port_struct: "PortStruct"
@@ -137,7 +134,6 @@ class StreamStatisticData(BaseModel):
         rx_port_struct.statistic.add_rx(self.rx_counter)
         rx_port_struct.statistic.add_latency(DelayData.parse_obj(self.latency))
         rx_port_struct.statistic.add_jitter(DelayData.parse_obj(self.jitter))
-        # rx_port_struct.statistic.add_extra(self.fcs)
 
 
 class PortCounter(StreamCounter):
@@ -272,22 +268,22 @@ class Statistic(BaseModel):
         self.add_jitter(pr_statistic.jitter)
         # self.add_extra(pr_statistic.fcs)
 
-    def add_tx(self, tx_stream_counter: StreamCounter) -> None:
+    def add_tx(self, tx_stream_counter: "StreamCounter") -> None:
         tx_stream_counter.calculate_stream_rate(
             self.is_final, self.duration, self.frame_size, self.interframe_gap
         )
         self.tx_counter.add_stream_counter(tx_stream_counter)
 
-    def add_rx(self, rx_stream_counter: StreamCounter) -> None:
+    def add_rx(self, rx_stream_counter: "StreamCounter") -> None:
         rx_stream_counter.calculate_stream_rate(
             self.is_final, self.duration, self.frame_size, self.interframe_gap
         )
         self.rx_counter.add_stream_counter(rx_stream_counter)
 
-    def add_latency(self, delay_data: DelayData) -> None:
+    def add_latency(self, delay_data: "DelayData") -> None:
         self.latency.update(delay_data)
 
-    def add_jitter(self, delay_data: DelayData) -> None:
+    def add_jitter(self, delay_data: "DelayData") -> None:
         self.jitter.update(delay_data)
 
     def add_burst_frames(self, frame_count: int) -> None:
@@ -296,14 +292,11 @@ class Statistic(BaseModel):
     def add_burst_bytes_count(self, bytes_count: int) -> None:
         self.burst_bytes_count += bytes_count
 
-    # def add_extra(self, fcs: int) -> None:
-    #     self.fcs_error_frames += fcs
-
-    def add_loss(self, tx_frames, rx_frames, loss_frames: int) -> None:
+    def add_loss(self, tx_frames: int, rx_frames: int, live_loss_frames: int) -> None:
         if self.is_final:
             self.loss_frames += tx_frames - rx_frames
         else:
-            self.loss_frames += loss_frames
+            self.loss_frames += live_loss_frames
 
     def calculate_rate(self) -> None:
         self.loss_ratio = (
@@ -329,7 +322,7 @@ class TotalCounter(BaseModel):
     fps: int = 0
     bytes_count: int = 0
 
-    def add(self, counter: PortCounter) -> None:
+    def add(self, counter: "PortCounter") -> None:
         self.frames += counter.frames
         self.l1_bps += counter.l1_bps
         self.l2_bps += counter.l2_bps
@@ -369,7 +362,6 @@ class TotalStatistic(BaseModel):
             if name in ["tx_counter", "rx_counter"]:
                 getattr(self, name).avg(count)
             else:
-                # value = value / count
                 setattr(
                     self, name, math.floor(Decimal(str(value)) / Decimal(str(count)))
                 )
@@ -437,7 +429,7 @@ class FinalStatistic(BaseModel):
             total.add(port_data)
         return total
 
-    def set_result_state(self, state: const.ResultState) -> None:
+    def set_result_state(self, state: "const.ResultState") -> None:
         self.result_state = state
 
     def sum(self, final: "FinalStatistic") -> None:

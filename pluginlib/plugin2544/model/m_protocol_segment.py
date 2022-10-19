@@ -1,7 +1,7 @@
 import re
 from enum import Enum
 from random import randint
-from typing import Any, Callable, Generator, List, Optional
+from typing import Any, Callable, Dict, Generator, List, Optional
 from pydantic import BaseModel
 from pydantic.class_validators import validator
 from xoa_driver.enums import ProtocolOption, ModifierAction
@@ -63,49 +63,27 @@ class SegmentType(Enum):
     SNAP = "snap"
     GTP = "gtp"
     ICMP = "icmp"
-    # ICMPV6 = "icmpv6"
     RTP = "rtp"
     RTCP = "rtcp"
     STP = "stp"
-    SCTP = "sctp"  # added
+    SCTP = "sctp"
     MACCTRL = "macctrl"
     MPLS = "mpls"
     PBBTAG = "pbbtag"
-    FCOE = "fcoe"  # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+    FCOE = "fcoe"
     FC = "fc"
-    # FCOEHEAD = "fcoehead"  # added
     FCOETAIL = "fcoetail"
     IGMPV3L0 = "igmpv3l0"
     IGMPV3L1 = "igmpv3l1"
-    # IGMPV3GR = "igmpv3gr"
-    # IGMPV3MR = "igmpv3mr"
-    # MLDV2AR = "mldv2ar"
     UDPCHECK = "udpcheck"
     IGMPV2 = "igmpv2"
-    # "MPLS_TP_OAM"
     GRE_NOCHECK = "gre_nocheck"
     GRE_CHECK = "gre_check"
     TCPCHECK = "tcp_check"
-    # "GTPV1L0"
-    # "GTPV1L1"
-    # "GTPV2L0"
-    # "GTPV2L1"
     IGMPV1 = "igmpv1"
-    # "PWETHCTRL"
     VXLAN = "vxlan"
-    # "ETHERNET_8023"
     NVGRE = "nvgre"
-    # "DHCPV4"
-    # "GENEVE"
-    # "XENA_TPLD"
-    # "XENA_TPLD_PI"
-    # "XENA_MICROTPLD"
-    # "ETHERNET_FCS"
-    # "MACCTRLPFC"
-    # "ECPRI"
-    # "ROE"
-    # "ETHERTYPE"
-    # Generat RAW form 1...64 bytes
+    # Generate RAW form 1...64 bytes
     _ignore_ = "SegmentType i"
     SegmentType = vars()
     for i in range(1, 65):
@@ -207,7 +185,7 @@ class SegmentField(BaseModel):
     class Config:
         validate_assignment = True
 
-    def __init__(self, **data: Any) -> None:
+    def __init__(self, **data: Dict[str, Any]) -> None:
         super().__init__(**data)
         self.check_value_range()
 
@@ -219,7 +197,7 @@ class SegmentField(BaseModel):
         if max_val >= theory_max:  # why not fvr.stop_value >= can_max?
             raise Exception("invalid value range", self.name, theory_max)
 
-    def prepare(self) -> BinaryString:
+    def prepare(self) -> "BinaryString":
         if not self.value_range:
             return self.value
 
@@ -228,7 +206,7 @@ class SegmentField(BaseModel):
         )
         return BinaryString(value_range_str)
 
-    def set_field_value(self, new_value: BinaryString) -> None:
+    def set_field_value(self, new_value: "BinaryString") -> None:
         if len(new_value) != self.bit_length:
             raise ValueError(
                 f"new value length {len(new_value)} not match field length {self.bit_length} ({self.name})"
@@ -245,15 +223,15 @@ class ProtocolSegment(BaseModel):
     fields: List[SegmentField]
     checksum_offset: Optional[int]
 
-    def __init__(self, **data: Any) -> None:
+    def __init__(self, **data: Dict[str, Any]) -> None:
         super().__init__(**data)
 
     @property
-    def hw_modifiers(self) -> Generator[HWModifier, None, None]:
+    def hw_modifiers(self) -> Generator["HWModifier", None, None]:
         return (f.hw_modifier for f in self.fields if f.hw_modifier)
 
     @property
-    def value_ranges(self) -> Generator[ValueRange, None, None]:
+    def value_ranges(self) -> Generator["ValueRange", None, None]:
         return (f.value_range for f in self.fields if f.value_range)
 
     @validator("checksum_offset")
@@ -286,13 +264,13 @@ class ProtocolSegment(BaseModel):
             result = self.__wrap_add_16(result, self.checksum_offset)
         return result
 
-    def __getitem__(self, field_name: str) -> SegmentField:
+    def __getitem__(self, field_name: str) -> "SegmentField":
         for field in self.fields:
             if field.name == field_name:
                 return field
         raise KeyError(field_name)
 
-    def __setitem__(self, field_name: str, new_value: BinaryString) -> None:
+    def __setitem__(self, field_name: str, new_value: "BinaryString") -> None:
         self[field_name].set_field_value(new_value)
 
     @property
@@ -307,7 +285,7 @@ class ProtocolSegment(BaseModel):
 class ProtocolSegmentProfileConfig(BaseModel):
     header_segments: List[ProtocolSegment] = []
 
-    def __getitem__(self, segment_type: SegmentType) -> List[ProtocolSegment]:
+    def __getitem__(self, segment_type: "SegmentType") -> List["ProtocolSegment"]:
         return [
             segment
             for segment in self.header_segments
@@ -320,11 +298,13 @@ class ProtocolSegmentProfileConfig(BaseModel):
             result.extend(s.prepare())
         return result
 
-    def get_segment(self, segment_type: SegmentType, index: int = 0) -> ProtocolSegment:
+    def get_segment(
+        self, segment_type: "SegmentType", index: int = 0
+    ) -> "ProtocolSegment":
         return self[segment_type][index]
 
     @property
-    def protocol_version(self) -> PortProtocolVersion:
+    def protocol_version(self) -> "PortProtocolVersion":
         v = PortProtocolVersion.ETHERNET
         for i in self.header_segments:
             if i.segment_type == SegmentType.IPV6:
@@ -336,7 +316,7 @@ class ProtocolSegmentProfileConfig(BaseModel):
         return v
 
     @property
-    def segment_id_list(self) -> List[ProtocolOption]:
+    def segment_id_list(self) -> List["ProtocolOption"]:
         return [h.segment_type.to_xmp() for h in self.header_segments]
 
     @property
@@ -358,6 +338,6 @@ class ProtocolSegmentProfileConfig(BaseModel):
                     )
                 total_bit_length += field.bit_length
 
-    def __init__(self, **data: Any) -> None:
+    def __init__(self, **data: Dict[str, Any]) -> None:
         super().__init__(**data)
         self.calc_segment_position()

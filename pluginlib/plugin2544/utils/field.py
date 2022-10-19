@@ -1,6 +1,6 @@
 import re
 from decimal import Decimal
-from typing import Any, List, Union, TYPE_CHECKING
+from typing import Any, Dict, List, Union, TYPE_CHECKING
 from ipaddress import (
     IPv4Address as OldIPv4Address,
     IPv6Address as OldIPv6Address,
@@ -16,10 +16,9 @@ from . import exceptions
 
 
 def hex_string_to_binary_string(hex: str) -> "BinaryString":
-    """binary string with leading zeros
-    """
-    hex = hex.lower().replace('0x', '')
-    return BinaryString(bin(int('1'+hex, 16))[3:])
+    """binary string with leading zeros"""
+    hex = hex.lower().replace("0x", "")
+    return BinaryString(bin(int("1" + hex, 16))[3:])
 
 
 class HexString(str):
@@ -28,7 +27,7 @@ class HexString(str):
 
 
 class MacAddress(str):
-    def __new__(cls, *args, **kwargs) -> "MacAddress":
+    def __new__(cls, *args: Any, **kwargs: Dict[str, Any]) -> "MacAddress":
         value = str.__new__(cls, *args, **kwargs)
         if not value:
             value = "00:00:00:00:00:00"
@@ -47,7 +46,7 @@ class MacAddress(str):
 
         return str.__new__(cls, ":".join(re.findall(".{2}", validate_value)))
 
-    def to_hexstring(self):
+    def to_hexstring(self) -> str:
         return (
             self.replace(":", "")
             .replace("-", "")
@@ -57,7 +56,7 @@ class MacAddress(str):
             .zfill(12)
         )
 
-    def first_three_bytes(self):
+    def first_three_bytes(self) -> str:
         return (
             self.replace(":", "")
             .replace("-", "")
@@ -75,7 +74,7 @@ class MacAddress(str):
         return not self or self == MacAddress("00:00:00:00:00:00")
 
     def to_binary_string(self) -> "BinaryString":
-        return hex_string_to_binary_string(self.replace(':', ''))
+        return hex_string_to_binary_string(self.replace(":", ""))
 
 
 class IPv4Address(OldIPv4Address):

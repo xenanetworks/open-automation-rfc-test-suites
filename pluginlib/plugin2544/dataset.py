@@ -44,7 +44,7 @@ class PluginModel2544(BaseModel):  # Main Model
             profile_id = port_config.profile_id
             port_config.set_profile(self.protocol_segments[profile_id].copy(deep=True))
 
-    def __init__(self, **data: Any):
+    def __init__(self, **data: Dict[str, Any]) -> None:
         super().__init__(**data)
         self.set_ports_rx_tx_type()
         self.check_port_groups_and_peers()

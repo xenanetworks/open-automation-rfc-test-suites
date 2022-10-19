@@ -23,7 +23,7 @@ from ..utils import constants
 class CommonOptions(BaseModel):
     duration_type: DurationType
     duration: Decimal
-    duration_unit: DurationUnit  # Union[DurationFrameUnit, DurationTimeUnit]
+    duration_unit: DurationUnit
     iterations: PositiveInt
 
     @validator("duration_unit", always=True)
@@ -64,12 +64,10 @@ class ThroughputTest(BaseModel):
     enabled: bool
     common_options: CommonOptions
     rate_iteration_options: RateIterationOptions
-    # pass_criteria PassCriteria
     use_pass_threshold: bool
     pass_threshold_pct: float
     acceptable_loss_pct: float
     collect_latency_jitter: bool
-    # additional_statisics: List[AdditionalStatisticsOption]
 
 
 class RateSweepOptions(BaseModel):

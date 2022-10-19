@@ -44,6 +44,5 @@ class AddressCollection:
         if protocol.is_ipv4:
             return self.src_ipv4_addr, self.dst_ipv4_addr
         elif protocol.is_ipv6:
-            return self.src_ipv6_addr, self.dst_ipv6_addr
-        else:
-            return self.smac, self.dmac
+            return self.src_ipv6_addr, self.dst_ipv6_addr        
+        return self.smac, self.dmac

@@ -1,8 +1,8 @@
-from enum import Enum as CaseSensitiveEnum
+from enum import Enum
 from xoa_driver import ports, enums
 
 
-class Enum(CaseSensitiveEnum):
+class CaseInsensitiveEnum(Enum):
     @classmethod
     def _missing_(cls, value):
         if isinstance(value, str):
@@ -79,24 +79,24 @@ INTERVAL_CHECK_LEARNING_TRAFFIC = 0.1
 INTERVAL_SEND_STATISTICS = 1
 
 
-class CounterType(Enum):
+class CounterType(CaseInsensitiveEnum):
     JITTER = -1
     LATENCY = -2147483648
 
 
-class PortCounterType(Enum):
+class PortCounterType(CaseInsensitiveEnum):
     TX = 0
     RX = 1
 
 
-class ResultState(Enum):
+class ResultState(CaseInsensitiveEnum):
     SUCCESS = "success"
     FAIL = "fail"
     DONE = "done"
     PENDING = "pending"
 
 
-class TestTopology(Enum):
+class TestTopology(CaseInsensitiveEnum):
     PAIRS = "pairs"
     BLOCKS = "blocks"
     MESH = "mesh"
@@ -110,13 +110,13 @@ class TestTopology(Enum):
         return self == type(self).PAIRS
 
 
-class TrafficDirection(Enum):
+class TrafficDirection(CaseInsensitiveEnum):
     EAST_TO_WEST = "east_to_west"
     WEST_TO_EAST = "west_to_east"
     BIDIRECTION = "bidirectional"
 
 
-class PacketSizeType(Enum):
+class PacketSizeType(CaseInsensitiveEnum):
     IETF_DEFAULT = "ietf_default"
     CUSTOM = "custom_sizes"
     RANGE = "specified"
@@ -144,7 +144,7 @@ class PacketSizeType(Enum):
             return enums.LengthType[self.name]
 
 
-class PayloadTypeStr(Enum):
+class PayloadTypeStr(CaseInsensitiveEnum):
     INCREMENTING = "incrementing"
     PATTERN = "pattern"
     PRBS = "prbs"
@@ -153,7 +153,7 @@ class PayloadTypeStr(Enum):
         return enums.PayloadType[self.name]
 
 
-class TidAllocationScope(Enum):
+class TidAllocationScope(CaseInsensitiveEnum):
     CONFIGURATION_SCOPE = "config_scope"
     RX_PORT_SCOPE = "port_scope"
     SOURCE_PORT_ID = "source_port_id"
@@ -163,7 +163,7 @@ class TidAllocationScope(Enum):
         return self == TidAllocationScope.CONFIGURATION_SCOPE
 
 
-class OuterLoopMode(Enum):
+class OuterLoopMode(CaseInsensitiveEnum):
     ITERATION = "iterations"
     PACKET_SIZE = "packet_size"
 
@@ -172,13 +172,13 @@ class OuterLoopMode(Enum):
         return self == type(self).ITERATION
 
 
-class MACLearningMode(Enum):
+class MACLearningMode(CaseInsensitiveEnum):
     NEVER = "never"
     ONCE = "once"
     EVERYTRIAL = "every_trial"
 
 
-class DurationType(Enum):
+class DurationType(CaseInsensitiveEnum):
     TIME = "time"
     FRAME = "frames"
 
@@ -187,7 +187,7 @@ class DurationType(Enum):
         return self == type(self).TIME
 
 
-class DurationUnit(Enum):
+class DurationUnit(CaseInsensitiveEnum):
     SECOND = "seconds"
     MINUTE = "minutes"
     HOUR = "hours"
@@ -209,7 +209,7 @@ class DurationUnit(Enum):
         }[self]
 
 
-class TestType(Enum):
+class TestType(CaseInsensitiveEnum):
     THROUGHPUT = "throughput"
     LATENCY_JITTER = "latency"
     FRAME_LOSS_RATE = "loss"
@@ -224,7 +224,7 @@ class TestType(Enum):
         return self == type(self).BACK_TO_BACK
 
 
-class SearchType(Enum):
+class SearchType(CaseInsensitiveEnum):
     BINARY_SEARCH = "binary_search"
     FAST_BINARY_SEARCH = "fast_binary_search"
 
@@ -233,7 +233,7 @@ class SearchType(Enum):
         return self == SearchType.FAST_BINARY_SEARCH
 
 
-class RateResultScopeType(Enum):
+class RateResultScopeType(CaseInsensitiveEnum):
     COMMON = "common_result"
     PER_SOURCE_PORT = "per_source_port_result"
 
@@ -242,7 +242,7 @@ class RateResultScopeType(Enum):
         return self == RateResultScopeType.PER_SOURCE_PORT
 
 
-class LatencyModeStr(Enum):
+class LatencyModeStr(CaseInsensitiveEnum):
     FIRST2LAST = "first_to_last"
     LAST2LAST = "last_to_last"
     FIRST2FIRST = "first_to_first"
@@ -252,18 +252,18 @@ class LatencyModeStr(Enum):
         return enums.LatencyMode[self.name]
 
 
-class TestResultState(Enum):
+class TestResultState(CaseInsensitiveEnum):
     PENDING = "pending"
     PASS = "pass"
     FAIL = "fail"
 
 
-class AcceptableLossType(Enum):
+class AcceptableLossType(CaseInsensitiveEnum):
     PERCENT = "percent"
     FRAME = "frames"
 
 
-class PortRateCapProfile(Enum):
+class PortRateCapProfile(CaseInsensitiveEnum):
     PHYSICAL = "physical_port_rate"
     CUSTOM = "custom_rate_cap"
 
@@ -272,7 +272,7 @@ class PortRateCapProfile(Enum):
         return self == PortRateCapProfile.CUSTOM
 
 
-class PortRateCapUnit(Enum):
+class PortRateCapUnit(CaseInsensitiveEnum):
     GBPS = "1e9_bps"
     MBPS = "1e6_bps"
     KBPS = "1e3_bps"
@@ -287,7 +287,7 @@ class PortRateCapUnit(Enum):
         }[self]
 
 
-class MdiMdixMode(Enum):
+class MdiMdixMode(CaseInsensitiveEnum):
     AUTO = "auto"
     MDI = "mdi"
     MDIX = "mdix"
@@ -296,7 +296,7 @@ class MdiMdixMode(Enum):
         return enums.MDIXMode[self.name]
 
 
-class BRRModeStr(Enum):
+class BRRModeStr(CaseInsensitiveEnum):
     MASTER = "master"
     SLAVE = "slave"
 
@@ -304,7 +304,7 @@ class BRRModeStr(Enum):
         return enums.BRRMode[self.name]
 
 
-class FECModeStr(Enum):
+class FECModeStr(CaseInsensitiveEnum):
     ON = "on"
     OFF = "off"
     FC_FEC = "fc_fec"
@@ -313,7 +313,7 @@ class FECModeStr(Enum):
         return enums.FECMode[self.name]
 
 
-class PortSpeedStr(Enum):
+class PortSpeedStr(CaseInsensitiveEnum):
     AUTO = "auto"
     F100M = "f100m"
     F1G = "f1g"
@@ -345,7 +345,7 @@ class PortSpeedStr(Enum):
         return enums.PortSpeedMode[self.name]
 
 
-class PortGroup(Enum):
+class PortGroup(CaseInsensitiveEnum):
     EAST = "east"
     WEST = "west"
     UNDEFINED = "undefined"
@@ -359,7 +359,7 @@ class PortGroup(Enum):
         return self == PortGroup.WEST
 
 
-class ModifierActionOption(Enum):
+class ModifierActionOption(CaseInsensitiveEnum):
     INC = "increment"
     DEC = "decrement"
     RANDOM = "random"
@@ -368,7 +368,7 @@ class ModifierActionOption(Enum):
         return enums.ModifierAction[self.name]
 
 
-class FlowCreationType(Enum):
+class FlowCreationType(CaseInsensitiveEnum):
     STREAM = "stream_based"
     MODIFIER = "modifier_based"
 
@@ -377,16 +377,16 @@ class FlowCreationType(Enum):
         return self == FlowCreationType.STREAM
 
 
-class ThroughputUnit(Enum):
+class ThroughputUnit(CaseInsensitiveEnum):
     BIT_PER_SEC = "bps"
     FRAME_PER_SEC = "fps"
 
 
-class MulticastRole(Enum):
+class MulticastRole(CaseInsensitiveEnum):
     UNDEFINED = "undefined"
 
 
-class SegmentType(Enum):
+class SegmentType(CaseInsensitiveEnum):
     # RAW = "raw"
     ETHERNET = "ethernet"
     VLAN = "vlan"
@@ -461,19 +461,19 @@ class SegmentType(Enum):
         return int(self.value.split("_")[-1])
 
 
-class StreamState(Enum):
+class StreamState(CaseInsensitiveEnum):
     OFF = "off"
     ON = "on"
     SUPPRESS = "suppress"
 
 
-class StreamRateType(Enum):
+class StreamRateType(CaseInsensitiveEnum):
     FRACTION = "fraction"
     PPS = "pps"
     L2MBPS = "l2mbps"
 
 
-class StreamPacketLengthType(Enum):
+class StreamPacketLengthType(CaseInsensitiveEnum):
     FIXED = "fixed"
     INCREMENTING = "incrementing"
     BUTTERFLY = "butterfly"
@@ -481,17 +481,17 @@ class StreamPacketLengthType(Enum):
     MIX = "mix"
 
 
-class FramePacketTerminology(Enum):
+class FramePacketTerminology(CaseInsensitiveEnum):
     FRAME = "fps"
     PACKET = "pps"
 
 
-class PassDisplayType(Enum):
+class PassDisplayType(CaseInsensitiveEnum):
     PASS = "pass"
     DONE = "done"
 
 
-class PortProtocolVersion(Enum):
+class PortProtocolVersion(CaseInsensitiveEnum):
     ETHERNET = 0
     IPV4 = 4
     IPV6 = 6
@@ -509,23 +509,23 @@ class PortProtocolVersion(Enum):
         return self != type(self).ETHERNET
 
 
-class IPVersion(Enum):
+class IPVersion(CaseInsensitiveEnum):
     IPV4 = 4
     IPV6 = 6
 
 
-class ARPSenarioType(Enum):
+class ARPSenarioType(CaseInsensitiveEnum):
     DEFAULT = 0
     GATEWAY = 1
     REMOTE = 2
     PUBLIC = 3
 
 
-class IPPrefixLength(Enum):
+class IPPrefixLength(CaseInsensitiveEnum):
     IPv4 = 32
     IPv6 = 128
 
 
-class TestState(Enum):
+class TestState(CaseInsensitiveEnum):
     L3_LEARNING = 3
     RUNNING_TEST = 5

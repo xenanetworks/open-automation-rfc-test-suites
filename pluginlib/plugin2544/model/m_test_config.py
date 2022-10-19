@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, List, Tuple
 from pydantic import (
     BaseModel,
     Field,
@@ -174,8 +174,8 @@ class TestConfiguration(BaseModel):
 
     @validator("multi_stream_config")
     def validate_multi_stream(
-        cls, v: MultiStreamConfig, values: Dict[str, Any]
-    ) -> MultiStreamConfig:
+        cls, v: "MultiStreamConfig", values: Dict[str, Any]
+    ) -> "MultiStreamConfig":
         if "flow_creation_type" not in values:
             return v
         if not values["flow_creation_type"].is_stream_based and v.enable_multi_stream:

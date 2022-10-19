@@ -11,7 +11,9 @@ from ..model import ThroughputTest
 
 
 class ThroughputBoutEntry:
-    def __init__(self, throughput_conf: ThroughputTest, port_structs: List[PortStruct]):
+    def __init__(
+        self, throughput_conf: "ThroughputTest", port_structs: List["PortStruct"]
+    ):
         self.current = (
             self.rate
         ) = self.next = throughput_conf.rate_iteration_options.initial_value_pct
@@ -22,9 +24,9 @@ class ThroughputBoutEntry:
             throughput_conf.rate_iteration_options.maximum_value_pct
         )
         self._last_move: int = 0
-        self._port_structs:List[PortStruct] = port_structs
+        self._port_structs: List[PortStruct] = port_structs
         self._throughput_conf = throughput_conf
-        self.best_final_result: FinalStatistic
+        self.best_final_result: Optional[FinalStatistic] = None
         self._port_test_passed = False
         self._port_should_continue = True
 
@@ -82,14 +84,12 @@ class ThroughputBoutEntry:
         for port_struct in self._port_structs:
             port_struct.set_rate(self.rate)
 
-    def update_boundary(self, result: Optional[FinalStatistic]) -> None:
-        self._port_should_continue =self._port_test_passed= False
+    def update_boundary(self, result: Optional["FinalStatistic"]) -> None:
+        self._port_should_continue = self._port_test_passed = False
         if not result:
             self._port_should_continue = True
             return
-        if (
-            self._throughput_conf.rate_iteration_options.result_scope.is_per_source_port
-        ):
+        if self._throughput_conf.rate_iteration_options.result_scope.is_per_source_port:
             loss_ratio = self._port_structs[0].statistic.loss_ratio
         else:
             loss_ratio = result.total.rx_loss_percent
@@ -113,7 +113,9 @@ class ThroughputBoutEntry:
             self._port_should_continue = True
 
 
-def get_initial_boundaries(throughput_conf: ThroughputTest, resources: ResourceManager):
+def get_initial_boundaries(
+    throughput_conf: "ThroughputTest", resources: "ResourceManager"
+) -> List["ThroughputBoutEntry"]:
     if throughput_conf.rate_iteration_options.result_scope.is_per_source_port:
         return [
             ThroughputBoutEntry(throughput_conf, [port_struct])

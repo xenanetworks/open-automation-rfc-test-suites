@@ -1,7 +1,6 @@
 import asyncio, time
 from decimal import Decimal
 from typing import Dict, List, TYPE_CHECKING, Union
-from loguru import logger
 from xoa_driver import testers as xoa_testers, modules, enums, utils
 from .learning import add_mac_learning_steps
 from .config_checkers import check_config
@@ -35,7 +34,7 @@ class ResourceManager:
         self.mapping: Dict[str, List[int]] = {}
 
     @property
-    def has_l3(self):
+    def has_l3(self) -> bool:
         return any(conf.profile.protocol_version.is_l3 for conf in self.all_confs)
 
     @staticmethod
@@ -59,7 +58,7 @@ class ResourceManager:
             if port_struct.port_conf.is_rx_port
         ]
 
-    async def setup_ports(self, latency_mode: const.LatencyModeStr) -> None:
+    async def setup_ports(self, latency_mode: "const.LatencyModeStr") -> None:
         await asyncio.gather(
             *[
                 port_struct.setup_port(self.test_conf, latency_mode)
@@ -77,7 +76,7 @@ class ResourceManager:
                 port_struct.port_identity.port_index,
             ]
 
-    async def init_resource(self, latency_mode: const.LatencyModeStr) -> None:
+    async def init_resource(self, latency_mode: "const.LatencyModeStr") -> None:
         await self.collect_control_ports()
         self.resolve_port_relations()
         check_config(list(self.__testers.values()), self.port_structs, self.test_conf)
@@ -130,9 +129,8 @@ class ResourceManager:
             *[port_struct.prepare() for port_struct in self.port_structs]
         )
 
-    async def add_toggle_port_sync_state_steps(
-        self,
-    ) -> None:  # AddTogglePortSyncStateSteps
+    async def add_toggle_port_sync_state_steps(self) -> None:
+        # AddTogglePortSyncStateSteps
         toggle_conf = self.test_conf.toggle_port_sync_config
         if not toggle_conf.toggle_port_sync:
             return
@@ -294,7 +292,7 @@ class ResourceManager:
             enums.OnOff.ON, local_time + delay_seconds, module_port_list
         )
 
-    async def start_traffic(self, port_sync=False) -> None:
+    async def start_traffic(self, port_sync: bool = False) -> None:
         if not port_sync:
             # send P_TRAFFIC every port
             await utils.apply(

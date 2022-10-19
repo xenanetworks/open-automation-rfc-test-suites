@@ -1,11 +1,7 @@
 from ipaddress import IPv4Network, IPv6Network
 from typing import Union
 from decimal import Decimal
-from pydantic import (
-    BaseModel,
-    validator,
-    NonNegativeInt,
-)
+from pydantic import BaseModel, validator, NonNegativeInt
 from ..utils import constants as const
 from ..utils.field import MacAddress, IPv4Address, IPv6Address, Prefix
 from .m_protocol_segment import ProtocolSegmentProfileConfig
@@ -21,7 +17,7 @@ class IPV6AddressProperties(BaseModel):
     ip_version: const.IPVersion = const.IPVersion.IPV6
 
     @property
-    def network(self) -> IPv6Network:
+    def network(self) -> "IPv6Network":
         return IPv6Network(f"{self.address}/{self.routing_prefix}", strict=False)
 
     @validator(
@@ -32,7 +28,7 @@ class IPV6AddressProperties(BaseModel):
         pre=True,
         allow_reuse=True,
     )
-    def set_address(cls, v: Union[str, IPv6Address]) -> IPv6Address:
+    def set_address(cls, v: Union[str, "IPv6Address"]) -> "IPv6Address":
         return IPv6Address(v)
 
     @validator("routing_prefix", "public_routing_prefix", pre=True, allow_reuse=True)
@@ -40,7 +36,7 @@ class IPV6AddressProperties(BaseModel):
         return Prefix(v)
 
     @property
-    def dst_addr(self) -> IPv6Address:
+    def dst_addr(self) -> "IPv6Address":
         return self.public_address if not self.public_address.is_empty else self.address
 
 
@@ -54,7 +50,7 @@ class IPV4AddressProperties(BaseModel):
     ip_version: const.IPVersion = const.IPVersion.IPV4
 
     @property
-    def network(self) -> IPv4Network:
+    def network(self) -> "IPv4Network":
         return IPv4Network(f"{self.address}/{self.routing_prefix}", strict=False)
 
     @validator(
@@ -65,7 +61,7 @@ class IPV4AddressProperties(BaseModel):
         pre=True,
         allow_reuse=True,
     )
-    def set_address(cls, v: Union[str, IPv4Address]) -> IPv4Address:
+    def set_address(cls, v: Union[str, "IPv4Address"]) -> "IPv4Address":
         return IPv4Address(v)
 
     @validator("routing_prefix", "public_routing_prefix", pre=True, allow_reuse=True)
@@ -73,7 +69,7 @@ class IPV4AddressProperties(BaseModel):
         return Prefix(v)
 
     @property
-    def dst_addr(self) -> IPv4Address:
+    def dst_addr(self) -> "IPv4Address":
         return self.public_address if not self.public_address.is_empty else self.address
 
 
@@ -120,7 +116,7 @@ class PortConfiguration(BaseModel):
         underscore_attrs_are_private = True
 
     @validator("ip_gateway_mac_address", pre=True)
-    def set_ip_gateway_mac_address(cls, ip_gateway_mac_address: str) -> MacAddress:
+    def set_ip_gateway_mac_address(cls, ip_gateway_mac_address: str) -> "MacAddress":
         return MacAddress(ip_gateway_mac_address)
 
     @property
@@ -156,15 +152,14 @@ class PortConfiguration(BaseModel):
         return Decimal(self.port_rate_cap_value * self.port_rate_cap_unit.scale())
 
     @property
-    def profile(self) -> ProtocolSegmentProfileConfig:
+    def profile(self) -> "ProtocolSegmentProfileConfig":
         return self._profile
 
-    def set_profile(self, value: ProtocolSegmentProfileConfig) -> None:
+    def set_profile(self, value: "ProtocolSegmentProfileConfig") -> None:
         self._profile = value
 
     @property
-    def ip_properties(self) -> Union[IPV4AddressProperties, IPV6AddressProperties]:
+    def ip_properties(self) -> Union["IPV4AddressProperties", "IPV6AddressProperties"]:
         if self._profile.protocol_version.is_ipv6:
             return self.ipv6_properties
-        else:
-            return self.ipv4_properties
+        return self.ipv4_properties

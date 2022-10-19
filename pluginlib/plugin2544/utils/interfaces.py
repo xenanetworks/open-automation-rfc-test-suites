@@ -1,9 +1,10 @@
-from typing import Any, Protocol
+from typing import Protocol as Interface, Union, Dict
+from pydantic import BaseModel
 
 
-class TestSuitePipe(Protocol):
-    def send_statistics(self, v: Any) -> None:
+class TestSuitePipe(Interface):
+    def send_statistics(self, data: Union[Dict, BaseModel]) -> None:
         ...
 
-    def send_warning(self, v: Any) -> None:
+    def send_warning(self, warning: Exception) -> None:
         ...

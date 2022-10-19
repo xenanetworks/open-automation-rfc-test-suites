@@ -104,9 +104,6 @@ class StreamStruct:
         self._packet_header: bytearray = bytearray()
         self._stream_offset = stream_offset
         self._packet_limit: int = 0
-        # self._pr_streams = [
-        #     PRStream(self._tx_port, port, self._tpldid) for port in self._rx_ports
-        # ]
         self._stream_statistic: StreamStatisticData = (
             StreamStatisticData()
         )  # record the latest statistic
