@@ -43,7 +43,7 @@ class PortStruct:
         # self._sync_status: bool = True
         # self._traffic_status: bool = False
         self._tester = tester
-        self._port = port
+        self.port_ins = port
         self._xoa_out = xoa_out
         self._port_identity = port_identity
         self._should_stop_on_los = False
@@ -62,12 +62,8 @@ class PortStruct:
         return self._port_identity
 
     @property
-    def port_statistic(self):
-        return self._port.statistics
-
-    @property
     def capabilities(self) -> "commands.P_CAPABILITIES.GetDataAttr":
-        return self._port.info.capabilities
+        return self.port_ins.info.capabilities
 
     async def _change_sync_status(
         self,
@@ -102,31 +98,31 @@ class PortStruct:
         raise exceptions.LossofTester(self._tester, self._port_identity.tester_id)
 
     async def set_toggle_port_sync(self, state: enums.OnOff) -> None:
-        await self._port.tx_config.enable.set(state)
+        await self.port_ins.tx_config.enable.set(state)
 
     async def set_broadr_reach_mode(self, broadr_reach_mode: const.BRRModeStr) -> None:
-        if self._port.info.is_brr_mode_supported == enums.YesNo.NO:
+        if self.port_ins.info.is_brr_mode_supported == enums.YesNo.NO:
             self._xoa_out.send_warning(
                 exceptions.BroadReachModeNotSupport(self._port_identity.name)
             )
-        elif isinstance(self._port, const.BrrPorts):
-            await self._port.brr_mode.set(broadr_reach_mode.to_xmp())
+        elif isinstance(self.port_ins, const.BrrPorts):
+            await self.port_ins.brr_mode.set(broadr_reach_mode.to_xmp())
 
     async def set_mdi_mdix_mode(self, mdi_mdix_mode: const.MdiMdixMode) -> None:
-        if self._port.info.capabilities.can_mdi_mdix == enums.YesNo.NO:
+        if self.port_ins.info.capabilities.can_mdi_mdix == enums.YesNo.NO:
             self._xoa_out.send_warning(
                 exceptions.MdiMdixModeNotSupport(self._port_identity.name)
             )
-        elif isinstance(self._port, const.MdixPorts):
-            await self._port.mdix_mode.set(mdi_mdix_mode.to_xmp())
+        elif isinstance(self.port_ins, const.MdixPorts):
+            await self.port_ins.mdix_mode.set(mdi_mdix_mode.to_xmp())
 
     async def set_anlt(self, on_off: bool) -> None:
         """Thor-400G-7S-1P support ANLT feature"""
-        if not on_off or not isinstance(self._port, const.PCSPMAPorts):
+        if not on_off or not isinstance(self.port_ins, const.PCSPMAPorts):
             return
 
-        if bool(self._port.info.capabilities.can_auto_neg_base_r):
-            await self._port.pcs_pma.auto_neg.settings.set(
+        if bool(self.port_ins.info.capabilities.can_auto_neg_base_r):
+            await self.port_ins.pcs_pma.auto_neg.settings.set(
                 enums.AutoNegMode.ANEG_ON,
                 enums.AutoNegTecAbility.DEFAULT_TECH_MODE,
                 enums.AutoNegFECOption.DEFAULT_FEC,
@@ -137,8 +133,8 @@ class PortStruct:
             self._xoa_out.send_warning(
                 exceptions.ANLTNotSupport(self._port_identity.name)
             )
-        if bool(self._port.info.capabilities.can_set_link_train):
-            await self._port.pcs_pma.link_training.settings.set(
+        if bool(self.port_ins.info.capabilities.can_set_link_train):
+            await self.port_ins.pcs_pma.link_training.settings.set(
                 enums.LinkTrainingMode.FORCE_ENABLE,
                 enums.PAM4FrameSize.N16K_FRAME,
                 enums.LinkTrainingInitCondition.NO_INIT,
@@ -154,33 +150,33 @@ class PortStruct:
         """P_AUTONEGSELECTION"""
         if not on_off:
             return
-        if not bool(self._port.info.capabilities.can_set_autoneg):
+        if not bool(self.port_ins.info.capabilities.can_set_autoneg):
             self._xoa_out.send_warning(
                 exceptions.AutoNegotiationNotSupport(self._port_identity.name)
             )
-        elif isinstance(self._port, const.AutoNegPorts):
-            await self._port.autoneg_selection.set_on()  # type:ignore
+        elif isinstance(self.port_ins, const.AutoNegPorts):
+            await self.port_ins.autoneg_selection.set_on()  # type:ignore
 
     async def set_speed_mode(self, port_speed_mode: const.PortSpeedStr) -> None:
         mode = port_speed_mode.to_xmp()
-        if mode not in self._port.info.port_possible_speed_modes:
+        if mode not in self.port_ins.info.port_possible_speed_modes:
             self._xoa_out.send_warning(exceptions.PortSpeedWarning(mode))
         else:
-            await self._port.speed.mode.selection.set(mode)
+            await self.port_ins.speed.mode.selection.set(mode)
 
     async def set_sweep_reduction(self, ppm: int) -> None:
-        await self._port.speed.reduction.set(ppm=ppm)
+        await self.port_ins.speed.reduction.set(ppm=ppm)
 
     async def set_stagger_step(self, port_stagger_steps: int) -> None:
         if not port_stagger_steps:
             return
-        await self._port.tx_config.delay.set(port_stagger_steps)  # P_TXDELAY
+        await self.port_ins.tx_config.delay.set(port_stagger_steps)  # P_TXDELAY
 
     async def set_fec_mode(self, fec_mode: const.FECModeStr) -> None:
         """Loki-100G-5S-2P  module 4 * 25G support FC_FEC mode"""
         if fec_mode == const.FECModeStr.OFF:
             return
-        await self._port.fec_mode.set(fec_mode.to_xmp())  # PP_FECMODE
+        await self.port_ins.fec_mode.set(fec_mode.to_xmp())  # PP_FECMODE
 
     async def set_max_header(self, header_length: int) -> None:
         # calculate max header length
@@ -188,44 +184,44 @@ class PortStruct:
             if header_length <= p:
                 header_length = p
                 break
-        await self._port.max_header_length.set(header_length)
+        await self.port_ins.max_header_length.set(header_length)
 
     async def set_packet_size_if_mix(
         self, frame_sizes: "FrameSizeConfiguration"
     ) -> None:
         if not frame_sizes.packet_size_type.is_mix:
             return
-        await self._port.mix.weights.set(*frame_sizes.mixed_sizes_weights)
+        await self.port_ins.mix.weights.set(*frame_sizes.mixed_sizes_weights)
         if frame_sizes.mixed_length_config:
             dic = frame_sizes.mixed_length_config.dict()
             for k, v in dic.items():
                 position = int(k.split("_")[-1])
-                await self._port.mix.lengths[position].set(v)
+                await self.port_ins.mix.lengths[position].set(v)
 
     async def send_packet(self, packet: str) -> None:
-        await self._port.tx_single_pkt.send.set(packet)
+        await self.port_ins.tx_single_pkt.send.set(packet)
 
     def free(self) -> List[misc.Token]:
-        return [self._port.reservation.set_release()]
+        return [self.port_ins.reservation.set_release()]
 
     async def prepare(self) -> None:
-        self._port.on_reservation_change(self.__on_reservation_status)
-        self._port.on_receive_sync_change(self._change_sync_status)
-        self._port.on_traffic_change(self._change_traffic_status)
-        self._port.on_speed_change(self._change_physical_port_speed)
+        self.port_ins.on_reservation_change(self.__on_reservation_status)
+        self.port_ins.on_receive_sync_change(self._change_sync_status)
+        self.port_ins.on_traffic_change(self._change_traffic_status)
+        self.port_ins.on_speed_change(self._change_physical_port_speed)
         self._tester.on_disconnected(self.__on_disconnect_tester)
         tokens = [
-            self._port.sync_status.get(),
-            self._port.traffic.state.get(),
-            self._port.net_config.mac_address.get(),
-            self._port.speed.current.get(),
+            self.port_ins.sync_status.get(),
+            self.port_ins.traffic.state.get(),
+            self.port_ins.net_config.mac_address.get(),
+            self.port_ins.speed.current.get(),
         ]
-        if self._port.is_reserved_by_me():
+        if self.port_ins.is_reserved_by_me():
             tokens.extend(self.free())
-        elif self._port.is_reserved_by_others():
-            tokens.append(self._port.reservation.set_relinquish())
-        tokens.append(self._port.reservation.set_reserve())
-        tokens.append(self._port.reset.set())
+        elif self.port_ins.is_reserved_by_others():
+            tokens.append(self.port_ins.reservation.set_relinquish())
+        tokens.append(self.port_ins.reservation.set_reserve())
+        tokens.append(self.port_ins.reset.set())
 
         (sync, traffic, mac, port_speed, *_) = await driver_utils.apply(*tokens)
         self.properties.sync_status = bool(sync.sync_status)
@@ -235,21 +231,21 @@ class PortStruct:
 
     async def clear_statistic(self) -> None:
         await driver_utils.apply(
-            self._port.statistics.tx.clear.set(), self._port.statistics.rx.clear.set()
+            self.port_ins.statistics.tx.clear.set(), self.port_ins.statistics.rx.clear.set()
         )
 
     async def set_tx_time_limit(self, tx_timelimit: int) -> None:
-        await self._port.tx_config.time_limit.set(int(tx_timelimit))
+        await self.port_ins.tx_config.time_limit.set(int(tx_timelimit))
 
     async def set_gap_monitor(
         self, gap_monitor_start_microsec, gap_monitor_stop_frames
     ) -> None:
-        await self._port.gap_monitor.set(
+        await self.port_ins.gap_monitor.set(
             gap_monitor_start_microsec, gap_monitor_stop_frames
         )
 
     def set_traffic(self, traffic_state: enums.StartOrStop):
-        return self._port.traffic.state.set(traffic_state)
+        return self.port_ins.traffic.state.set(traffic_state)
 
     async def set_arp_trucks(self, arp_datas: Set["RXTableData"]) -> None:
         arp_chunk: List["misc.ArpChunk"] = []
@@ -262,7 +258,7 @@ class PortStruct:
                     arp_data.dmac,
                 )
             )
-        await self._port.arp_rx_table.set(arp_chunk)
+        await self.port_ins.arp_rx_table.set(arp_chunk)
 
     async def set_ndp_trucks(self, ndp_datas: Set["RXTableData"]) -> None:
         ndp_chunk: List["misc.NdpChunk"] = []
@@ -275,34 +271,34 @@ class PortStruct:
                     rx_data.dmac,
                 )
             )
-        await self._port.ndp_rx_table.set(ndp_chunk)
+        await self.port_ins.ndp_rx_table.set(ndp_chunk)
 
     async def set_reply(self) -> None:
         await driver_utils.apply(
-            self._port.net_config.ipv4.arp_reply.set_on(),  # P_ARPREPLY
-            self._port.net_config.ipv6.arp_reply.set_on(),  # P_ARPV6REPLY
-            self._port.net_config.ipv4.ping_reply.set_on(),  # P_PINGREPLY
-            self._port.net_config.ipv6.ping_reply.set_on(),  # P_PINGV6REPLY
+            self.port_ins.net_config.ipv4.arp_reply.set_on(),  # P_ARPREPLY
+            self.port_ins.net_config.ipv6.arp_reply.set_on(),  # P_ARPV6REPLY
+            self.port_ins.net_config.ipv4.ping_reply.set_on(),  # P_PINGREPLY
+            self.port_ins.net_config.ipv6.ping_reply.set_on(),  # P_PINGV6REPLY
         )
 
     async def set_tpld_mode(self, use_micro_tpld: bool) -> None:
-        await self._port.tpld_mode.set(enums.TPLDMode(int(use_micro_tpld)))
+        await self.port_ins.tpld_mode.set(enums.TPLDMode(int(use_micro_tpld)))
 
     async def set_latency_offset(self, offset: int) -> None:
-        await self._port.latency_config.offset.set(offset=offset)
+        await self.port_ins.latency_config.offset.set(offset=offset)
 
     async def set_interframe_gap(self, interframe_gap: int) -> None:
-        await self._port.interframe_gap.set(min_byte_count=interframe_gap)
+        await self.port_ins.interframe_gap.set(min_byte_count=interframe_gap)
 
     async def set_pause_mode(self, pause_mode_enabled: bool):
-        await self._port.pause.set(on_off=enums.OnOff(int(pause_mode_enabled)))
+        await self.port_ins.pause.set(on_off=enums.OnOff(int(pause_mode_enabled)))
 
     async def set_latency_mode(self, latency_mode: const.LatencyModeStr):
-        await self._port.latency_config.mode.set(latency_mode.to_xmp())
+        await self.port_ins.latency_config.mode.set(latency_mode.to_xmp())
 
     async def set_ipv4_address(self, ipv4_properties) -> None:
         subnet_mask = ipv4_properties.routing_prefix.to_ipv4()
-        await self._port.net_config.ipv4.address.set(
+        await self.port_ins.net_config.ipv4.address.set(
             ipv4_address=ipv4_properties.address,
             subnet_mask=subnet_mask,
             gateway=ipv4_properties.gateway,
@@ -310,7 +306,7 @@ class PortStruct:
         )
 
     async def set_ipv6_address(self, ipv6_properties) -> None:
-        await self._port.net_config.ipv6.address.set(
+        await self.port_ins.net_config.ipv6.address.set(
             ipv6_address=ipv6_properties.address,
             gateway=ipv6_properties.gateway,
             subnet_prefix=ipv6_properties.routing_prefix,
@@ -318,22 +314,22 @@ class PortStruct:
         )
 
     async def set_mac_address(self, mac_addr: str) -> None:
-        await self._port.net_config.mac_address.set(mac_addr)
+        await self.port_ins.net_config.mac_address.set(mac_addr)
         self.properties.native_mac_address = MacAddress(mac_addr)
 
     @property
     def local_states(self):
-        return self._port.local_states
+        return self.port_ins.local_states
 
     async def clear(self) -> None:
         await driver_utils.apply(*self.free())
         await self._tester.session.logoff()
 
     async def create_stream(self):
-        return await self._port.streams.create()
+        return await self.port_ins.streams.create()
 
     async def get_traffic_status(self) -> bool:
-        return bool((await self._port.traffic.state.get()).on_off)
+        return bool((await self.port_ins.traffic.state.get()).on_off)
 
     @property
     def send_port_speed(self) -> Decimal:
@@ -473,7 +469,7 @@ class PortStruct:
         return NonNegativeDecimal(str(self.send_port_speed))
 
     async def query(self) -> None:
-        extra = self._port.statistics.rx.extra.get()
+        extra = self.port_ins.statistics.rx.extra.get()
         stream_tasks = [stream_struct.query() for stream_struct in self.stream_structs]
         extra_tasks = [extra] if self.port_conf.is_rx_port else []
         results = await asyncio.gather(*extra_tasks, *stream_tasks)

@@ -27,7 +27,6 @@ if TYPE_CHECKING:
     from .structure import PortStruct
 
 
-
 class PTStream:
     def __init__(self, tx_port: "PortStruct", stream_id: int) -> None:
         self.tx_port = tx_port
@@ -35,7 +34,7 @@ class PTStream:
         self.statistic = StreamCounter()
 
     async def query(self) -> None:
-        tx_frames = await self.tx_port._port.statistics.tx.obtain_from_stream(
+        tx_frames = await self.tx_port.port_ins.statistics.tx.obtain_from_stream(
             self.stream_id
         ).get()
         self.statistic = StreamCounter(
@@ -55,14 +54,12 @@ class PRStream:
         self.statistic: "PRStatistic" = PRStatistic()
 
     async def query(self) -> None:
-        rx = self.rx_port.port_statistic.rx.access_tpld(self.tpld_id)
-        # rx_frames, error, ji, latency, fcs = await utils.apply(
+        rx = self.rx_port.port_ins.statistics.rx.access_tpld(self.tpld_id)
         rx_frames, error, ji, latency = await utils.apply(
             rx.traffic.get(),
             rx.errors.get(),
             rx.jitter.get(),
             rx.latency.get(),
-            # self.rx_port.port_statistic.rx.extra.get(),
         )
         self.statistic = PRStatistic(
             rx_stream_counter=StreamCounter(
@@ -71,7 +68,6 @@ class PRStream:
                 pps=rx_frames.packet_count_last_sec,
                 bytes_count=rx_frames.byte_count_since_cleared,
             ),
-            # fcs=fcs.fcs_error_count,
             live_loss_frames=error.non_incre_seq_event_count,
             latency=DelayData(
                 counter_type=const.CounterType.LATENCY,
@@ -86,7 +82,6 @@ class PRStream:
                 maximum=ji.max_val,
             ),
         )
-
 
 
 class StreamStruct:
@@ -262,11 +257,24 @@ class StreamStruct:
         profile = self._tx_port.port_conf.profile.copy(deep=True)
         for index, segment in enumerate(profile.header_segments):
             if segment.segment_type.is_ethernet and index == 0:
-                ps.setup_segment_ethernet(segment, self._addr_coll.smac, self._addr_coll.dmac, self._addr_coll.arp_mac)
+                ps.setup_segment_ethernet(
+                    segment,
+                    self._addr_coll.smac,
+                    self._addr_coll.dmac,
+                    self._addr_coll.arp_mac,
+                )
             if segment.segment_type.is_ipv4:
-                ps.setup_segment_ipv4(segment,self._addr_coll.src_ipv4_addr, self._addr_coll.dst_ipv4_addr)
+                ps.setup_segment_ipv4(
+                    segment,
+                    self._addr_coll.src_ipv4_addr,
+                    self._addr_coll.dst_ipv4_addr,
+                )
             if segment.segment_type.is_ipv6:
-                ps.setup_segment_ipv6(segment, self._addr_coll.src_ipv6_addr, self._addr_coll.dst_ipv6_addr)
+                ps.setup_segment_ipv6(
+                    segment,
+                    self._addr_coll.src_ipv6_addr,
+                    self._addr_coll.dst_ipv6_addr,
+                )
 
         await self._stream.packet.header.data.set(f"0x{profile.prepare().hex()}")
 

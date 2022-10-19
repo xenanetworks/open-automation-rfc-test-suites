@@ -147,7 +147,7 @@ async def setup_address_refresh(
             for packet in packet_list:
                 address_refresh_tokens.append(
                     (
-                        port_struct._port.tx_single_pkt.send.set(packet),
+                        port_struct.port_ins.tx_single_pkt.send.set(packet),
                         port_struct.port_conf.is_rx_only,
                     )
                 )
