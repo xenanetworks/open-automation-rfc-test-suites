@@ -104,9 +104,12 @@ class ResourceManager:
             or self.test_conf.topology.is_pair_topology
         ):
             return
-        await asyncio.gather(*[
-            port.set_sweep_reduction(10 * (i + 1)) for i, port in enumerate(self.port_structs)
-        ])
+        await asyncio.gather(
+            *[
+                port.set_sweep_reduction(10 * (i + 1))
+                for i, port in enumerate(self.port_structs)
+            ]
+        )
 
     async def collect_control_ports(self) -> None:
         await asyncio.gather(*self.__testers.values())

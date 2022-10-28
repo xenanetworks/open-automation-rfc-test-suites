@@ -4,15 +4,11 @@ import platform
 import pydantic
 from pathlib import Path
 from typing import Any, cast, Dict
-from xoa_core import types, controller
 from loguru import logger
-import sys
-
-sys.path.append("D:/Working/open-automation-config-converter")
 
 from xoa_converter.entry import converter
 from xoa_converter.types import TestSuiteType
-
+from xoa_core import types, controller
 
 DEBUG = True
 BASE_PATH = Path.cwd()
@@ -24,7 +20,6 @@ T_SUITE_NAME = "RFC-2544"
 
 def set_windows_loop_policy():
     plat = platform.system().lower()
-
     if plat == "windows":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
@@ -62,6 +57,8 @@ async def main() -> None:
             logger.error("Test suite is not recognised.")
             return None
         new_data = converter(TestSuiteType(T_SUITE_NAME), app_data, info["schema"])
+        with open("2544.json", "w") as f:
+            f.write(new_data)
         config = json.loads(new_data)
         await start_test(c, config, T_SUITE_NAME)
 

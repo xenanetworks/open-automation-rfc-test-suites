@@ -158,14 +158,16 @@ class TestTypesConfiguration(BaseModel):
     back_to_back_test: BackToBackTest
 
     # Computed Properties
-    available_test: List[AllTestType] = []
 
-    @validator("available_test", pre=True, always=True)
-    def set_available_test(
-        cls, v: List[AllTestType], values: Dict[str, Any]
-    ) -> List[AllTestType]:
-        v = []
-        for test_type_config in values.values():
-            if test_type_config.enabled:
-                v.append(test_type_config)
-        return v
+    @property
+    def available_test(self) -> List[AllTestType]:
+        return [
+            test_type_config
+            for test_type_config in (
+                self.throughput_test,
+                self.latency_test,
+                self.frame_loss_rate_test,
+                self.back_to_back_test,
+            )
+            if test_type_config.enabled
+        ]

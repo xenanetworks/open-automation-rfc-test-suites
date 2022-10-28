@@ -166,11 +166,11 @@ class TestConfiguration(BaseModel):
     multi_stream_config: MultiStreamConfig
     repeat_test_until_stopped: bool = False
 
-    @validator("payload_pattern", always=True, pre=True)
-    def payload_type_str_list(cls, v: str) -> str:
-        if v.startswith("0x") or v.startswith("0X"):
-            return v
-        return "".join([hex(int(i)).replace("0x", "").zfill(2) for i in v.split(",")])
+    # @validator("payload_pattern", always=True, pre=True)
+    # def payload_type_str_list(cls, v: str) -> str:
+    #     if v.startswith("0x") or v.startswith("0X"):
+    #         return v
+    #     return "".join([hex(int(i)).replace("0x", "").zfill(2) for i in v.split(",")])
 
     @validator("multi_stream_config")
     def validate_multi_stream(
