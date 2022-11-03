@@ -9,8 +9,6 @@ from math import ceil
 from xoa_converter.entry import converter
 from xoa_converter.types import TestSuiteType
 from xoa_core import types, controller
-import colorama
-import random
 
 DEBUG = False
 BASE_PATH = Path.cwd()
