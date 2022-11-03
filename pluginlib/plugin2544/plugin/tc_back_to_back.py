@@ -33,7 +33,7 @@ class BackToBackBoutEntry:
 
     def update_boundaries(self) -> None:
         self._port_should_continue = self._port_test_passed = False
-        if not self._port_struct.statistic:
+        if not self._port_struct.statistic or (self._port_struct.statistic and not self._port_struct.statistic.is_final):
             self._port_should_continue = True
             return
         if self._left_bound <= self._right_bound:
