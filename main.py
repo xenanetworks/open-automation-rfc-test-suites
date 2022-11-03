@@ -69,7 +69,7 @@ class T2544Displayer:
             ["tx_counter", "rx_counter"],
             f"total_other",
         )
-        all_tables += cls.assign_table(results["total"]["tx_counter"], [], f"{colorama.Fore.BLUE}total_tx")
+        all_tables += cls.assign_table(results["total"]["tx_counter"], [], f"total_tx")
         all_tables += cls.assign_table(results["total"]["rx_counter"], [], f"total_rx")
 
         for port in results["port_data"]:
