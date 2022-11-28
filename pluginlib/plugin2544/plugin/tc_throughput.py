@@ -1,8 +1,6 @@
-from copy import deepcopy
 from decimal import Decimal
-from typing import List, Optional, Union
+from typing import List, Optional
 
-from loguru import logger
 from .statistics import FinalStatistic
 from .test_resource import ResourceManager
 

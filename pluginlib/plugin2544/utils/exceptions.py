@@ -1,6 +1,5 @@
 from decimal import Decimal
 from typing import Any
-from loguru import logger
 from pydantic import NonNegativeInt
 from xoa_driver import ports as xoa_ports, testers as xoa_testers
 from . import constants as const

@@ -1,27 +1,25 @@
+from __future__ import annotations
+from rich.console import Console
+from rich.table import Table
+from rich.live import Live
 import asyncio
 import json
 import platform
 import pydantic
 from pathlib import Path
-from typing import Any, cast, Dict
+from typing import Any, cast 
 from loguru import logger
 from math import ceil
 from xoa_converter.entry import converter
 from xoa_converter.types import TestSuiteType
 from xoa_core import types, controller
 
-DEBUG = False
+DEBUG = True
 BASE_PATH = Path.cwd()
 PLUGINS_PATH = BASE_PATH / "pluginlib"
 INPUT_DATA_PATH = BASE_PATH / "test" / "2.v2544"
 JSON_PATH = BASE_PATH / "test" / "hello.json"
 T_SUITE_NAME = "RFC-2544"
-
-from rich.live import Live
-from rich.table import Table
-from rich.console import Console
-from pydantic import SecretStr
-from typing import Dict, List
 
 
 class T2544Displayer:
@@ -30,7 +28,7 @@ class T2544Displayer:
 
     @classmethod
     def assign_table(
-        cls, results: Dict[str, str], exclude_keys: List[str], common_column_name: str
+        cls, results: dict[str, str], exclude_keys: list[str], common_column_name: str
     ):
         rephrase = {k: v for k, v in results.items() if k not in exclude_keys}
         length = len(rephrase)
@@ -58,7 +56,7 @@ class T2544Displayer:
         return tables
 
     @classmethod
-    def generate_table(cls, results: Dict) -> List[Table]:
+    def generate_table(cls, results: dict) -> list[Table]:
         """Make a new table."""
 
         all_tables = cls.assign_table(results, ["total", "port_data"], f"general")
@@ -98,7 +96,7 @@ class T2544Displayer:
         return all_tables
 
     @classmethod
-    def display(cls, result: Dict) -> None:
+    def display(cls, result: dict) -> None:
         cls.console.clear()
         tables = cls.generate_table(result)
         for table in tables:
@@ -114,11 +112,12 @@ def set_windows_loop_policy():
 
 async def subscribe(ctrl: controller.MainController, source: str) -> None:
     async for msg in ctrl.listen_changes(source, _filter={types.EMsgType.STATISTICS}):
-        T2544Displayer.display(json.loads(msg.payload.json()))
+        # T2544Displayer.display(json.loads(msg.payload.json()))
+        pass
 
 
 async def start_test(
-    ctrl: controller.MainController, config: Dict[str, Any], test_suite_name: str
+    ctrl: controller.MainController, config: dict[str, Any], test_suite_name: str
 ) -> None:
     exec_id = ctrl.start_test_suite(test_suite_name, config, debug_connection=DEBUG)
     await subscribe(ctrl, exec_id)
@@ -128,7 +127,7 @@ async def main() -> None:
     new = [
         types.Credentials(
             product=types.EProductType.VALKYRIE,
-            host="demo.xenanetworks.com",
+            host="192.168.1.198",
             password=cast(pydantic.SecretStr, "xena"),
         ),
     ]

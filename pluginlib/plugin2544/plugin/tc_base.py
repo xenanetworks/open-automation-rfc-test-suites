@@ -1,9 +1,9 @@
-import asyncio, time
+import asyncio
+import time
 from copy import deepcopy
 import math
 from decimal import Decimal
 from typing import List, Optional, Protocol, TYPE_CHECKING
-from loguru import logger
 from .tc_back_to_back import BackToBackBoutEntry
 from ..model.m_test_type_config import (
     AllTestType,
@@ -95,9 +95,9 @@ class TestCaseProcessor:
             self.xoa_out.send_statistics(data)
             if self.resources.should_quit(start_time, params.duration):
                 break
+            self.resources.tell_progress(start_time, params.duration)
             await asyncio.sleep(const.INTERVAL_SEND_STATISTICS)
         await asyncio.sleep(const.DELAY_STATISTICS)
-        logger.debug("-" * 50)
         data = await aggregate_data(self.resources, params, is_final=True)
         return data
 
@@ -185,7 +185,9 @@ class TestCaseProcessor:
             final = boundaries[0].best_final_result
             # record the max throughput rate
             if final is not None:
-                self._set_throughput_for_frame_size(final.frame_size, final.tx_rate_percent)
+                self._set_throughput_for_frame_size(
+                    final.frame_size, final.tx_rate_percent
+                )
         else:
             # Step 1: initial counter
             for port_struct in self.resources.port_structs:

@@ -8,10 +8,6 @@ from ipaddress import (
     IPv6Network,
 )
 from ..model.m_protocol_segment import BinaryString
-
-if TYPE_CHECKING:
-    from ..model.m_protocol_segment import BinaryString
-
 from . import exceptions
 
 

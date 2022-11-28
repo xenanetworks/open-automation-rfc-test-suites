@@ -1,0 +1,936 @@
+{
+  "username": "hello",
+  "port_identities": {
+    "p0": {
+      "tester_id": "2906f8d041e9fd07191d6a37ef5785b2",
+      "tester_index": 0,
+      "module_index": 5,
+      "port_index": 0
+    },
+    "p1": {
+      "tester_id": "2906f8d041e9fd07191d6a37ef5785b2",
+      "tester_index": 0,
+      "module_index": 5,
+      "port_index": 1
+    },
+    "p2": {
+      "tester_id": "2906f8d041e9fd07191d6a37ef5785b2",
+      "tester_index": 0,
+      "module_index": 5,
+      "port_index": 2
+    },
+    "p3": {
+      "tester_id": "2906f8d041e9fd07191d6a37ef5785b2",
+      "tester_index": 0,
+      "module_index": 5,
+      "port_index": 3
+    }
+  },
+  "config": {
+    "test_configuration": {
+      "flow_creation_type": "stream_based",
+      "tid_allocation_scope": "config_scope",
+      "mac_base_address": "01:02:03",
+      "enable_speed_reduction_sweep": false,
+      "use_port_sync_start": false,
+      "port_stagger_steps": 0,
+      "outer_loop_mode": "packet_size",
+      "mac_learning_mode": "every_trial",
+      "mac_learning_frame_count": 1,
+      "toggle_port_sync_config": {
+        "toggle_port_sync": true,
+        "sync_off_duration_second": 1,
+        "delay_after_sync_on_second": 1
+      },
+      "learning_rate_pct": 1.0,
+      "learning_duration_second": 5000.0,
+      "use_flow_based_learning_preamble": true,
+      "flow_based_learning_frame_count": 10,
+      "delay_after_flow_based_learning_ms": 500,
+      "arp_refresh_enabled": true,
+      "arp_refresh_period_second": 4000.0,
+      "use_gateway_mac_as_dmac": true,
+      "should_stop_on_los": true,
+      "delay_after_port_reset_second": 5,
+      "topology": "BLOCKS",
+      "direction": "east_to_west",
+      "frame_sizes": {
+        "packet_size_type": "custom_sizes",
+        "custom_packet_sizes": [
+          512.0
+        ],
+        "fixed_packet_start_size": 100,
+        "fixed_packet_end_size": 1500,
+        "fixed_packet_step_size": 100,
+        "varying_packet_min_size": 64,
+        "varying_packet_max_size": 1500,
+        "mixed_length_config": {
+          "field_0": 56,
+          "field_1": 60,
+          "field_14": 9216,
+          "field_15": 16360
+        },
+        "mixed_sizes_weights": [
+          0,
+          0,
+          0,
+          0,
+          57,
+          3,
+          5,
+          1,
+          2,
+          5,
+          1,
+          4,
+          4,
+          18,
+          0,
+          0
+        ]
+      },
+      "use_micro_tpld_on_demand": false,
+      "payload_type": "Pattern",
+      "payload_pattern": "ae00000000000000000000000000000000",
+      "multi_stream_config": {
+        "enable_multi_stream": false,
+        "per_port_stream_count": 2,
+        "multi_stream_address_offset": 10,
+        "multi_stream_address_increment": 1,
+        "multi_stream_mac_base_address": "14:F4:BC"
+      },
+      "repeat_test_until_stopped": false
+    },
+    "protocol_segments": {
+      "909e2a26-e4e0-4788-9acf-fe5734cb187e": {
+        "header_segments": [
+          {
+            "segment_type": "ethernet",
+            "fields": [
+              {
+                "name": "Dst MAC addr",
+                "value": "000000000000000000000000000000000000000000000000",
+                "bit_length": 48,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Src MAC addr",
+                "value": "000000000000000000000000000000000000000000000000",
+                "bit_length": 48,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "EtherType",
+                "value": "1111111111111111",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              }
+            ],
+            "checksum_offset": null
+          }
+        ]
+      },
+      "433a96db-7ec6-432e-b236-dde31cd9fe13": {
+        "header_segments": [
+          {
+            "segment_type": "ethernet",
+            "fields": [
+              {
+                "name": "Dst MAC addr",
+                "value": "000000000000000000000000000000000000000000000000",
+                "bit_length": 48,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Src MAC addr",
+                "value": "000000000000000000000000000000000000000000000000",
+                "bit_length": 48,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "EtherType",
+                "value": "1000000100000000",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              }
+            ],
+            "checksum_offset": null
+          },
+          {
+            "segment_type": "vlan",
+            "fields": [
+              {
+                "name": "PCP",
+                "value": "000",
+                "bit_length": 3,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "CFI/DEI",
+                "value": "0",
+                "bit_length": 1,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "VLAN Tag",
+                "value": "000000000000",
+                "bit_length": 12,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "EtherType",
+                "value": "1111111111111111",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              }
+            ],
+            "checksum_offset": null
+          }
+        ]
+      },
+      "a31879b6-16f1-4b96-8415-c8e082837642": {
+        "header_segments": [
+          {
+            "segment_type": "ethernet",
+            "fields": [
+              {
+                "name": "Dst MAC addr",
+                "value": "000000000000000000000000000000000000000000000000",
+                "bit_length": 48,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Src MAC addr",
+                "value": "000000000000000000000000000000000000000000000000",
+                "bit_length": 48,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "EtherType",
+                "value": "1001000100000000",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              }
+            ],
+            "checksum_offset": null
+          },
+          {
+            "segment_type": "vlan",
+            "fields": [
+              {
+                "name": "PCP",
+                "value": "000",
+                "bit_length": 3,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "CFI/DEI",
+                "value": "0",
+                "bit_length": 1,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "VLAN Tag",
+                "value": "000000000000",
+                "bit_length": 12,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "EtherType",
+                "value": "1000000100000000",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              }
+            ],
+            "checksum_offset": null
+          },
+          {
+            "segment_type": "vlan",
+            "fields": [
+              {
+                "name": "PCP",
+                "value": "000",
+                "bit_length": 3,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "CFI/DEI",
+                "value": "0",
+                "bit_length": 1,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "VLAN Tag",
+                "value": "000000000000",
+                "bit_length": 12,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "EtherType",
+                "value": "1111111111111111",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              }
+            ],
+            "checksum_offset": null
+          }
+        ]
+      },
+      "0018b2ef-9991-4f8f-b228-972d00b0ceec": {
+        "header_segments": [
+          {
+            "segment_type": "ethernet",
+            "fields": [
+              {
+                "name": "Dst MAC addr",
+                "value": "000000000000000000000000000000000000000000000000",
+                "bit_length": 48,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Src MAC addr",
+                "value": "000000000000000000000000000000000000000000000000",
+                "bit_length": 48,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "EtherType",
+                "value": "0000100000000000",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              }
+            ],
+            "checksum_offset": null
+          },
+          {
+            "segment_type": "ipv4",
+            "fields": [
+              {
+                "name": "Version",
+                "value": "0100",
+                "bit_length": 4,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Header Length",
+                "value": "0101",
+                "bit_length": 4,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "DSCP",
+                "value": "000000",
+                "bit_length": 6,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "ECN",
+                "value": "00",
+                "bit_length": 2,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Total Length",
+                "value": "0000000000010100",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Identification",
+                "value": "0000000000000000",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Flags",
+                "value": "000",
+                "bit_length": 3,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Fragment Offset",
+                "value": "0000000000000",
+                "bit_length": 13,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "TTL",
+                "value": "01111111",
+                "bit_length": 8,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Protocol",
+                "value": "11111111",
+                "bit_length": 8,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Header Checksum",
+                "value": "0000000000000000",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Src IP Addr",
+                "value": "00000000000000000000000000000000",
+                "bit_length": 32,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Dest IP Addr",
+                "value": "00000000000000000000000000000000",
+                "bit_length": 32,
+                "hw_modifier": null,
+                "value_range": null
+              }
+            ],
+            "checksum_offset": 10
+          }
+        ]
+      },
+      "31c95b21-7c32-4d96-93dc-c9fdd3261594": {
+        "header_segments": [
+          {
+            "segment_type": "ethernet",
+            "fields": [
+              {
+                "name": "Dst MAC addr",
+                "value": "000000000000000000000000000000000000000000000000",
+                "bit_length": 48,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Src MAC addr",
+                "value": "000000000000000000000000000000000000000000000000",
+                "bit_length": 48,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "EtherType",
+                "value": "0000100000000000",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              }
+            ],
+            "checksum_offset": null
+          },
+          {
+            "segment_type": "ipv4",
+            "fields": [
+              {
+                "name": "Version",
+                "value": "0100",
+                "bit_length": 4,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Header Length",
+                "value": "0101",
+                "bit_length": 4,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "DSCP",
+                "value": "000000",
+                "bit_length": 6,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "ECN",
+                "value": "00",
+                "bit_length": 2,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Total Length",
+                "value": "0000000000010100",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Identification",
+                "value": "0000000000000000",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Flags",
+                "value": "000",
+                "bit_length": 3,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Fragment Offset",
+                "value": "0000000000000",
+                "bit_length": 13,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "TTL",
+                "value": "01111111",
+                "bit_length": 8,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Protocol",
+                "value": "00010001",
+                "bit_length": 8,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Header Checksum",
+                "value": "0000000000000000",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Src IP Addr",
+                "value": "00000000000000000000000000000000",
+                "bit_length": 32,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Dest IP Addr",
+                "value": "00000000000000000000000000000000",
+                "bit_length": 32,
+                "hw_modifier": null,
+                "value_range": null
+              }
+            ],
+            "checksum_offset": 10
+          },
+          {
+            "segment_type": "udp",
+            "fields": [
+              {
+                "name": "Src Port",
+                "value": "0000000000000000",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Dest Port",
+                "value": "0000000000000000",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Length",
+                "value": "0000000000000000",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Checksum",
+                "value": "0000000000000000",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              }
+            ],
+            "checksum_offset": null
+          }
+        ]
+      },
+      "96b64721-7617-461e-b58a-cee21ddf0800": {
+        "header_segments": [
+          {
+            "segment_type": "ethernet",
+            "fields": [
+              {
+                "name": "Dst MAC addr",
+                "value": "000000000000000000000000000000000000000000000000",
+                "bit_length": 48,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Src MAC addr",
+                "value": "000000000000000000000000000000000000000000000000",
+                "bit_length": 48,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "EtherType",
+                "value": "1000011011011101",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              }
+            ],
+            "checksum_offset": null
+          },
+          {
+            "segment_type": "ipv6",
+            "fields": [
+              {
+                "name": "Version",
+                "value": "0110",
+                "bit_length": 4,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Traffic Class",
+                "value": "00000000",
+                "bit_length": 8,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Flow Label",
+                "value": "00000000000000000000",
+                "bit_length": 20,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Payload Length",
+                "value": "0000000000000000",
+                "bit_length": 16,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Next Header",
+                "value": "00111011",
+                "bit_length": 8,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Hop Limit",
+                "value": "11111111",
+                "bit_length": 8,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Src IPv6 Addr",
+                "value": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "bit_length": 128,
+                "hw_modifier": null,
+                "value_range": null
+              },
+              {
+                "name": "Dest IPv6 Addr",
+                "value": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "bit_length": 128,
+                "hw_modifier": null,
+                "value_range": null
+              }
+            ],
+            "checksum_offset": null
+          }
+        ]
+      }
+    },
+    "ports_configuration": {
+      "c-P-0-5-0": {
+        "port_slot": "p0",
+        "peer_config_slot": "c-P-0-5-0",
+        "port_group": "EAST",
+        "port_speed_mode": "AUTO",
+        "auto_neg_enabled": true,
+        "anlt_enabled": false,
+        "mdi_mdix_mode": "AUTO",
+        "broadr_reach_mode": "SLAVE",
+        "port_rate_cap_value": 1000.0,
+        "port_rate_cap_profile": "physical_port_rate",
+        "port_rate_cap_unit": "1e6_bps",
+        "inter_frame_gap": 20,
+        "speed_reduction_ppm": 0,
+        "pause_mode_enabled": 0,
+        "latency_offset_ms": 0,
+        "fec_mode": "off",
+        "profile_id": "0018b2ef-9991-4f8f-b228-972d00b0ceec",
+        "ip_gateway_mac_address": "000000000000",
+        "reply_arp_requests": true,
+        "reply_ping_requests": true,
+        "remote_loop_mac_address": "000000000000",
+        "ipv4_properties": {
+          "address": "192.168.2.2",
+          "routing_prefix": 24,
+          "public_address": "0.0.0.0",
+          "public_routing_prefix": 24,
+          "gateway": "192.168.2.1",
+          "remote_loop_address": "0.0.0.0",
+          "ip_version": 4
+        },
+        "ipv6_properties": {
+          "address": "::",
+          "routing_prefix": 64,
+          "public_address": "::",
+          "public_routing_prefix": 64,
+          "gateway": "::",
+          "remote_loop_address": "::",
+          "ip_version": 6
+        },
+        "port_rate_cap_enabled": false
+      },
+      "c-P-0-5-1": {
+        "port_slot": "p1",
+        "peer_config_slot": "",
+        "port_group": "EAST",
+        "port_speed_mode": "AUTO",
+        "auto_neg_enabled": true,
+        "anlt_enabled": false,
+        "mdi_mdix_mode": "AUTO",
+        "broadr_reach_mode": "SLAVE",
+        "port_rate_cap_value": 1000.0,
+        "port_rate_cap_profile": "physical_port_rate",
+        "port_rate_cap_unit": "1e6_bps",
+        "inter_frame_gap": 20,
+        "speed_reduction_ppm": 0,
+        "pause_mode_enabled": 0,
+        "latency_offset_ms": 0,
+        "fec_mode": "off",
+        "profile_id": "0018b2ef-9991-4f8f-b228-972d00b0ceec",
+        "ip_gateway_mac_address": "000000000000",
+        "reply_arp_requests": true,
+        "reply_ping_requests": true,
+        "remote_loop_mac_address": "000000000000",
+        "ipv4_properties": {
+          "address": "192.168.2.3",
+          "routing_prefix": 24,
+          "public_address": "0.0.0.0",
+          "public_routing_prefix": 24,
+          "gateway": "192.168.2.1",
+          "remote_loop_address": "0.0.0.0",
+          "ip_version": 4
+        },
+        "ipv6_properties": {
+          "address": "::",
+          "routing_prefix": 64,
+          "public_address": "::",
+          "public_routing_prefix": 64,
+          "gateway": "::",
+          "remote_loop_address": "::",
+          "ip_version": 6
+        },
+        "port_rate_cap_enabled": false
+      },
+      "c-P-0-5-2": {
+        "port_slot": "p2",
+        "peer_config_slot": "",
+        "port_group": "WEST",
+        "port_speed_mode": "AUTO",
+        "auto_neg_enabled": true,
+        "anlt_enabled": false,
+        "mdi_mdix_mode": "AUTO",
+        "broadr_reach_mode": "SLAVE",
+        "port_rate_cap_value": 1000.0,
+        "port_rate_cap_profile": "physical_port_rate",
+        "port_rate_cap_unit": "1e6_bps",
+        "inter_frame_gap": 20,
+        "speed_reduction_ppm": 0,
+        "pause_mode_enabled": 0,
+        "latency_offset_ms": 0,
+        "fec_mode": "off",
+        "profile_id": "0018b2ef-9991-4f8f-b228-972d00b0ceec",
+        "ip_gateway_mac_address": "000000000000",
+        "reply_arp_requests": true,
+        "reply_ping_requests": true,
+        "remote_loop_mac_address": "000000000000",
+        "ipv4_properties": {
+          "address": "192.168.2.4",
+          "routing_prefix": 24,
+          "public_address": "0.0.0.0",
+          "public_routing_prefix": 24,
+          "gateway": "192.168.2.1",
+          "remote_loop_address": "0.0.0.0",
+          "ip_version": 4
+        },
+        "ipv6_properties": {
+          "address": "::",
+          "routing_prefix": 64,
+          "public_address": "::",
+          "public_routing_prefix": 64,
+          "gateway": "::",
+          "remote_loop_address": "::",
+          "ip_version": 6
+        },
+        "port_rate_cap_enabled": false
+      },
+      "c-P-0-5-3": {
+        "port_slot": "p3",
+        "peer_config_slot": "",
+        "port_group": "WEST",
+        "port_speed_mode": "AUTO",
+        "auto_neg_enabled": true,
+        "anlt_enabled": false,
+        "mdi_mdix_mode": "AUTO",
+        "broadr_reach_mode": "SLAVE",
+        "port_rate_cap_value": 1000.0,
+        "port_rate_cap_profile": "physical_port_rate",
+        "port_rate_cap_unit": "1e6_bps",
+        "inter_frame_gap": 20,
+        "speed_reduction_ppm": 0,
+        "pause_mode_enabled": 0,
+        "latency_offset_ms": 0,
+        "fec_mode": "off",
+        "profile_id": "0018b2ef-9991-4f8f-b228-972d00b0ceec",
+        "ip_gateway_mac_address": "000000000000",
+        "reply_arp_requests": true,
+        "reply_ping_requests": true,
+        "remote_loop_mac_address": "000000000000",
+        "ipv4_properties": {
+          "address": "192.168.2.5",
+          "routing_prefix": 24,
+          "public_address": "0.0.0.0",
+          "public_routing_prefix": 24,
+          "gateway": "192.168.2.1",
+          "remote_loop_address": "0.0.0.0",
+          "ip_version": 4
+        },
+        "ipv6_properties": {
+          "address": "::",
+          "routing_prefix": 64,
+          "public_address": "::",
+          "public_routing_prefix": 64,
+          "gateway": "::",
+          "remote_loop_address": "::",
+          "ip_version": 6
+        },
+        "port_rate_cap_enabled": false
+      }
+    },
+    "test_types_configuration": {
+      "throughput_test": {
+        "test_type": "throughput",
+        "enabled": false,
+        "common_options": {
+          "duration_type": "time",
+          "duration": 1.0,
+          "duration_unit": "Seconds",
+          "iterations": 1
+        },
+        "rate_iteration_options": {
+          "search_type": "binary_search",
+          "result_scope": "common_result",
+          "initial_value_pct": 100.0,
+          "maximum_value_pct": 100.0,
+          "minimum_value_pct": 0.1,
+          "value_resolution_pct": 0.5
+        },
+        "use_pass_threshold": false,
+        "pass_threshold_pct": 0.0,
+        "acceptable_loss_pct": 0.0,
+        "collect_latency_jitter": false
+      },
+      "latency_test": {
+        "test_type": "latency",
+        "enabled": true,
+        "common_options": {
+          "duration_type": "time",
+          "duration": 10.0,
+          "duration_unit": "Seconds",
+          "iterations": 1
+        },
+        "rate_sweep_options": {
+          "start_value_pct": 100.0,
+          "end_value_pct": 100.0,
+          "step_value_pct": 50.0,
+          "burst_resolution": 0
+        },
+        "latency_mode": "Last_To_Last",
+        "use_relative_to_throughput": false,
+        "throughput": 0
+      },
+      "frame_loss_rate_test": {
+        "test_type": "loss",
+        "enabled": false,
+        "common_options": {
+          "duration_type": "time",
+          "duration": 1.0,
+          "duration_unit": "Seconds",
+          "iterations": 1
+        },
+        "rate_sweep_options": {
+          "start_value_pct": 50.0,
+          "end_value_pct": 100.0,
+          "step_value_pct": 50.0,
+          "burst_resolution": 0
+        },
+        "use_gap_monitor": false,
+        "gap_monitor_start_microsec": 0,
+        "gap_monitor_stop_frames": 0,
+        "use_pass_fail_criteria": false,
+        "acceptable_loss_pct": 0.0,
+        "acceptable_loss_type": "Percent"
+      },
+      "back_to_back_test": {
+        "test_type": "back_to_back",
+        "enabled": false,
+        "common_options": {
+          "duration_type": "time",
+          "duration": 1.0,
+          "duration_unit": "Seconds",
+          "iterations": 1
+        },
+        "rate_sweep_options": {
+          "start_value_pct": 50.0,
+          "end_value_pct": 100.0,
+          "step_value_pct": 50.0,
+          "burst_resolution": 100
+        }
+      }
+    }
+  }
+}

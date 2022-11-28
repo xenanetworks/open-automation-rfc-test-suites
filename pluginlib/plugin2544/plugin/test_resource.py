@@ -1,4 +1,5 @@
-import asyncio, time
+import asyncio
+import time
 from decimal import Decimal
 from typing import Dict, List, TYPE_CHECKING, Union
 from xoa_driver import testers as xoa_testers, modules, enums, utils
@@ -27,7 +28,8 @@ class ResourceManager:
         self.all_confs = all_confs
         self.__port_identities = port_identities
         self._validate_tester_type(testers.values(), xoa_testers.L23Tester)
-        self.__testers: Dict[str, "xoa_testers.L23Tester"] = testers  # type: ignore
+        # type: ignore
+        self.__testers: Dict[str, "xoa_testers.L23Tester"] = testers
         self.port_structs: List["PortStruct"] = []
         self.xoa_out: "TestSuitePipe" = xoa_out
         self.test_conf: "TestConfiguration" = test_conf
@@ -241,10 +243,16 @@ class ResourceManager:
             )
         return False
 
+    def tell_progress(self, start_time: float, actual_duration: Decimal) -> None:
+        elapsed = time.time() - start_time
+        self.xoa_out.send_progress(elapsed / float(actual_duration) * 100)
+
     def should_quit(self, start_time: float, actual_duration: Decimal) -> bool:
         test_finished = self.test_finished()
         elapsed = time.time() - start_time
-        actual_duration_elapsed = elapsed >= actual_duration + 5
+        actual_duration_elapsed = (
+            elapsed >= float(actual_duration) + const.DELAY_TEST_MUST_FINISH
+        )
         los = self.los()
         if los:
             self.xoa_out.send_warning(exceptions.StopTestByLossSignal())
