@@ -99,6 +99,7 @@ class TestCaseProcessor:
             await asyncio.sleep(const.INTERVAL_SEND_STATISTICS)
         await asyncio.sleep(const.DELAY_STATISTICS)
         data = await aggregate_data(self.resources, params, is_final=True)
+        self.xoa_out.send_statistics(data)
         return data
 
     async def _latency(
