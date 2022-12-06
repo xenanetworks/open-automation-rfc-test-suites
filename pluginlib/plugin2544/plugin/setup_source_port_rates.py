@@ -38,10 +38,10 @@ async def _setup_source_port_rate_stream_mode(
         ]
         port_stream_count = len(port_struct.properties.peers) * len(stream_info_list)
         stream_rate_percent = Decimal(str(port_struct.rate)) / Decimal(
-            str(port_stream_count)
-        )
+            str(port_stream_count) 
+        ) / Decimal("100")
         stream_rate_bps_L1 = (
-            Decimal(str(stream_rate_percent)) * src_port_speed  # / Decimal("100")
+            Decimal(str(stream_rate_percent)) * src_port_speed  # 
         )
         stream_rate_bps_L2 = math.floor(
             stream_rate_bps_L1

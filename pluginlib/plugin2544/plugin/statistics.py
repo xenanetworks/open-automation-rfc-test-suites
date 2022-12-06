@@ -450,3 +450,4 @@ class StatisticParams(BaseModel):
     duration: Decimal
     repetition: Union[int, str]
     rate_percent: Decimal = Decimal("0")
+    rate_result_scope: const.RateResultScopeType = const.RateResultScopeType.COMMON

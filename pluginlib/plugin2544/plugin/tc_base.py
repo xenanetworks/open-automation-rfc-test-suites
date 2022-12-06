@@ -166,6 +166,7 @@ class TestCaseProcessor:
             frame_size=current_packet_size,
             repetition=repetition,
             duration=test_type_conf.common_options.actual_duration,
+            rate_result_scope=test_type_conf.rate_iteration_options.result_scope,
         )
         while True:
             for boundary in boundaries:
