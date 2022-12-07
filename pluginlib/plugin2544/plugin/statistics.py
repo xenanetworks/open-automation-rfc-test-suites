@@ -188,7 +188,7 @@ class Statistic(BaseModel):
     is_final: bool = False  # for calculation use
     frame_size: Decimal = Decimal("1")  # for calculation use
     duration: Decimal = Decimal("0")  # for calculation use
-    rate: Decimal = Decimal("0")  # # for calculation use
+    rate_percent: Decimal = Decimal("0")  # # for calculation use
     interframe_gap: Decimal = Decimal("0")  # for calculation use
     port_speed: Decimal = Decimal("0")  # for calculation use
     tx_counter: PortCounter = PortCounter(counter_type=const.PortCounterType.TX)
@@ -413,7 +413,7 @@ class FinalStatistic(BaseModel):
     repetition: Union[int, str] = "avg"
     rate_result_scope: const.RateResultScopeType = const.RateResultScopeType.COMMON
     port_data: List[Statistic] = []
-    tx_rate_nominal_percent: Decimal = Decimal("0.0")
+    # tx_rate_nominal_percent: Decimal = Decimal("0.0")
     total: TotalStatistic = TotalStatistic()
 
     class Config:

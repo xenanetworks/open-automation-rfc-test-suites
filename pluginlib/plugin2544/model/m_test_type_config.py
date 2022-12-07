@@ -87,10 +87,10 @@ class RateSweepOptions(BaseModel):
     def set_pcts(cls, v: Decimal) -> Decimal:
         return Decimal(str(v))
 
-    def set_throughput_relative(self, throughput_rate: Decimal) -> None:
-        self.start_value_pct = self.start_value_pct * throughput_rate / 100
-        self.end_value_pct = self.end_value_pct * throughput_rate / 100
-        self.step_value_pct = self.step_value_pct * throughput_rate / 100
+    # def set_throughput_relative(self, throughput_rate: Decimal) -> None:
+    #     self.start_value_pct = self.start_value_pct * throughput_rate / 100
+    #     self.end_value_pct = self.end_value_pct * throughput_rate / 100
+    #     self.step_value_pct = self.step_value_pct * throughput_rate / 100
 
     @property
     def rate_sweep_list(self) -> Iterable[Decimal]:

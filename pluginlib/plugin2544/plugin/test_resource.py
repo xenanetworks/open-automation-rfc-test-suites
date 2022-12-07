@@ -259,9 +259,9 @@ class ResourceManager:
 
         return test_finished or los or actual_duration_elapsed
 
-    def set_rate(self, rate: Decimal) -> None:
+    def set_rate_percent(self, rate: Decimal) -> None:
         for port_struct in self.tx_ports:
-            port_struct.set_rate(rate)
+            port_struct.set_rate_percent(rate)
 
     async def set_tx_time_limit(self, tx_timelimit: Union[Decimal, int]) -> None:
         """throughput & latency & frame loss support txtimelimit"""

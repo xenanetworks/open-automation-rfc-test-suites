@@ -13,7 +13,7 @@ class ThroughputBoutEntry:
         self, throughput_conf: "ThroughputTest", port_structs: List["PortStruct"]
     ):
         self.current = (
-            self.rate
+            self.rate_percent
         ) = self.next = throughput_conf.rate_iteration_options.initial_value_pct
         self.left_bound: Decimal = (
             throughput_conf.rate_iteration_options.minimum_value_pct
@@ -78,9 +78,9 @@ class ThroughputBoutEntry:
 
     def update_rate(self):
         self.current = self.next
-        self.rate = self.next
+        self.rate_percent = self.next
         for port_struct in self._port_structs:
-            port_struct.set_rate(self.rate)
+            port_struct.set_rate_percent(self.rate_percent)
 
     def update_boundary(self, result: Optional["FinalStatistic"]) -> None:
         self._port_should_continue = self._port_test_passed = False
@@ -91,7 +91,7 @@ class ThroughputBoutEntry:
             loss_ratio = self._port_structs[0].statistic.loss_ratio
         else:
             loss_ratio = result.total.rx_loss_percent
-        loss_ratio_pct = loss_ratio * 100
+        loss_ratio_pct = loss_ratio * Decimal('100')
         if loss_ratio_pct <= self._throughput_conf.acceptable_loss_pct:
             if (
                 self._throughput_conf.rate_iteration_options.result_scope.is_per_source_port

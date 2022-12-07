@@ -108,12 +108,15 @@ class TestCaseProcessor:
         current_packet_size: Decimal,
         repetition: int,
     ):
-        factor = Decimal(100)
+        factor = Decimal("1")
         if test_type_conf.use_relative_to_throughput and self._throughput_map:
-            factor = self._throughput_map.get(current_packet_size) or factor
+            factor = self._throughput_map.get(
+                current_packet_size, Decimal("100")
+            ) / Decimal("100")
+
         for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
-            tx_rate_nominal_percent = rate_percent
-            rate_percent = rate_percent * factor / Decimal(100)
+            # tx_rate_nominal_percent = rate_percent
+            rate_percent = rate_percent * factor
             params = StatisticParams(
                 test_case_type=test_type_conf.test_type,
                 rate_percent=rate_percent,
@@ -121,12 +124,12 @@ class TestCaseProcessor:
                 repetition=repetition,
                 duration=test_type_conf.common_options.actual_duration,
             )
-            self.resources.set_rate(rate_percent)
+            self.resources.set_rate_percent(rate_percent)
             await self.add_learning_steps(current_packet_size)
             await self.start_test(test_type_conf, current_packet_size)
             result = await self.collect(params)
             await self.resources.set_tx_time_limit(0)
-            result.tx_rate_nominal_percent = tx_rate_nominal_percent
+            # result.tx_rate_nominal_percent = tx_rate_nominal_percent
             self._add_result(True, result)
 
     async def _frame_loss(
@@ -136,7 +139,7 @@ class TestCaseProcessor:
         repetition: int,
     ):
         for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
-            self.resources.set_rate(rate_percent)
+            self.resources.set_rate_percent(rate_percent)
             await self.add_learning_steps(current_packet_size)
             await self.start_test(test_type_conf, current_packet_size)
             params = StatisticParams(
@@ -179,7 +182,7 @@ class TestCaseProcessor:
                 break
             for boundary in boundaries:
                 boundary.update_rate()
-            params.rate_percent = boundaries[0].rate
+            params.rate_percent = boundaries[0].rate_percent
             await self.start_test(test_type_conf, current_packet_size)
             result = await self.collect(params)
             await self.resources.set_tx_time_limit(0)
@@ -235,7 +238,7 @@ class TestCaseProcessor:
                 repetition=repetition,
                 duration=test_type_conf.common_options.actual_duration,
             )
-            self.resources.set_rate(rate_percent)
+            self.resources.set_rate_percent(rate_percent)
             boundaries = [
                 BackToBackBoutEntry(
                     test_type_conf, port_struct, current_packet_size, rate_percent
