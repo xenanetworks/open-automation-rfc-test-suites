@@ -1,6 +1,7 @@
 from decimal import Decimal
 from ..model.m_test_type_config import BackToBackTest
 from .structure import PortStruct
+from typing import List
 
 
 class BackToBackBoutEntry:
@@ -33,7 +34,9 @@ class BackToBackBoutEntry:
 
     def update_boundaries(self) -> None:
         self._port_should_continue = self._port_test_passed = False
-        if not self._port_struct.statistic or (self._port_struct.statistic and not self._port_struct.statistic.is_final):
+        if not self._port_struct.statistic or (
+            self._port_struct.statistic and not self._port_struct.statistic.is_final
+        ):
             self._port_should_continue = True
             return
         if self._left_bound <= self._right_bound:
@@ -59,7 +62,6 @@ class BackToBackBoutEntry:
     def update_right_bound(self) -> None:
         self._right_bound = self.current
         self.next = (self._left_bound + self._right_bound) / 2
-
         self._last_move = 1
 
     def compare_search_pointer(self) -> bool:
@@ -74,3 +76,16 @@ class BackToBackBoutEntry:
                     self.current = self._left_bound
             return True
         return False
+
+
+def get_initial_back_to_back_boundaries(
+    back_to_back_conf: "BackToBackTest",
+    port_structs: List[PortStruct],
+    current_packet_size: Decimal,
+    rate_percent: Decimal,
+) -> List["BackToBackBoutEntry"]:
+    return [
+        BackToBackBoutEntry(
+            back_to_back_conf, port_structs[0], current_packet_size, rate_percent
+        )
+    ]
