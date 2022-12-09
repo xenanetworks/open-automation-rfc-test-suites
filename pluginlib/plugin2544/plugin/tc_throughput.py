@@ -112,7 +112,7 @@ def get_initial_throughput_boundaries(
     if throughput_conf.rate_iteration_options.result_scope.is_per_source_port:
         return [
             ThroughputBoutEntry(throughput_conf, port_struct)
-            for port_struct in resources.port_structs
+            for port_struct in resources.tx_ports
         ]
     else:
         return [ThroughputBoutEntry(throughput_conf, resources.tx_ports[0])]
