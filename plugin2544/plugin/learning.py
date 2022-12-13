@@ -264,7 +264,7 @@ async def add_L3_learning_preamble_steps(
     if not address_refresh_handler:
         return
     address_refresh_handler.set_current_state(const.TestState.L3_LEARNING)
-    resources.set_rate(resources.test_conf.learning_rate_pct)
+    resources.set_rate_percent(resources.test_conf.learning_rate_pct)
     await setup_source_port_rates(resources, current_packet_size)
     await resources.set_tx_time_limit(
         resources.test_conf.learning_duration_second * 1000
@@ -287,7 +287,7 @@ async def add_flow_based_learning_preamble_steps(
 ) -> None:  # AddFlowBasedLearningPreambleSteps
     if not resources.test_conf.use_flow_based_learning_preamble:
         return
-    resources.set_rate(resources.test_conf.learning_rate_pct)
+    resources.set_rate_percent(resources.test_conf.learning_rate_pct)
     await setup_source_port_rates(resources, current_packet_size)
     await resources.set_frame_limit(resources.test_conf.flow_based_learning_frame_count)
     await resources.start_traffic()

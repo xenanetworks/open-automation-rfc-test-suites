@@ -339,8 +339,8 @@ class PortStruct:
         self.properties.send_port_speed = speed
 
     @property
-    def rate(self) -> Decimal:
-        return self.properties.rate
+    def rate_percent(self) -> Decimal:
+        return self.properties.rate_percent
 
     @property
     def stream_structs(self) -> List["StreamStruct"]:
@@ -354,8 +354,8 @@ class PortStruct:
     def port_conf(self) -> "PortConfiguration":
         return self._port_conf
 
-    def set_rate(self, rate: Decimal) -> None:
-        self.properties.rate = rate
+    def set_rate_percent(self, rate_percent: Decimal) -> None:
+        self.properties.rate_percent = rate_percent
 
     def init_counter(
         self, packet_size: Decimal, duration: Decimal, is_final: bool = False
@@ -363,7 +363,7 @@ class PortStruct:
         self._statistic = Statistic(
             port_id=self._port_identity.name,
             frame_size=packet_size,
-            rate=self.rate,
+            rate_percent=self.rate_percent,
             duration=duration,
             is_final=is_final,
             port_speed=self.send_port_speed,
@@ -495,7 +495,7 @@ class Properties:
     arp_trunks: Set[RXTableData] = field(default_factory=set)
     ndp_trunks: Set[RXTableData] = field(default_factory=set)
 
-    rate: Decimal = Decimal("0")
+    rate_percent: Decimal = Decimal("0")
     send_port_speed: Decimal = Decimal("0")
     native_mac_address: MacAddress = MacAddress()
     arp_mac_address: MacAddress = MacAddress()
