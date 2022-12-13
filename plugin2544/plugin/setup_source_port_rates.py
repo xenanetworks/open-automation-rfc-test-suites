@@ -37,12 +37,12 @@ async def _setup_source_port_rate_stream_mode(
             if stream_info.is_rx_port(peer_struct)
         ]
         port_stream_count = len(port_struct.properties.peers) * len(stream_info_list)
-        stream_rate_percent = Decimal(str(port_struct.rate)) / Decimal(
-            str(port_stream_count)
+        stream_ratio = (
+            Decimal(str(port_struct.rate_percent))
+            / Decimal(str(port_stream_count))
+            / Decimal("100")
         )
-        stream_rate_bps_L1 = (
-            Decimal(str(stream_rate_percent)) * src_port_speed  # / Decimal("100")
-        )
+        stream_rate_bps_L1 = Decimal(str(stream_ratio)) * src_port_speed  #
         stream_rate_bps_L2 = math.floor(
             stream_rate_bps_L1
             * Decimal(str(current_packet_size))
@@ -62,7 +62,7 @@ async def _setup_source_port_rate_modifier_mode(
 ) -> None:  # SetupSourcePortRateModifierMode
     inter_frame_gap = port_struct.port_conf.inter_frame_gap
     src_port_speed = port_struct.send_port_speed
-    port_rate_bps_L1 = port_struct.rate * src_port_speed #/ Decimal("100")
+    port_rate_bps_L1 = port_struct.rate_percent * src_port_speed / Decimal("100")
     port_rate_bps_L2 = (
         port_rate_bps_L1 * current_packet_size / (current_packet_size + inter_frame_gap)
     )
