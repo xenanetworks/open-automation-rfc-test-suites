@@ -1,8 +1,6 @@
-from copy import deepcopy
 from decimal import Decimal
-from typing import List, Optional, Union
+from typing import List, Optional
 
-from loguru import logger
 from .statistics import FinalStatistic
 from .test_resource import ResourceManager
 
@@ -11,11 +9,9 @@ from ..model import ThroughputTest
 
 
 class ThroughputBoutEntry:
-    def __init__(
-        self, throughput_conf: "ThroughputTest", port_structs: List["PortStruct"]
-    ):
+    def __init__(self, throughput_conf: "ThroughputTest", port_struct: "PortStruct"):
         self.current = (
-            self.rate
+            self.rate_percent
         ) = self.next = throughput_conf.rate_iteration_options.initial_value_pct
         self.left_bound: Decimal = (
             throughput_conf.rate_iteration_options.minimum_value_pct
@@ -24,7 +20,7 @@ class ThroughputBoutEntry:
             throughput_conf.rate_iteration_options.maximum_value_pct
         )
         self._last_move: int = 0
-        self._port_structs: List[PortStruct] = port_structs
+        self._port_struct: PortStruct = port_struct
         self._throughput_conf = throughput_conf
         self.best_final_result: Optional[FinalStatistic] = None
         self._port_test_passed = False
@@ -80,9 +76,8 @@ class ThroughputBoutEntry:
 
     def update_rate(self):
         self.current = self.next
-        self.rate = self.next
-        for port_struct in self._port_structs:
-            port_struct.set_rate(self.rate)
+        self.rate_percent = self.next
+        self._port_struct.set_rate_percent(self.rate_percent)
 
     def update_boundary(self, result: Optional["FinalStatistic"]) -> None:
         self._port_should_continue = self._port_test_passed = False
@@ -90,18 +85,16 @@ class ThroughputBoutEntry:
             self._port_should_continue = True
             return
         if self._throughput_conf.rate_iteration_options.result_scope.is_per_source_port:
-            loss_ratio = self._port_structs[0].statistic.loss_ratio
+            loss_ratio = self._port_struct.statistic.loss_ratio
         else:
             loss_ratio = result.total.rx_loss_percent
-        loss_ratio_pct = loss_ratio * 100
+        loss_ratio_pct = loss_ratio * Decimal("100")
         if loss_ratio_pct <= self._throughput_conf.acceptable_loss_pct:
             if (
                 self._throughput_conf.rate_iteration_options.result_scope.is_per_source_port
             ):
-                [
-                    stream_struct.set_best_result()
-                    for stream_struct in self._port_structs[0].stream_structs
-                ]
+                for stream in self._port_struct.stream_structs:
+                    stream.set_best_result()
             else:
                 self.best_final_result = result
             self.update_left_bound()
@@ -113,13 +106,13 @@ class ThroughputBoutEntry:
             self._port_should_continue = True
 
 
-def get_initial_boundaries(
+def get_initial_throughput_boundaries(
     throughput_conf: "ThroughputTest", resources: "ResourceManager"
 ) -> List["ThroughputBoutEntry"]:
     if throughput_conf.rate_iteration_options.result_scope.is_per_source_port:
         return [
-            ThroughputBoutEntry(throughput_conf, [port_struct])
+            ThroughputBoutEntry(throughput_conf, port_struct)
             for port_struct in resources.tx_ports
         ]
     else:
-        return [ThroughputBoutEntry(throughput_conf, resources.port_structs)]
+        return [ThroughputBoutEntry(throughput_conf, resources.tx_ports[0])]
