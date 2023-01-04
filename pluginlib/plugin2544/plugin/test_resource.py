@@ -21,7 +21,7 @@ class ResourceManager:
         self,
         testers: Dict[str, "xoa_testers.GenericAnyTester"],
         all_confs: List["PortConfiguration"],
-        port_identities: Dict[str, "PortIdentity"],
+        port_identities: List["PortIdentity"],
         test_conf: "TestConfiguration",
         xoa_out: "TestSuitePipe",
     ):
@@ -116,8 +116,9 @@ class ResourceManager:
     async def collect_control_ports(self) -> None:
         await asyncio.gather(*self.__testers.values())
         for port_conf in self.all_confs:
-            slot = port_conf.port_slot
-            port_identity = self.__port_identities[slot]
+            port_identity = [
+                i for i in self.__port_identities if i.name == port_conf._port_config_slot
+            ][0]
             tester = self.__testers[port_identity.tester_id]
             if not isinstance(tester, xoa_testers.L23Tester):
                 raise exceptions.WrongModuleTypeError(tester)
