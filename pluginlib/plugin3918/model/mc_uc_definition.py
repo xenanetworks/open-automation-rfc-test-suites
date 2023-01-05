@@ -2,7 +2,7 @@ from typing import Union
 from pydantic import BaseModel, validator
 
 from ..utils.constants import IPVersion, IgmpVersion, TestTopology, TrafficDirection
-from .protocol_segments import ProtocolSegmentProfileConfigure
+from .protocol_segments import ProtocolSegmentProfileConfig
 from ..utils.field import NewIPv4Address, NewIPv6Address
 
 
@@ -10,7 +10,7 @@ class UcFlowDefinition(BaseModel):
     comment: str
     topology: TestTopology
     direction: TrafficDirection
-    stream_definition: ProtocolSegmentProfileConfigure
+    stream_definition: ProtocolSegmentProfileConfig
 
 
 class McDefinition(BaseModel):
@@ -25,7 +25,7 @@ class McDefinition(BaseModel):
     mc_ip_v4_start_address: NewIPv4Address
     mc_ip_v6_start_address: NewIPv6Address
     mc_address_step_value: int
-    stream_definition: ProtocolSegmentProfileConfigure
+    stream_definition: ProtocolSegmentProfileConfig
     uc_flow_def: UcFlowDefinition
     item_id: str
 

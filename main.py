@@ -1,19 +1,25 @@
+from __future__ import annotations
 import asyncio
 import json
-from config import INPUT_DATA_PATH
+import platform
+import pydantic
 from xoa_core import types, controller
-import sys
-
-sys.path.append("D:/Working/open-automation-config-converter")
-
-
 from xoa_converter.entry import converter
 from xoa_converter.types import TestSuiteType
 from rich.live import Live
 from rich.table import Table
 from rich.console import Console
-from pydantic import SecretStr
-from typing import Dict, List
+from typing import Dict, List, Any, cast
+from pathlib import Path
+from loguru import logger
+
+
+DEBUG = True
+BASE_PATH = Path.cwd()
+PLUGINS_PATH = BASE_PATH / "pluginlib"
+INPUT_DATA_PATH = BASE_PATH / "test" / "2.v3918"
+JSON_PATH = BASE_PATH / "test" / "hello.json"
+T_SUITE_NAME = "RFC-3918"
 
 
 class T3918Displayer:
@@ -53,32 +59,53 @@ class T3918Displayer:
                 live.update(table)
 
 
-async def test():
+def set_windows_loop_policy():
+    plat = platform.system().lower()
+    if plat == "windows":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+
+async def subscribe(ctrl: controller.MainController, source: str) -> None:
+    async for msg in ctrl.listen_changes(source, _filter={types.EMsgType.STATISTICS}):
+        # T2544Displayer.display(json.loads(msg.payload.json()))
+        print(msg.payload)
+        pass
+
+
+async def start_test(
+    ctrl: controller.MainController, config: dict[str, Any], test_suite_name: str
+) -> None:
+    exec_id = ctrl.start_test_suite(test_suite_name, config, debug_connection=DEBUG)
+    await subscribe(ctrl, exec_id)
+
+
+async def main() -> None:
     new = [
         types.Credentials(
             product=types.EProductType.VALKYRIE,
             host="192.168.1.198",
-            password=SecretStr("xena"),
+            password=cast(pydantic.SecretStr, "xena"),
         ),
     ]
-
     c = await controller.MainController()
-    c.register_lib("./pluginlib")
-    for t in new:
-        await c.add_tester(t)
+    c.register_lib(str(PLUGINS_PATH))
 
-    with open(INPUT_DATA_PATH, "r") as f:
+    await asyncio.gather(*[c.add_tester(t) for t in new])
+    asyncio.create_task(subscribe(c, types.PIPE_EXECUTOR))
+
+    with open(INPUT_DATA_PATH) as f:
         app_data = f.read()
-        info = c.get_test_suite_info("RFC-3918")
-        new_data = converter(TestSuiteType.RFC3918, app_data, info["schema"])
-    test_id = c.start_test_suite(
-        "RFC-3918", json.loads(new_data), debug_connection=True
-    )
-    async for msg in c.listen_changes(test_id, _filter={types.EMsgType.STATISTICS}):
-        print(T3918Displayer.display(msg.payload))
+        info = c.get_test_suite_info(T_SUITE_NAME)
+        if not info:
+            logger.error("Test suite is not recognised.")
+            return None
+        new_data = converter(TestSuiteType(T_SUITE_NAME), app_data, info["schema"])
+        with open(JSON_PATH, "w") as f:
+            f.write(new_data)
+        config = json.loads(new_data)
+        await start_test(c, config, T_SUITE_NAME)
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.create_task(test())
-    loop.run_forever()
+    set_windows_loop_policy()
+    asyncio.run(main())

@@ -924,7 +924,7 @@ class HeaderSegment(BaseModel):
         return len(self.segment_value) // 2
 
 
-class ProtocolSegmentProfileConfigure(BaseModel):
+class ProtocolSegmentProfileConfig(BaseModel):
     description: str = ""
     header_segments: List[HeaderSegment] = []
     payload_type: PayloadType

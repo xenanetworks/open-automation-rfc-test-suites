@@ -8,7 +8,7 @@ from ..utils.constants import (
     ProtocolOption,
 )
 from ..model.protocol_segments import (
-    ProtocolSegmentProfileConfigure,
+    ProtocolSegmentProfileConfig,
 )
 from ..model.port_config import PortConfiguration
 from ..utils.field import NewIPv4Address, NewIPv6Address, MacAddress
@@ -25,7 +25,7 @@ class PortArpRefreshData:
 
 
 def has_ip_segment(
-    stream_config: "ProtocolSegmentProfileConfigure",
+    stream_config: "ProtocolSegmentProfileConfig",
 ) -> Optional[IPVersion]:
     for i in stream_config.header_segments:
         if i.segment_type == ProtocolOption.IPV4:
@@ -76,7 +76,7 @@ def make_address_collection(
 async def send_arp_learning_request(
     target_ip_address: Union["NewIPv4Address", "NewIPv6Address"],
     port_instance: "PortInstance",
-    stream_config: "ProtocolSegmentProfileConfigure",
+    stream_config: "ProtocolSegmentProfileConfig",
 ):
     await port_instance.port.streams.server_sync()
     await gather(*[s.delete() for s in port_instance.port.streams])        
@@ -99,7 +99,7 @@ async def send_arp_learning_request(
 async def send_gateway_learning_request(
     address_refresh_map: Dict[str, List["PortArpRefreshData"]],
     port_instance: "PortInstance",
-    stream_config: "ProtocolSegmentProfileConfigure",
+    stream_config: "ProtocolSegmentProfileConfig",
 ) -> Dict[str, List["PortArpRefreshData"]]:
     ip_version = has_ip_segment(stream_config)
     if not ip_version:
