@@ -124,7 +124,7 @@ class StreamStatisticData(BaseModel):
         self.rx_counter.add_stream_counter(pr_stream_statistic.rx_stream_counter)
         self.latency.update(pr_stream_statistic.latency)
         self.jitter.update(pr_stream_statistic.jitter)
-        self.live_loss_frames += pr_stream_statistic.live_loss_frames
+        self.live_loss_frames += max(0, pr_stream_statistic.live_loss_frames)
 
     def calculate(
         self, tx_port_struct: "PortStruct", rx_port_struct: "PortStruct"
@@ -294,14 +294,14 @@ class Statistic(BaseModel):
 
     def add_loss(self, tx_frames: int, rx_frames: int, live_loss_frames: int) -> None:
         if self.is_final:
-            self.loss_frames += tx_frames - rx_frames
+            self.loss_frames += max(tx_frames - rx_frames, 0)
         else:
-            self.loss_frames += live_loss_frames
+            self.loss_frames += max(live_loss_frames, 0)
 
     def calculate_rate(self) -> None:
         self.loss_ratio = (
             Decimal(str(self.loss_frames)) / Decimal(str(self.tx_counter.frames))
-            if self.tx_counter.frames
+            if self.tx_counter.frames and Decimal(str(self.loss_frames)) > Decimal('0')
             else Decimal("0")
         )
         self.tx_counter.calculate_port_rate(
@@ -372,12 +372,12 @@ class TotalStatistic(BaseModel):
         self.fcs_error_frames += port_data.fcs_error_frames
         self.tx_rate_l1_bps_theor += port_data.tx_rate_l1_bps_theor
         self.tx_rate_fps_theor += port_data.tx_rate_fps_theor
-        self.rx_loss_frames += port_data.loss_frames
+        self.rx_loss_frames += max(port_data.loss_frames, 0)
         self.tx_burst_bytes += port_data.burst_bytes_count
         self.tx_burst_frames += port_data.burst_frames
         self.rx_loss_percent = (
             Decimal(str(self.rx_loss_frames)) / Decimal(str(self.tx_counter.frames))
-            if self.tx_counter.frames
+            if self.tx_counter.frames and Decimal(str(self.rx_loss_frames)) >= Decimal('0')
             else Decimal("0.0")
         )
 
