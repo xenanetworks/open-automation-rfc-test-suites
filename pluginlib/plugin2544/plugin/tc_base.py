@@ -90,8 +90,8 @@ class TestCaseProcessor:
         await schedule_arp_refresh(self.resources, self.address_refresh_handler)
 
     async def collect(self, params: "StatisticParams") -> "FinalStatistic":
+        start_time = time.time()
         while True:
-            start_time = time.time()
             data = await aggregate_data(self.resources, params, is_final=False)
             self.xoa_out.send_statistics(data)
             if self.resources.should_quit(start_time, params.duration):
