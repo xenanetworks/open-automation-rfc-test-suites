@@ -1,4 +1,3 @@
-from decimal import Decimal
 from typing import Any, Dict, List, Tuple
 from pydantic import (
     BaseModel,
@@ -7,7 +6,7 @@ from pydantic import (
     NonNegativeInt,
     PositiveInt,
 )
-from ..utils.field import NonNegativeDecimal
+from pydantic import NonNegativeFloat
 from ..utils import constants as const, exceptions
 
 
@@ -137,7 +136,7 @@ class TestConfiguration(BaseModel):
     mac_learning_frame_count: PositiveInt
     toggle_port_sync_config: TogglePortSyncConfig
     # L23LearningOptions
-    learning_rate_pct: Decimal
+    learning_rate_pct: float
     learning_duration_second: PositiveInt
     # FlowBasedLearningOptions
     use_flow_based_learning_preamble: bool
@@ -145,7 +144,7 @@ class TestConfiguration(BaseModel):
     delay_after_flow_based_learning_ms: int = Field(..., ge=50)
     # ArpNdpOptions
     arp_refresh_enabled: bool
-    arp_refresh_period_second: NonNegativeDecimal = NonNegativeDecimal(4000)
+    arp_refresh_period_second: NonNegativeFloat = NonNegativeFloat(4000.0)
     use_gateway_mac_as_dmac: bool
     # ResetAndErrorHandling
     should_stop_on_los: bool

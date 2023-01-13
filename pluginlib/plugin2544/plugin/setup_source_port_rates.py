@@ -1,7 +1,6 @@
 import asyncio
 import math
 from typing import TYPE_CHECKING
-from decimal import Decimal
 
 if TYPE_CHECKING:
     from .test_resource import ResourceManager
@@ -10,7 +9,7 @@ if TYPE_CHECKING:
 
 async def setup_source_port_rates(
     resources: "ResourceManager",
-    current_packet_size: Decimal,
+    current_packet_size: float,
 ) -> None:  # SetupSourcePortRatesForLearning
     for port_struct in resources.tx_ports:
         if resources.test_conf.flow_creation_type.is_stream_based:
@@ -26,7 +25,7 @@ async def setup_source_port_rates(
 
 
 async def _setup_source_port_rate_stream_mode(
-    port_struct: "PortStruct", current_packet_size: Decimal
+    port_struct: "PortStruct", current_packet_size: float
 ) -> None:  # SetupSourcePortRateStreamMode
     inter_frame_gap = port_struct.port_conf.inter_frame_gap
     src_port_speed = port_struct.send_port_speed
@@ -37,16 +36,12 @@ async def _setup_source_port_rate_stream_mode(
             if stream_info.is_rx_port(peer_struct)
         ]
         port_stream_count = len(port_struct.properties.peers) * len(stream_info_list)
-        stream_ratio = (
-            Decimal(str(port_struct.rate_percent))
-            / Decimal(str(port_stream_count))
-            / Decimal("100")
-        )
-        stream_rate_bps_L1 = Decimal(str(stream_ratio)) * src_port_speed  #
+        stream_ratio = port_struct.rate_percent / port_stream_count / 100.0
+        stream_rate_bps_L1 = stream_ratio * src_port_speed  #
         stream_rate_bps_L2 = math.floor(
             stream_rate_bps_L1
-            * Decimal(str(current_packet_size))
-            / (Decimal(str(current_packet_size)) + Decimal(str(inter_frame_gap)))
+            * current_packet_size
+            / (current_packet_size + inter_frame_gap)
         )
         await asyncio.gather(
             *[
@@ -58,11 +53,11 @@ async def _setup_source_port_rate_stream_mode(
 
 async def _setup_source_port_rate_modifier_mode(
     port_struct: "PortStruct",
-    current_packet_size: Decimal,
+    current_packet_size: float,
 ) -> None:  # SetupSourcePortRateModifierMode
     inter_frame_gap = port_struct.port_conf.inter_frame_gap
     src_port_speed = port_struct.send_port_speed
-    port_rate_bps_L1 = port_struct.rate_percent * src_port_speed / Decimal("100")
+    port_rate_bps_L1 = port_struct.rate_percent * src_port_speed / 100.0
     port_rate_bps_L2 = (
         port_rate_bps_L1 * current_packet_size / (current_packet_size + inter_frame_gap)
     )

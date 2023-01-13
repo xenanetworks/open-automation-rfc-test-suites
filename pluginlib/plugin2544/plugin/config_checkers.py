@@ -145,7 +145,7 @@ def check_tid_limitations(
 
 def check_port_min_packet_length(
     capabilities: "commands.P_CAPABILITIES.GetDataAttr",
-    min_packet_size: Union[field.NonNegativeDecimal, int],
+    min_packet_size: Union[field.NonNegativeFloat, int],
     packet_size_type: "const.PacketSizeType",
 ) -> None:
     if capabilities.min_packet_length > min_packet_size:
@@ -158,7 +158,7 @@ def check_port_min_packet_length(
 
 def check_port_max_packet_length(
     capabilities: "commands.P_CAPABILITIES.GetDataAttr",
-    max_packet_size: Union[field.NonNegativeDecimal, int],
+    max_packet_size: Union[field.NonNegativeFloat, int],
     packet_size_type: "const.PacketSizeType",
 ) -> None:
     if capabilities.max_packet_length < max_packet_size:
@@ -188,7 +188,7 @@ def get_needed_packet_length(
 
 def check_needed_packet_length(
     port_struct: "PortStruct",
-    min_packet_size: Union[field.NonNegativeDecimal, int],
+    min_packet_size: Union[field.NonNegativeFloat, int],
     use_micro_tpld_on_demand: bool,
 ) -> None:
     need_packet_length = get_needed_packet_length(port_struct, use_micro_tpld_on_demand)

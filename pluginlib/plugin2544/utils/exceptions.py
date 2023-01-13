@@ -1,8 +1,8 @@
-from decimal import Decimal
 from typing import Any
 from pydantic import NonNegativeInt
 from xoa_driver import ports as xoa_ports, testers as xoa_testers
 from . import constants as const
+
 
 
 class BXMPWarning(Warning):
@@ -223,7 +223,7 @@ class InterFrameGapError(Exception):
 
 
 class PortRateError(Exception):
-    def __init__(self, curr: Decimal, max: int) -> None:
+    def __init__(self, curr: float, max: int) -> None:
         self.msg = (
             f"Custom port rate ({curr}) must not exceed physical port rate ({max})."
         )

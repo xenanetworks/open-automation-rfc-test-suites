@@ -1,4 +1,3 @@
-from decimal import Decimal
 import math
 import asyncio
 from xoa_driver import utils
@@ -170,7 +169,7 @@ class AddressRefreshHandler:
     def __init__(
         self,
         address_refresh_tokens: List[Tuple["misc.Token", bool]],
-        refresh_period: Decimal,
+        refresh_period: float,
     ) -> None:
         self.index = 0
         self.refresh_burst_size = 1
@@ -258,7 +257,7 @@ async def schedule_arp_refresh(
 
 async def add_L3_learning_preamble_steps(
     resources: "ResourceManager",
-    current_packet_size: Decimal,
+    current_packet_size: float,
     address_refresh_handler: Optional["AddressRefreshHandler"] = None,
 ) -> None:  # AddL3LearningPreambleSteps
     if not address_refresh_handler:
@@ -283,7 +282,7 @@ async def add_L3_learning_preamble_steps(
 
 async def add_flow_based_learning_preamble_steps(
     resources: "ResourceManager",
-    current_packet_size: Decimal,
+    current_packet_size: float,
 ) -> None:  # AddFlowBasedLearningPreambleSteps
     if not resources.test_conf.use_flow_based_learning_preamble:
         return

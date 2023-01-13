@@ -1,4 +1,3 @@
-from decimal import Decimal
 from typing import Any, Dict, Iterable, List, Union
 from pydantic import (
     BaseModel,
@@ -22,7 +21,7 @@ from ..utils import constants
 
 class CommonOptions(BaseModel):
     duration_type: DurationType
-    duration: Decimal
+    duration: float
     duration_unit: DurationUnit
     iterations: PositiveInt
 
@@ -37,25 +36,23 @@ class CommonOptions(BaseModel):
         return v
 
     @property
-    def actual_duration(self) -> Decimal:
+    def actual_duration(self) -> float:
         return self.duration * self.duration_unit.scale
 
 
 class RateIterationOptions(BaseModel):
     search_type: SearchType
     result_scope: RateResultScopeType
-    initial_value_pct: Decimal = Field(ge=0.0, le=100.0)
-    maximum_value_pct: Decimal = Field(ge=0.0, le=100.0)
-    minimum_value_pct: Decimal = Field(ge=0.0, le=100.0)
-    value_resolution_pct: Decimal = Field(ge=0.0, le=100.0)
+    initial_value_pct: float = Field(ge=0.0, le=100.0)
+    maximum_value_pct: float = Field(ge=0.0, le=100.0)
+    minimum_value_pct: float = Field(ge=0.0, le=100.0)
+    value_resolution_pct: float = Field(ge=0.0, le=100.0)
 
     @validator("initial_value_pct", "minimum_value_pct")
-    def check_if_larger_than_maximun(
-        cls, v: Decimal, values: Dict[str, Any]
-    ) -> Decimal:
+    def check_if_larger_than_maximun(cls, v: float, values: Dict[str, Any]) -> float:
         if "maximum_value_pct" in values:
             if v > values["maximum_value_pct"]:
-                raise exceptions.RateRestriction(float(v), values["maximum_value_pct"])
+                raise exceptions.RateRestriction(v, values["maximum_value_pct"])
         return v
 
 
@@ -71,35 +68,35 @@ class ThroughputTest(BaseModel):
 
 
 class RateSweepOptions(BaseModel):
-    start_value_pct: Decimal
-    end_value_pct: Decimal
-    step_value_pct: Decimal
-    burst_resolution: Decimal = Decimal("0")
+    start_value_pct: float
+    end_value_pct: float
+    step_value_pct: float
+    burst_resolution: float = 0.0
 
-    @validator(
-        "start_value_pct",
-        "end_value_pct",
-        "step_value_pct",
-        "burst_resolution",
-        pre=True,
-        always=True,
-    )
-    def set_pcts(cls, v: Decimal) -> Decimal:
-        return Decimal(str(v))
+    # @validator(
+    #     "start_value_pct",
+    #     "end_value_pct",
+    #     "step_value_pct",
+    #     "burst_resolution",
+    #     pre=True,
+    #     always=True,
+    # )
+    # def set_pcts(cls, v: float) -> float:
+    #     return float(v)
 
-    # def set_throughput_relative(self, throughput_rate: Decimal) -> None:
+    # def set_throughput_relative(self, throughput_rate: float) -> None:
     #     self.start_value_pct = self.start_value_pct * throughput_rate / 100
     #     self.end_value_pct = self.end_value_pct * throughput_rate / 100
     #     self.step_value_pct = self.step_value_pct * throughput_rate / 100
 
     @property
-    def rate_sweep_list(self) -> Iterable[Decimal]:
+    def rate_sweep_list(self) -> Iterable[float]:
         start_value_pct = self.start_value_pct
         end_value_pct = self.end_value_pct
         step_value_pct = self.step_value_pct
         if start_value_pct > end_value_pct:
             raise exceptions.RangeRestriction()
-        if step_value_pct <= Decimal("0"):
+        if step_value_pct <= 0.0:
             raise exceptions.StepValueRestriction()
         pct = start_value_pct
         while True:
@@ -121,7 +118,7 @@ class LatencyTest(BaseModel):
     rate_sweep_options: RateSweepOptions
     latency_mode: LatencyModeStr
     use_relative_to_throughput: bool
-    throughput: Decimal = Decimal("0")
+    throughput: float = 0.0
 
 
 class FrameLossRateTest(BaseModel):

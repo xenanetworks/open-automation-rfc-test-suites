@@ -1,4 +1,3 @@
-from decimal import getcontext
 from typing import Any, Dict, Tuple
 from pydantic import BaseModel, validator
 from .utils import exceptions, constants as const
@@ -10,7 +9,6 @@ from .model import (
 )
 
 
-getcontext().prec = 6
 
 ProtoSegType = Dict[str, ProtocolSegmentProfileConfig]
 PortConfType = Dict[str, PortConfiguration]

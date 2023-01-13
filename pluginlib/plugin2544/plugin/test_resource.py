@@ -1,6 +1,5 @@
 import asyncio
 import time
-from decimal import Decimal
 from typing import Dict, List, TYPE_CHECKING, Union
 from xoa_driver import testers as xoa_testers, modules, enums, utils
 from .learning import add_mac_learning_steps
@@ -117,7 +116,9 @@ class ResourceManager:
         await asyncio.gather(*self.__testers.values())
         for port_conf in self.all_confs:
             port_identity = [
-                i for i in self.__port_identities if i.name == port_conf._port_config_slot
+                i
+                for i in self.__port_identities
+                if i.name == port_conf._port_config_slot
             ][0]
             tester = self.__testers[port_identity.tester_id]
             if not isinstance(tester, xoa_testers.L23Tester):
@@ -194,7 +195,7 @@ class ResourceManager:
             for peer_struct in dest_ports:
                 port_struct.properties.register_peer(peer_struct)
 
-    async def setup_packet_size(self, current_packet_size: Union[Decimal, int]) -> None:
+    async def setup_packet_size(self, current_packet_size: Union[float, int]) -> None:
         if self.test_conf.frame_sizes.packet_size_type.is_fix:
             min_size = max_size = int(current_packet_size)
         else:
@@ -244,15 +245,15 @@ class ResourceManager:
             )
         return False
 
-    def tell_progress(self, start_time: float, actual_duration: Decimal) -> None:
+    def tell_progress(self, start_time: float, actual_duration: float) -> None:
         elapsed = time.time() - start_time
-        self.xoa_out.send_progress(elapsed / float(actual_duration) * 100)
+        self.xoa_out.send_progress(elapsed / actual_duration * 100)
 
-    def should_quit(self, start_time: float, actual_duration: Decimal) -> bool:
+    def should_quit(self, start_time: float, actual_duration: float) -> bool:
         test_finished = self.test_finished()
         elapsed = time.time() - start_time
         actual_duration_elapsed = (
-            elapsed >= float(actual_duration) + const.DELAY_TEST_MUST_FINISH
+            elapsed >= actual_duration + const.DELAY_TEST_MUST_FINISH
         )
         los = self.los()
         if los:
@@ -260,11 +261,11 @@ class ResourceManager:
 
         return test_finished or los or actual_duration_elapsed
 
-    def set_rate_percent(self, rate: Decimal) -> None:
+    def set_rate_percent(self, rate: float) -> None:
         for port_struct in self.tx_ports:
             port_struct.set_rate_percent(rate)
 
-    async def set_tx_time_limit(self, tx_timelimit: Union[Decimal, int]) -> None:
+    async def set_tx_time_limit(self, tx_timelimit: Union[float, int]) -> None:
         """throughput & latency & frame loss support txtimelimit"""
         await asyncio.gather(
             *[
@@ -330,7 +331,7 @@ class ResourceManager:
             )
 
     async def collect(
-        self, packet_size: Decimal, duration: Decimal, is_final: bool = False
+        self, packet_size: float, duration: float, is_final: bool = False
     ) -> None:
         for port_struct in self.port_structs:
             port_struct.init_counter(packet_size, duration, is_final)

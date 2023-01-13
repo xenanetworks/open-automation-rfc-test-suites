@@ -1,5 +1,4 @@
 import asyncio
-from decimal import Decimal
 from typing import List, TYPE_CHECKING, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
 from xoa_driver import enums, misc, utils as driver_utils
@@ -12,7 +11,7 @@ from .data_model import (
 from .statistics import Statistic
 from .stream_struct import StreamStruct
 from ..utils import exceptions, constants as const
-from ..utils.field import MacAddress, NonNegativeDecimal
+from ..utils.field import MacAddress, NonNegativeFloat
 
 if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity
@@ -332,14 +331,14 @@ class PortStruct:
         return bool((await self.port_ins.traffic.state.get()).on_off)
 
     @property
-    def send_port_speed(self) -> Decimal:
+    def send_port_speed(self) -> float:
         return self.properties.send_port_speed
 
-    def set_send_port_speed(self, speed: Decimal) -> None:
+    def set_send_port_speed(self, speed: float) -> None:
         self.properties.send_port_speed = speed
 
     @property
-    def rate_percent(self) -> Decimal:
+    def rate_percent(self) -> float:
         return self.properties.rate_percent
 
     @property
@@ -354,11 +353,11 @@ class PortStruct:
     def port_conf(self) -> "PortConfiguration":
         return self._port_conf
 
-    def set_rate_percent(self, rate_percent: Decimal) -> None:
+    def set_rate_percent(self, rate_percent: float) -> None:
         self.properties.rate_percent = rate_percent
 
     def init_counter(
-        self, packet_size: Decimal, duration: Decimal, is_final: bool = False
+        self, packet_size: float, duration: float, is_final: bool = False
     ) -> None:
         self._statistic = Statistic(
             port_id=self._port_identity.name,
@@ -448,13 +447,13 @@ class PortStruct:
         await self.set_arp_trucks(self.properties.arp_trunks)
         await self.set_ndp_trucks(self.properties.ndp_trunks)
 
-    def get_capped_port_speed(self) -> Decimal:
+    def get_capped_port_speed(self) -> float:
         port_speed = self.properties.physical_port_speed
         if self._port_conf.port_rate_cap_profile.is_custom:
             port_speed = min(self._port_conf.port_rate, port_speed)
-        return Decimal(str(port_speed))
+        return port_speed
 
-    def _get_use_port_speed(self) -> NonNegativeDecimal:
+    def _get_use_port_speed(self) -> NonNegativeFloat:
         tx_speed = self.get_capped_port_speed()
         if self._port_conf.peer_config_slot and len(self.properties.peers) == 1:
             # Only Pair Topology Need to query peer speed
@@ -462,11 +461,9 @@ class PortStruct:
             rx_speed = peer_struct.get_capped_port_speed()
             tx_speed = min(tx_speed, rx_speed)
         self.set_send_port_speed(
-            tx_speed
-            * Decimal(str(1e6 - self._port_conf.speed_reduction_ppm))
-            / Decimal(str(1e6))
+            tx_speed * (1e6 - self._port_conf.speed_reduction_ppm) / 1e6
         )
-        return NonNegativeDecimal(str(self.send_port_speed))
+        return NonNegativeFloat(self.send_port_speed)
 
     async def query(self) -> None:
         extra = self.port_ins.statistics.rx.extra.get()
@@ -495,8 +492,8 @@ class Properties:
     arp_trunks: Set[RXTableData] = field(default_factory=set)
     ndp_trunks: Set[RXTableData] = field(default_factory=set)
 
-    rate_percent: Decimal = Decimal("0")
-    send_port_speed: Decimal = Decimal("0")
+    rate_percent: float = 0.0
+    send_port_speed: float = 0.0
     native_mac_address: MacAddress = MacAddress()
     arp_mac_address: MacAddress = MacAddress()
     traffic_status: bool = False

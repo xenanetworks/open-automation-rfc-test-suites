@@ -1,4 +1,3 @@
-from decimal import Decimal
 from typing import List, Optional
 
 from .statistics import FinalStatistic
@@ -13,10 +12,10 @@ class ThroughputBoutEntry:
         self.current = (
             self.rate_percent
         ) = self.next = throughput_conf.rate_iteration_options.initial_value_pct
-        self.left_bound: Decimal = (
+        self.left_bound: float = (
             throughput_conf.rate_iteration_options.minimum_value_pct
         )
-        self.right_bound: Decimal = (
+        self.right_bound: float = (
             throughput_conf.rate_iteration_options.maximum_value_pct
         )
         self._last_move: int = 0
@@ -46,7 +45,7 @@ class ThroughputBoutEntry:
         else:
             self.next = (self.left_bound + self.right_bound) / 2
 
-    def update_right_bound(self, loss_ratio: Decimal):
+    def update_right_bound(self, loss_ratio: float):
         self.right_bound = self.current
         self._last_move = 1
 
@@ -58,7 +57,7 @@ class ThroughputBoutEntry:
             self.right_bound = self.left_bound
         if self._throughput_conf.rate_iteration_options.search_type.is_fast:
             self.next = max(
-                self.current * (Decimal("1.0") - loss_ratio),
+                self.current * (1.0 - loss_ratio),
                 self.left_bound,
             )
         else:
@@ -87,7 +86,7 @@ class ThroughputBoutEntry:
             loss_ratio = self._port_struct.statistic.loss_ratio
         else:
             loss_ratio = result.total.rx_loss_percent
-        loss_ratio_pct = loss_ratio * Decimal("100")
+        loss_ratio_pct = loss_ratio * 100.0
         if loss_ratio_pct <= self._throughput_conf.acceptable_loss_pct:
             if (
                 self._throughput_conf.rate_iteration_options.result_scope.is_per_source_port

@@ -1,6 +1,5 @@
 from ipaddress import IPv4Network, IPv6Network
 from typing import Union
-from decimal import Decimal
 from pydantic import BaseModel, validator, NonNegativeInt
 from ..utils import constants as const
 from ..utils.field import MacAddress, IPv4Address, IPv6Address, Prefix
@@ -92,7 +91,7 @@ class PortConfiguration(BaseModel):
     port_rate_cap_unit: const.PortRateCapUnit
 
     # PhysicalPortProperties
-    inter_frame_gap: Decimal
+    inter_frame_gap: float
     speed_reduction_ppm: NonNegativeInt
     pause_mode_enabled: bool
     latency_offset_ms: int  # QUESTION: can be negative?
@@ -148,8 +147,8 @@ class PortConfiguration(BaseModel):
         self._port_config_slot = name
 
     @property
-    def port_rate(self) -> Decimal:
-        return Decimal(self.port_rate_cap_value * self.port_rate_cap_unit.scale())
+    def port_rate(self) -> float:
+        return self.port_rate_cap_value * self.port_rate_cap_unit.scale()
 
     @property
     def profile(self) -> "ProtocolSegmentProfileConfig":

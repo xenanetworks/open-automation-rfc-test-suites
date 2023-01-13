@@ -2,7 +2,6 @@ import asyncio
 import time
 from copy import deepcopy
 import math
-from decimal import Decimal
 from typing import List, Optional, Protocol, TYPE_CHECKING
 from .tc_back_to_back import BackToBackBoutEntry
 from ..model.m_test_type_config import (
@@ -52,7 +51,7 @@ class TestCaseProcessor:
     async def run(
         self,
         test_type_conf: "AllTestType",
-        current_packet_size: Decimal,
+        current_packet_size: float,
         iteration: int,
     ) -> None:
         if isinstance(test_type_conf, ThroughputTest):
@@ -68,7 +67,7 @@ class TestCaseProcessor:
         elif isinstance(test_type_conf, BackToBackTest):
             await self._back_to_back(test_type_conf, current_packet_size, iteration)
 
-    async def add_learning_steps(self, current_packet_size: Decimal) -> None:
+    async def add_learning_steps(self, current_packet_size: float) -> None:
         await self.resources.stop_traffic()
         await add_L3_learning_preamble_steps(self.resources, current_packet_size)
         await add_mac_learning_steps(self.resources, const.MACLearningMode.EVERYTRIAL)
@@ -77,7 +76,7 @@ class TestCaseProcessor:
         )
 
     async def start_test(
-        self, test_type_conf: "AllTestType", current_packet_size: Decimal
+        self, test_type_conf: "AllTestType", current_packet_size: float
     ) -> None:
         await setup_source_port_rates(self.resources, current_packet_size)
         if test_type_conf.common_options.duration_type.is_time_duration:
@@ -106,14 +105,12 @@ class TestCaseProcessor:
     async def _latency(
         self,
         test_type_conf: "LatencyTest",
-        current_packet_size: Decimal,
+        current_packet_size: float,
         repetition: int,
     ):
-        factor = Decimal("1")
+        factor = 1.0
         if test_type_conf.use_relative_to_throughput and self._throughput_map:
-            factor = self._throughput_map.get(
-                current_packet_size, Decimal("100")
-            ) / Decimal("100")
+            factor = self._throughput_map.get(current_packet_size, 100.0) / 100.0
 
         for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
             # tx_rate_nominal_percent = rate_percent
@@ -136,7 +133,7 @@ class TestCaseProcessor:
     async def _frame_loss(
         self,
         test_type_conf: "FrameLossRateTest",
-        current_packet_size: Decimal,
+        current_packet_size: float,
         repetition: int,
     ):
         for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
@@ -158,7 +155,7 @@ class TestCaseProcessor:
     async def _throughput(
         self,
         test_type_conf: "ThroughputTest",
-        current_packet_size: Decimal,
+        current_packet_size: float,
         repetition: int,
     ):
         await self.add_learning_steps(current_packet_size)
@@ -227,7 +224,7 @@ class TestCaseProcessor:
     async def _back_to_back(
         self,
         test_type_conf: "BackToBackTest",
-        current_packet_size: Decimal,
+        current_packet_size: float,
         repetition: int,
     ) -> None:
         result = None
@@ -260,7 +257,7 @@ class TestCaseProcessor:
                 result,
             )
 
-    def _set_throughput_for_frame_size(self, frame_size: Decimal, rate: Decimal):
+    def _set_throughput_for_frame_size(self, frame_size: float, rate: float):
         """for latency relative to throughput use, use max throughput rate and only for throughput common result scope"""
         if frame_size not in self._throughput_map:
             self._throughput_map[frame_size] = 0
@@ -281,7 +278,7 @@ class TestCaseProcessor:
         return final
 
     def _average_per_frame_size(
-        self, test_type_conf: "AllTestType", frame_size: Decimal
+        self, test_type_conf: "AllTestType", frame_size: float
     ) -> None:
         result = self.test_results[test_type_conf.test_type][frame_size]
         if isinstance(test_type_conf, ThroughputTest):
@@ -296,7 +293,7 @@ class TestCaseProcessor:
                 self._average_statistic(statistic_lists)
 
     def cal_average(
-        self, test_type_conf: "AllTestType", frame_size: Optional[Decimal] = None
+        self, test_type_conf: "AllTestType", frame_size: Optional[float] = None
     ) -> None:
         if frame_size:
             result = self.test_results[test_type_conf.test_type][frame_size]
@@ -345,9 +342,7 @@ class TestCaseProcessor:
                     stream_info_list
                 )
                 total_frame_count = boundaries[0].current
-                stream_burst = Decimal(str(total_frame_count)) / Decimal(
-                    str(port_stream_count)
-                )
+                stream_burst = total_frame_count / port_stream_count
                 await asyncio.gather(
                     *[
                         stream_struct.set_frame_limit(math.floor(stream_burst))
