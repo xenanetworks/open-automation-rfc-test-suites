@@ -77,7 +77,6 @@ class ThroughputBoutEntry:
     def update_rate(self):
         self.current = self.next
         self.rate_percent = self.next
-        self._port_struct.set_rate_percent(self.rate_percent)
 
     def update_boundary(self, result: Optional["FinalStatistic"]) -> None:
         self._port_should_continue = self._port_test_passed = False

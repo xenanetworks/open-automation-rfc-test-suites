@@ -301,7 +301,7 @@ class Statistic(BaseModel):
     def calculate_rate(self) -> None:
         self.loss_ratio = (
             Decimal(str(self.loss_frames)) / Decimal(str(self.tx_counter.frames))
-            if self.tx_counter.frames and Decimal(str(self.loss_frames)) > Decimal('0')
+            if self.tx_counter.frames and Decimal(str(self.loss_frames)) >= Decimal("0")
             else Decimal("0")
         )
         self.tx_counter.calculate_port_rate(
@@ -377,7 +377,8 @@ class TotalStatistic(BaseModel):
         self.tx_burst_frames += port_data.burst_frames
         self.rx_loss_percent = (
             Decimal(str(self.rx_loss_frames)) / Decimal(str(self.tx_counter.frames))
-            if self.tx_counter.frames and Decimal(str(self.rx_loss_frames)) >= Decimal('0')
+            if self.tx_counter.frames
+            and Decimal(str(self.rx_loss_frames)) >= Decimal("0")
             else Decimal("0.0")
         )
 
@@ -451,3 +452,6 @@ class StatisticParams(BaseModel):
     repetition: Union[int, str]
     rate_percent: Decimal = Decimal("0")
     rate_result_scope: const.RateResultScopeType = const.RateResultScopeType.COMMON
+
+    def set_rate_percent(self, rate: Decimal) -> None:
+        self.rate_percent = rate

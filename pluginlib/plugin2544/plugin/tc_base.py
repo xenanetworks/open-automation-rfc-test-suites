@@ -181,7 +181,8 @@ class TestCaseProcessor:
             test_passed = all(boundary.port_test_passed for boundary in boundaries)
             for boundary in boundaries:
                 boundary.update_rate()
-            params.rate_percent = boundaries[0].rate_percent
+            params.set_rate_percent(boundaries[0].rate_percent)
+            self.resources.set_rate_percent(params.rate_percent)
             await self.start_test(test_type_conf, current_packet_size)
             result = await self.collect(params)
             await self.resources.set_tx_time_limit(0)
