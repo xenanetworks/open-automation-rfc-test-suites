@@ -1,9 +1,9 @@
-import asyncio
 from typing import TYPE_CHECKING, List, Union
 from xoa_driver.enums import ProtocolOption
-
+from pydantic import NonNegativeFloat
 from ..model.m_test_type_config import AllTestType
-from ..utils import field, exceptions, constants as const
+from ..utils import exceptions, constants as const
+from pydantic import NonNegativeFloat
 from .common import find_dest_port_structs
 
 if TYPE_CHECKING:
@@ -36,7 +36,7 @@ def check_port_config_profile(
             profile.packet_header_length, capabilities.max_header_length
         )
 
-    for header_segment in profile.header_segments:
+    for header_segment in profile.segments:
         for modifier in header_segment.hw_modifiers:
             if modifier.repeat > capabilities.max_repeat:
                 raise exceptions.ModifierRepeatCountExceed(
@@ -145,7 +145,7 @@ def check_tid_limitations(
 
 def check_port_min_packet_length(
     capabilities: "commands.P_CAPABILITIES.GetDataAttr",
-    min_packet_size: Union[field.NonNegativeFloat, int],
+    min_packet_size: Union[NonNegativeFloat, int],
     packet_size_type: "const.PacketSizeType",
 ) -> None:
     if capabilities.min_packet_length > min_packet_size:
@@ -158,7 +158,7 @@ def check_port_min_packet_length(
 
 def check_port_max_packet_length(
     capabilities: "commands.P_CAPABILITIES.GetDataAttr",
-    max_packet_size: Union[field.NonNegativeFloat, int],
+    max_packet_size: Union[NonNegativeFloat, int],
     packet_size_type: "const.PacketSizeType",
 ) -> None:
     if capabilities.max_packet_length < max_packet_size:
@@ -188,7 +188,7 @@ def get_needed_packet_length(
 
 def check_needed_packet_length(
     port_struct: "PortStruct",
-    min_packet_size: Union[field.NonNegativeFloat, int],
+    min_packet_size: Union[NonNegativeFloat, int],
     use_micro_tpld_on_demand: bool,
 ) -> None:
     need_packet_length = get_needed_packet_length(port_struct, use_micro_tpld_on_demand)

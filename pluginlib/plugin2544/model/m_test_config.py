@@ -17,7 +17,7 @@ class FrameSizesOptions(BaseModel):
     field_15: NonNegativeInt = Field(16360)
 
 
-class FrameSizeConfiguration(BaseModel):
+class FrameSize(BaseModel):
     # FrameSizes
     packet_size_type: const.PacketSizeType
     # FixedSizesPerTrial
@@ -120,50 +120,83 @@ class TogglePortSyncConfig(BaseModel):
     delay_after_sync_on_second: PositiveInt
 
 
-class TestConfiguration(BaseModel):
-    # FlowCreation
-    flow_creation_type: const.FlowCreationType
-    tid_allocation_scope: const.TidAllocationScope
-    mac_base_address: str
-    # PortScheduling
-    enable_speed_reduction_sweep: bool
-    use_port_sync_start: bool
-    port_stagger_steps: NonNegativeInt
-    # TestScheduling
-    outer_loop_mode: const.OuterLoopMode
-    # MacLearningOptions
-    mac_learning_mode: const.MACLearningMode
-    mac_learning_frame_count: PositiveInt
-    toggle_port_sync_config: TogglePortSyncConfig
-    # L23LearningOptions
-    learning_rate_pct: float
-    learning_duration_second: PositiveInt
-    # FlowBasedLearningOptions
-    use_flow_based_learning_preamble: bool
-    flow_based_learning_frame_count: PositiveInt
-    delay_after_flow_based_learning_ms: int = Field(..., ge=50)
-    # ArpNdpOptions
-    arp_refresh_enabled: bool
-    arp_refresh_period_second: NonNegativeFloat = NonNegativeFloat(4000.0)
-    use_gateway_mac_as_dmac: bool
-    # ResetAndErrorHandling
-    should_stop_on_los: bool
-    delay_after_port_reset_second: PositiveInt
+class TopologyConfig(BaseModel):
+
     # OverallTestTopology
     topology: const.TestTopology
     direction: const.TrafficDirection
 
-    frame_sizes: FrameSizeConfiguration
+
+class FrameSizeConfig(BaseModel):
+    frame_sizes: FrameSize
     # FrameTestPayload
     use_micro_tpld_on_demand: bool
-
     # payload_definition PayloadDefinition
     payload_type: const.PayloadTypeStr
     payload_pattern: str  # full number string
 
-    # MultiStreamConfiguration
-    multi_stream_config: MultiStreamConfig
+
+class FlowCreationConfig(BaseModel):
+    # FlowCreation
+    flow_creation_type: const.FlowCreationType
+    tid_allocation_scope: const.TidAllocationScope
+    mac_base_address: str
+
+
+class PortSchedulingConfig(BaseModel):
+    # PortScheduling
+    enable_speed_reduction_sweep: bool
+    use_port_sync_start: bool
+    port_stagger_steps: NonNegativeInt
+
+
+class MacLearningOptions(BaseModel):
+    # MacLearningOptions
+    mac_learning_mode: const.MACLearningMode
+    mac_learning_frame_count: PositiveInt
+    toggle_port_sync_config: TogglePortSyncConfig
+
+
+class L23LearningOptions(BaseModel):
+    # L23LearningOptions
+    learning_rate_pct: float
+    learning_duration_second: PositiveInt
+    # ArpNdpOptions
+    arp_refresh_enabled: bool
+    arp_refresh_period_second: NonNegativeFloat = NonNegativeFloat(4000.0)
+    use_gateway_mac_as_dmac: bool
+
+
+class FlowBasedLearningOptions(BaseModel):
+    # FlowBasedLearningOptions
+    use_flow_based_learning_preamble: bool
+    flow_based_learning_frame_count: PositiveInt
+    delay_after_flow_based_learning_ms: int = Field(..., ge=50)
+
+
+class ResetErrorHandling(BaseModel):
+    # ResetAndErrorHandling
+    should_stop_on_los: bool
+    delay_after_port_reset_second: PositiveInt
+
+
+class TestExecutionConfig(BaseModel):
+    flow_creation_config: FlowCreationConfig
+    port_scheduling_config: PortSchedulingConfig
+    outer_loop_mode: const.OuterLoopMode
+    mac_learning_options: MacLearningOptions
+    l23_learning_options: L23LearningOptions
+    flow_based_learning_options: FlowBasedLearningOptions
+    reset_error_handling: ResetErrorHandling
     repeat_test_until_stopped: bool = False
+
+
+class TestConfiguration(BaseModel):
+    topology_config: TopologyConfig
+    frame_size_config: FrameSizeConfig
+    multi_stream_config: MultiStreamConfig
+    test_execution_config: TestExecutionConfig
+    # TestScheduling
 
     # @validator("payload_pattern", always=True, pre=True)
     # def payload_type_str_list(cls, v: str) -> str:

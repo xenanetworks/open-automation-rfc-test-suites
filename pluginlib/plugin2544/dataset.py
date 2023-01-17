@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple
+from typing import Any, List, Tuple, Dict
 from pydantic import BaseModel, validator
 from .utils import exceptions, constants as const
 from .model import (
@@ -9,15 +9,10 @@ from .model import (
 )
 
 
-
-ProtoSegType = Dict[str, ProtocolSegmentProfileConfig]
-PortConfType = Dict[str, PortConfiguration]
-
-
 class PluginModel2544(BaseModel):  # Main Model
     test_configuration: TestConfiguration
-    protocol_segments: ProtoSegType
-    ports_configuration: PortConfType
+    protocol_segments: List[ProtocolSegmentProfileConfig]
+    ports_configuration: List[PortConfiguration]
     test_types_configuration: TestTypesConfiguration
 
     def set_ports_rx_tx_type(self) -> None:

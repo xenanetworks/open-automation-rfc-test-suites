@@ -19,11 +19,15 @@ from ..utils import exceptions
 from ..utils import constants
 
 
+class Repetition(BaseModel):
+    repetition: PositiveInt
+
+
 class CommonOptions(BaseModel):
     duration_type: DurationType
     duration: float
     duration_unit: DurationUnit
-    iterations: PositiveInt
+    repetition: PositiveInt
 
     @validator("duration_unit", always=True)
     def validate_duration(
@@ -57,12 +61,11 @@ class RateIterationOptions(BaseModel):
 
 
 class ThroughputTest(BaseModel):
-    test_type: TestType
     enabled: bool
     common_options: CommonOptions
     rate_iteration_options: RateIterationOptions
-    use_pass_threshold: bool
-    pass_threshold_pct: float
+    use_pass_criteria: bool
+    pass_threshold_throughput_pct: float
     acceptable_loss_pct: float
     collect_latency_jitter: bool
 
@@ -71,7 +74,11 @@ class RateSweepOptions(BaseModel):
     start_value_pct: float
     end_value_pct: float
     step_value_pct: float
+
+
+class BurstSizeIterationOptions(BaseModel):
     burst_resolution: float = 0.0
+    maximum_burst: float = 0.0
 
     # @validator(
     #     "start_value_pct",
@@ -112,17 +119,14 @@ class RateSweepOptions(BaseModel):
 
 
 class LatencyTest(BaseModel):
-    test_type: TestType
     enabled: bool
     common_options: CommonOptions
     rate_sweep_options: RateSweepOptions
     latency_mode: LatencyModeStr
     use_relative_to_throughput: bool
-    throughput: float = 0.0
 
 
 class FrameLossRateTest(BaseModel):
-    test_type: TestType
     enabled: bool
     common_options: CommonOptions
     rate_sweep_options: RateSweepOptions
@@ -134,15 +138,15 @@ class FrameLossRateTest(BaseModel):
 
     # PassCriteriaOptions
     use_pass_fail_criteria: bool
-    acceptable_loss_pct: float
+    acceptable_loss: float
     acceptable_loss_type: AcceptableLossType
 
 
 class BackToBackTest(BaseModel):
-    test_type: TestType
     enabled: bool
-    common_options: CommonOptions
+    common_options: Repetition
     rate_sweep_options: RateSweepOptions
+    burst_size_iteration_options: BurstSizeIterationOptions
 
 
 AllTestType = Union[ThroughputTest, LatencyTest, FrameLossRateTest, BackToBackTest]

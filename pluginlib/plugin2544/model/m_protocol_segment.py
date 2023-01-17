@@ -219,7 +219,7 @@ class SegmentField(BaseModel):
 
 
 class ProtocolSegment(BaseModel):
-    segment_type: SegmentType
+    type: SegmentType
     fields: List[SegmentField]
     checksum_offset: Optional[int]
 
@@ -283,18 +283,19 @@ class ProtocolSegment(BaseModel):
 
 
 class ProtocolSegmentProfileConfig(BaseModel):
-    header_segments: List[ProtocolSegment] = []
+    id: str = ""
+    segments: List[ProtocolSegment] = []
 
     def __getitem__(self, segment_type: "SegmentType") -> List["ProtocolSegment"]:
         return [
             segment
-            for segment in self.header_segments
-            if segment.segment_type == segment_type
+            for segment in self.segments
+            if segment.type == segment_type
         ]
 
     def prepare(self) -> bytearray:
         result = bytearray()
-        for s in self.header_segments:
+        for s in self.segments:
             result.extend(s.prepare())
         return result
 
@@ -306,31 +307,31 @@ class ProtocolSegmentProfileConfig(BaseModel):
     @property
     def protocol_version(self) -> "PortProtocolVersion":
         v = PortProtocolVersion.ETHERNET
-        for i in self.header_segments:
-            if i.segment_type == SegmentType.IPV6:
+        for i in self.segments:
+            if i.type == SegmentType.IPV6:
                 v = PortProtocolVersion.IPV6
                 break
-            elif i.segment_type == SegmentType.IP:
+            elif i.type == SegmentType.IP:
                 v = PortProtocolVersion.IPV4
                 break
         return v
 
     @property
     def segment_id_list(self) -> List["ProtocolOption"]:
-        return [h.segment_type.to_xmp() for h in self.header_segments]
+        return [h.type.to_xmp() for h in self.segments]
 
     @property
     def packet_header_length(self) -> int:
         """byte header length for convenient use with xoa-driver"""
-        return sum(hs.bit_length for hs in self.header_segments) // 8
+        return sum(hs.bit_length for hs in self.segments) // 8
 
     @property
     def modifier_count(self) -> int:
-        return sum(hs.modifier_count for hs in self.header_segments)
+        return sum(hs.modifier_count for hs in self.segments)
 
     def calc_segment_position(self) -> None:
         total_bit_length = 0
-        for segment in self.header_segments:
+        for segment in self.segments:
             for field in segment.fields:
                 if modifier := field.hw_modifier:
                     modifier.set_byte_segment_position(

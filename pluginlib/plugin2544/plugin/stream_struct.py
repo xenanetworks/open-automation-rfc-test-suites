@@ -126,7 +126,7 @@ class StreamStruct:
         if self._flow_creation_type.is_stream_based:
             return [
                 modifier
-                for header_segment in self._tx_port.port_conf.profile.header_segments
+                for header_segment in self._tx_port.port_conf.profile.segments
                 for modifier in header_segment.hw_modifiers
             ]
         else:
@@ -252,21 +252,21 @@ class StreamStruct:
     async def set_packet_header(self) -> None:
         # Insert all configured header segments in order
         profile = self._tx_port.port_conf.profile.copy(deep=True)
-        for index, segment in enumerate(profile.header_segments):
-            if segment.segment_type.is_ethernet and index == 0:
+        for index, segment in enumerate(profile.segments):
+            if segment.type.is_ethernet and index == 0:
                 ps.setup_segment_ethernet(
                     segment,
                     self._addr_coll.smac,
                     self._addr_coll.dmac,
                     self._addr_coll.arp_mac,
                 )
-            if segment.segment_type.is_ipv4:
+            if segment.type.is_ipv4:
                 ps.setup_segment_ipv4(
                     segment,
                     self._addr_coll.src_ipv4_addr,
                     self._addr_coll.dst_ipv4_addr,
                 )
-            if segment.segment_type.is_ipv6:
+            if segment.type.is_ipv6:
                 ps.setup_segment_ipv6(
                     segment,
                     self._addr_coll.src_ipv6_addr,

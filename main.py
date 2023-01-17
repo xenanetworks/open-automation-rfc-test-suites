@@ -17,7 +17,7 @@ from xoa_core import types, controller
 DEBUG = True
 BASE_PATH = Path.cwd()
 PLUGINS_PATH = BASE_PATH / "pluginlib"
-INPUT_DATA_PATH = BASE_PATH / "test" / "2.v2544"
+INPUT_DATA_PATH = BASE_PATH / "test" / "1.v2544"
 JSON_PATH = BASE_PATH / "test" / "hello.json"
 T_SUITE_NAME = "RFC-2544"
 
@@ -147,7 +147,7 @@ async def main() -> None:
         with open("2544.json", "w") as f:
             f.write(new_data)
         config = json.loads(new_data)
-        await start_test(c, config, T_SUITE_NAME)
+        # await start_test(c, config, T_SUITE_NAME)
 
 
 if __name__ == "__main__":

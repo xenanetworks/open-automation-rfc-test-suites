@@ -19,10 +19,10 @@ if TYPE_CHECKING:
 def get_dest_ip_modifier_addr_range(
     port_struct: "PortStruct",
 ) -> Optional[range]:
-    header_segments = port_struct.port_conf.profile.header_segments
+    header_segments = port_struct.port_conf.profile.segments
     for header_segment in header_segments:
-        if (not header_segment.segment_type.is_ipv4) or (
-            not header_segment.segment_type.is_ipv6
+        if (not header_segment.type.is_ipv4) or (
+            not header_segment.type.is_ipv6
         ):
             continue
 

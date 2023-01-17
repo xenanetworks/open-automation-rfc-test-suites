@@ -357,9 +357,9 @@ def check_if_frame_loss_success(
     is_test_passed = True
     if frame_loss_conf.use_pass_fail_criteria:
         if frame_loss_conf.acceptable_loss_type == const.AcceptableLossType.PERCENT:
-            if result.total.rx_loss_percent > frame_loss_conf.acceptable_loss_pct:
+            if result.total.rx_loss_percent > frame_loss_conf.acceptable_loss:
                 is_test_passed = False
         else:
-            if result.total.rx_loss_frames > frame_loss_conf.acceptable_loss_pct:
+            if result.total.rx_loss_frames > frame_loss_conf.acceptable_loss:
                 is_test_passed = False
     return is_test_passed

@@ -68,8 +68,8 @@ class ThroughputBoutEntry:
 
     def pass_threshold(self) -> bool:
         return (
-            self.current >= self._throughput_conf.pass_threshold_pct
-            if self._throughput_conf.use_pass_threshold
+            self.current >= self._throughput_conf.pass_threshold_throughput_pct
+            if self._throughput_conf.use_pass_criteria
             else True
         )
 

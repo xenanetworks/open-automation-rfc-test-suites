@@ -11,7 +11,8 @@ from .data_model import (
 from .statistics import Statistic
 from .stream_struct import StreamStruct
 from ..utils import exceptions, constants as const
-from ..utils.field import MacAddress, NonNegativeFloat
+from ..utils.field import MacAddress
+from pydantic import NonNegativeFloat
 
 if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
     from xoa_driver.lli import commands
     from ..utils.interfaces import TestSuitePipe
     from ..model import (
-        FrameSizeConfiguration,
+        FrameSize,
         TestConfiguration,
         PortConfiguration,
         ThroughputTest,
@@ -185,7 +186,7 @@ class PortStruct:
         await self.port_ins.max_header_length.set(header_length)
 
     async def set_packet_size_if_mix(
-        self, frame_sizes: "FrameSizeConfiguration"
+        self, frame_sizes: "FrameSize"
     ) -> None:
         if not frame_sizes.packet_size_type.is_mix:
             return
@@ -390,7 +391,7 @@ class PortStruct:
         self._stream_structs.append(stream_struct)
 
     async def configure_streams(self, test_conf: "TestConfiguration") -> None:
-        for header_segment in self._port_conf.profile.header_segments:
+        for header_segment in self._port_conf.profile.segments:
             for field_value_range in header_segment.value_ranges:
                 if field_value_range.restart_for_each_port:
                     field_value_range.reset()
