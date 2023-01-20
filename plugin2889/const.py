@@ -157,7 +157,7 @@ class PortGroup(Enum):
 
 class PortRateCapProfile(Enum):
     PHYSICAL = "physical_port_rate"
-    CUSTOM = "custom_rate_cap"
+    CUSTOM = "custom"
 
     @property
     def is_custom(self) -> bool:
