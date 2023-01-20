@@ -124,7 +124,7 @@ class PacketSizeType(CaseInsensitiveEnum):
     INCREMENTING = "incrementing"
     BUTTERFLY = "butterfly"
     RANDOM = "random"
-    MIX = "mixe_sizes"
+    MIX = "mixed_sizes"
 
     @property
     def is_custom(self) -> bool:

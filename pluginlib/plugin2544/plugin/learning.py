@@ -21,9 +21,7 @@ def get_dest_ip_modifier_addr_range(
 ) -> Optional[range]:
     header_segments = port_struct.port_conf.profile.segments
     for header_segment in header_segments:
-        if (not header_segment.type.is_ipv4) or (
-            not header_segment.type.is_ipv6
-        ):
+        if (not header_segment.type.is_ipv4) or (not header_segment.type.is_ipv6):
             continue
 
         for field in header_segment.fields:
@@ -91,8 +89,8 @@ async def get_address_learning_packet(
 ) -> List[str]:  # GetAddressLearningPacket
     """ARP REFRESH STEP 2: generate learning packet according to address_refresh_data_set"""
     dmac = MacAddress("FF:FF:FF:FF:FF:FF")
-    gateway = port_struct.port_conf.ip_properties.gateway
-    sender_ip = port_struct.port_conf.ip_properties.address
+    gateway = port_struct.port_conf.ip_address.gateway
+    sender_ip = port_struct.port_conf.ip_address.address
     if use_gateway and not gateway.is_empty:
         gwmac = port_struct.port_conf.ip_gateway_mac_address
         if not gwmac.is_empty:
@@ -141,7 +139,7 @@ async def setup_address_refresh(
             packet_list = await get_address_learning_packet(
                 port_struct,
                 arp_data,
-                resources.test_conf.use_gateway_mac_as_dmac,
+                resources.test_conf.test_execution_config.l23_learning_options.  use_gateway_mac_as_dmac,
             )
             for packet in packet_list:
                 address_refresh_tokens.append(
@@ -315,10 +313,15 @@ async def add_mac_learning_steps(
     resources: "ResourceManager",
     require_mode: "const.MACLearningMode",
 ) -> None:
-    if require_mode != resources.test_conf.mac_learning_mode:
+    if (
+        require_mode
+        != resources.test_conf.test_execution_config.mac_learning_options.mac_learning_mode
+    ):
         return
 
-    mac_learning_frame_count = resources.test_conf.mac_learning_frame_count
+    mac_learning_frame_count = (
+        resources.test_conf.test_execution_config.mac_learning_options.mac_learning_frame_count
+    )
     none_mac = "FFFFFFFFFFFF"
     four_f = "FFFF"
     paddings = "00" * 118

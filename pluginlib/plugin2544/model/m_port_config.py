@@ -1,6 +1,6 @@
 from ipaddress import IPv4Network, IPv6Network
-from typing import Union
-from pydantic import BaseModel, validator, NonNegativeInt
+from typing import Union, Optional
+from pydantic import BaseModel, validator, Field
 from ..utils import constants as const
 from ..utils.field import MacAddress, IPv4Address, IPv6Address, Prefix
 from .m_protocol_segment import ProtocolSegmentProfileConfig
@@ -73,10 +73,25 @@ class IPV4AddressProperties(BaseModel):
 
 
 class PortConfiguration(BaseModel):
-    port_slot: str
-    peer_config_slot: str
+    port_slot: int
+    peer_slot: Optional[int]
     port_group: const.PortGroup
     port_speed_mode: const.PortSpeedStr
+    ip_address: Optional[Union[IPV4AddressProperties, IPV6AddressProperties]]
+    ip_gateway_mac_address: MacAddress
+    reply_arp_requests: bool
+    reply_ping_requests: bool
+    remote_loop_mac_address: MacAddress
+    inter_frame_gap: float
+    speed_reduction_ppm: int = Field(ge=0)
+    pause_mode_enabled: bool
+    latency_offset_ms: int  # QUESTION: can be negative?
+    fec_mode: const.FECModeStr
+    # PortRateCap
+    port_rate_cap_enabled: bool
+    port_rate_cap_value: float
+    port_rate_cap_profile: const.PortRateCapProfile
+    port_rate_cap_unit: const.PortRateCapUnit
 
     # PeerNegotiation
     auto_neg_enabled: bool
@@ -84,30 +99,11 @@ class PortConfiguration(BaseModel):
     mdi_mdix_mode: const.MdiMdixMode
     broadr_reach_mode: const.BRRModeStr
 
-    # PortRateCap
-    # port_rate_cap_enabled: bool
-    port_rate_cap_value: float
-    port_rate_cap_profile: const.PortRateCapProfile
-    port_rate_cap_unit: const.PortRateCapUnit
-
     # PhysicalPortProperties
-    inter_frame_gap: float
-    speed_reduction_ppm: NonNegativeInt
-    pause_mode_enabled: bool
-    latency_offset_ms: int  # QUESTION: can be negative?
-    fec_mode: const.FECModeStr
-
-    profile_id: str
-
-    ip_gateway_mac_address: MacAddress
-    reply_arp_requests: bool
-    reply_ping_requests: bool
-    remote_loop_mac_address: MacAddress
-    ipv4_properties: IPV4AddressProperties
-    ipv6_properties: IPV6AddressProperties
+    protocol_segment_profile_id: str
 
     _profile: ProtocolSegmentProfileConfig = ProtocolSegmentProfileConfig()
-    _port_config_slot: str = ""
+    # _port_config_slot: str = ""
     _is_tx: bool = True
     _is_rx: bool = True
 
@@ -138,13 +134,13 @@ class PortConfiguration(BaseModel):
 
     @property
     def is_loop(self) -> bool:
-        return self._port_config_slot == self.peer_config_slot
+        return self.port_slot == self.peer_slot
 
     def is_pair(self, peer_config: "PortConfiguration") -> bool:
-        return peer_config.peer_config_slot == self._port_config_slot
+        return peer_config.peer_slot == self.port_slot
 
-    def set_name(self, name: str) -> None:
-        self._port_config_slot = name
+    # def set_name(self, name: str) -> None:
+    #     self._port_config_slot = name
 
     @property
     def port_rate(self) -> float:
@@ -156,9 +152,3 @@ class PortConfiguration(BaseModel):
 
     def set_profile(self, value: "ProtocolSegmentProfileConfig") -> None:
         self._profile = value
-
-    @property
-    def ip_properties(self) -> Union["IPV4AddressProperties", "IPV6AddressProperties"]:
-        if self._profile.protocol_version.is_ipv6:
-            return self.ipv6_properties
-        return self.ipv4_properties

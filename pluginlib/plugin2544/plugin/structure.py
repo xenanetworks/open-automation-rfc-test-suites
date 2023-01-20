@@ -12,7 +12,6 @@ from .statistics import Statistic
 from .stream_struct import StreamStruct
 from ..utils import exceptions, constants as const
 from ..utils.field import MacAddress
-from pydantic import NonNegativeFloat
 
 if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity
@@ -169,7 +168,7 @@ class PortStruct:
     async def set_stagger_step(self, port_stagger_steps: int) -> None:
         if not port_stagger_steps:
             return
-        await self.port_ins.tx_config.delay.set(port_stagger_steps)  # P_TXDELAY
+        await self.port_ins.tx_config.delay.set()  # P_TXDELAY
 
     async def set_fec_mode(self, fec_mode: const.FECModeStr) -> None:
         """Loki-100G-5S-2P  module 4 * 25G support FC_FEC mode"""
@@ -185,9 +184,7 @@ class PortStruct:
                 break
         await self.port_ins.max_header_length.set(header_length)
 
-    async def set_packet_size_if_mix(
-        self, frame_sizes: "FrameSize"
-    ) -> None:
+    async def set_packet_size_if_mix(self, frame_sizes: "FrameSize") -> None:
         if not frame_sizes.packet_size_type.is_mix:
             return
         await self.port_ins.mix.weights.set(*frame_sizes.mixed_sizes_weights)
@@ -418,7 +415,9 @@ class PortStruct:
     async def setup_port(
         self, test_conf: "TestConfiguration", latency_mode: "const.LatencyModeStr"
     ) -> None:
-        if not test_conf.flow_creation_type.is_stream_based:
+        if (
+            not test_conf.test_execution_config.flow_creation_config.flow_creation_type.is_stream_based
+        ):
             mac = gen_macaddress(
                 test_conf.multi_stream_config.multi_stream_mac_base_address,
                 self.properties.test_port_index,
@@ -430,7 +429,7 @@ class PortStruct:
         await self.set_interframe_gap(int(self._port_conf.inter_frame_gap))
         await self.set_pause_mode(self._port_conf.pause_mode_enabled)
         await self.set_latency_mode(latency_mode)
-        await self.set_tpld_mode(test_conf.use_micro_tpld_on_demand)
+        await self.set_tpld_mode(test_conf.frame_size_config.use_micro_tpld_on_demand)
         await self.set_reply()
         await self.set_ip_address()
         await self.set_broadr_reach_mode(self._port_conf.broadr_reach_mode)
@@ -440,8 +439,10 @@ class PortStruct:
         await self.set_auto_negotiation(self._port_conf.auto_neg_enabled)
         await self.set_max_header(self._port_conf.profile.packet_header_length)
         await self.set_sweep_reduction(self._port_conf.speed_reduction_ppm)
-        await self.set_stagger_step(test_conf.port_stagger_steps)
-        await self.set_packet_size_if_mix(test_conf.frame_sizes)
+        await self.set_stagger_step(
+            test_conf.test_execution_config.port_scheduling_config.port_stagger_steps
+        )
+        await self.set_packet_size_if_mix(test_conf.frame_size_config.frame_sizes)
         self._get_use_port_speed()
 
     async def set_rx_tables(self) -> None:
@@ -454,9 +455,9 @@ class PortStruct:
             port_speed = min(self._port_conf.port_rate, port_speed)
         return port_speed
 
-    def _get_use_port_speed(self) -> NonNegativeFloat:
+    def _get_use_port_speed(self) -> float:
         tx_speed = self.get_capped_port_speed()
-        if self._port_conf.peer_config_slot and len(self.properties.peers) == 1:
+        if self._port_conf.peer_slot is not None and len(self.properties.peers) == 1:
             # Only Pair Topology Need to query peer speed
             peer_struct = self.properties.peers[0]
             rx_speed = peer_struct.get_capped_port_speed()
@@ -464,7 +465,7 @@ class PortStruct:
         self.set_send_port_speed(
             tx_speed * (1e6 - self._port_conf.speed_reduction_ppm) / 1e6
         )
-        return NonNegativeFloat(self.send_port_speed)
+        return self.send_port_speed
 
     async def query(self) -> None:
         extra = self.port_ins.statistics.rx.extra.get()

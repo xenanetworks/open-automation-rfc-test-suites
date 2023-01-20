@@ -119,11 +119,4 @@ class Prefix(int):
         return IPv4Address(int(self * "1" + (32 - self) * "0", 2))
 
 
-# class NonNegativeFloat(float):
-#     def __init__(self, v: Any) -> None:
-#         float.__init__(v)
-#         if self < 0:
-#             raise ValueError("Please pass in positive Value.")
-
-
 IPAddress = Union[IPv4Address, IPv6Address]

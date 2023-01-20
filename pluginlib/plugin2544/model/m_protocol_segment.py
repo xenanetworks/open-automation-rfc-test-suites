@@ -283,7 +283,7 @@ class ProtocolSegment(BaseModel):
 
 
 class ProtocolSegmentProfileConfig(BaseModel):
-    id: str = ""
+    id: str = ""  
     segments: List[ProtocolSegment] = []
 
     def __getitem__(self, segment_type: "SegmentType") -> List["ProtocolSegment"]:

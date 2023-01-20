@@ -1,8 +1,6 @@
-from typing import Any
-from pydantic import NonNegativeInt
+from typing import Any, Union
 from xoa_driver import ports as xoa_ports, testers as xoa_testers
 from . import constants as const
-
 
 
 class BXMPWarning(Warning):
@@ -154,6 +152,14 @@ class MixWeightsNotEnough(Exception):
         super().__init__(self.msg)
 
 
+class SmallerThanZeroError(Exception):
+    def __init__(self, num: Union[int, float]) -> None:
+        self.msg = (
+            f"Num {num} must be non negative."
+        )
+        super().__init__(self.msg)
+
+
 class MixWeightsSumError(Exception):
     def __init__(self, current_sum: int) -> None:
         self.msg = (
@@ -231,7 +237,7 @@ class PortRateError(Exception):
 
 
 class SpeedReductionError(Exception):
-    def __init__(self, curr: NonNegativeInt, max: int) -> None:
+    def __init__(self, curr: int, max: int) -> None:
         self.msg = f"Custom speed reduction ({curr} ppm) must not exceed ({max} ppm)."
         super().__init__(self.msg)
 

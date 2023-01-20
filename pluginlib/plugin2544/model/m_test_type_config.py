@@ -1,11 +1,5 @@
-from typing import Any, Dict, Iterable, List, Union
-from pydantic import (
-    BaseModel,
-    Field,
-    validator,
-    NonNegativeInt,
-    PositiveInt,
-)
+from typing import Any, Dict, Iterable, List, Union, Tuple
+from pydantic import BaseModel, Field, validator
 from ..utils.constants import (
     DurationType,
     DurationUnit,
@@ -20,14 +14,14 @@ from ..utils import constants
 
 
 class Repetition(BaseModel):
-    repetition: PositiveInt
+    repetition: int = Field(gt=0)
 
 
 class CommonOptions(BaseModel):
     duration_type: DurationType
     duration: float
     duration_unit: DurationUnit
-    repetition: PositiveInt
+    repetition: int = Field(gt=0)
 
     @validator("duration_unit", always=True)
     def validate_duration(
@@ -133,13 +127,13 @@ class FrameLossRateTest(BaseModel):
 
     # Convergence(BaseModel):
     use_gap_monitor: bool
-    gap_monitor_start_microsec: NonNegativeInt
-    gap_monitor_stop_frames: NonNegativeInt
+    gap_monitor_start_microsec: int = Field(ge=0)
+    gap_monitor_stop_frames: int = Field(ge=0)
 
     # PassCriteriaOptions
-    use_pass_fail_criteria: bool
-    acceptable_loss: float
-    acceptable_loss_type: AcceptableLossType
+    use_pass_criteria: bool
+    pass_criteria_loss: float
+    pass_criteria_loss_type: AcceptableLossType
 
 
 class BackToBackTest(BaseModel):
@@ -161,14 +155,14 @@ class TestTypesConfiguration(BaseModel):
     # Computed Properties
 
     @property
-    def available_test(self) -> List[AllTestType]:
+    def available_test(self) -> List[Tuple[TestType, AllTestType]]:
         return [
-            test_type_config
-            for test_type_config in (
-                self.throughput_test,
-                self.latency_test,
-                self.frame_loss_rate_test,
-                self.back_to_back_test,
+            (test_type, test_type_config)
+            for test_type, test_type_config in (
+                (TestType.THROUGHPUT, self.throughput_test),
+                (TestType.LATENCY_JITTER, self.latency_test),
+                (TestType.FRAME_LOSS_RATE, self.frame_loss_rate_test),
+                (TestType.BACK_TO_BACK, self.back_to_back_test),
             )
             if test_type_config.enabled
         ]

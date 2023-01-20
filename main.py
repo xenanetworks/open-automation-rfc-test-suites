@@ -7,7 +7,7 @@ import json
 import platform
 import pydantic
 from pathlib import Path
-from typing import Any, cast 
+from typing import Any, cast
 from loguru import logger
 from math import ceil
 from xoa_converter.entry import converter
@@ -146,8 +146,8 @@ async def main() -> None:
         new_data = converter(TestSuiteType(T_SUITE_NAME), app_data, info["schema"])
         with open("2544.json", "w") as f:
             f.write(new_data)
-        config = json.loads(new_data)
-        # await start_test(c, config, T_SUITE_NAME)
+        conf = json.loads(new_data)
+        await start_test(c, conf, T_SUITE_NAME)
 
 
 if __name__ == "__main__":

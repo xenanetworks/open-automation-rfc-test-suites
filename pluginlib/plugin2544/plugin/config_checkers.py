@@ -1,10 +1,9 @@
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, List, Union, Tuple
 from xoa_driver.enums import ProtocolOption
-from pydantic import NonNegativeFloat
 from ..model.m_test_type_config import AllTestType
 from ..utils import exceptions, constants as const
-from pydantic import NonNegativeFloat
 from .common import find_dest_port_structs
+
 
 if TYPE_CHECKING:
     from xoa_driver import testers as xoa_testers
@@ -145,7 +144,7 @@ def check_tid_limitations(
 
 def check_port_min_packet_length(
     capabilities: "commands.P_CAPABILITIES.GetDataAttr",
-    min_packet_size: Union[NonNegativeFloat, int],
+    min_packet_size: Union[float, int],
     packet_size_type: "const.PacketSizeType",
 ) -> None:
     if capabilities.min_packet_length > min_packet_size:
@@ -158,7 +157,7 @@ def check_port_min_packet_length(
 
 def check_port_max_packet_length(
     capabilities: "commands.P_CAPABILITIES.GetDataAttr",
-    max_packet_size: Union[NonNegativeFloat, int],
+    max_packet_size: Union[float, int],
     packet_size_type: "const.PacketSizeType",
 ) -> None:
     if capabilities.max_packet_length < max_packet_size:
@@ -188,7 +187,7 @@ def get_needed_packet_length(
 
 def check_needed_packet_length(
     port_struct: "PortStruct",
-    min_packet_size: Union[NonNegativeFloat, int],
+    min_packet_size: Union[float, int],
     use_micro_tpld_on_demand: bool,
 ) -> None:
     need_packet_length = get_needed_packet_length(port_struct, use_micro_tpld_on_demand)
@@ -216,17 +215,24 @@ def check_micro_tpld(
 def check_port_test_config(
     port_struct: "PortStruct", test_conf: "TestConfiguration"
 ) -> None:
-    is_stream_based = test_conf.flow_creation_type.is_stream_based
-    if test_conf.frame_sizes.packet_size_type.is_mix:
-        packet_size_list = test_conf.frame_sizes.mixed_packet_length
+
+    is_stream_based = (
+        test_conf.test_execution_config.flow_creation_config.flow_creation_type.is_stream_based
+    )
+    if test_conf.frame_size_config.frame_sizes.packet_size_type.is_mix:
+        packet_size_list = test_conf.frame_size_config.frame_sizes.mixed_packet_length
     else:
-        packet_size_list = test_conf.frame_sizes.packet_size_list
-    packet_size_type = test_conf.frame_sizes.packet_size_type
+        packet_size_list = test_conf.frame_size_config.frame_sizes.packet_size_list
+    packet_size_type = test_conf.frame_size_config.frame_sizes.packet_size_type
     min_packet_size = min(packet_size_list)
     max_packet_size = max(packet_size_list)
     per_port_stream_count = test_conf.multi_stream_config.per_port_stream_count
-    check_payload_pattern(port_struct.capabilities, test_conf.payload_pattern)
-    check_micro_tpld(port_struct.capabilities, test_conf.use_micro_tpld_on_demand)
+    check_payload_pattern(
+        port_struct.capabilities, test_conf.frame_size_config.payload_pattern
+    )
+    check_micro_tpld(
+        port_struct.capabilities, test_conf.frame_size_config.use_micro_tpld_on_demand
+    )
     check_port_min_packet_length(
         port_struct.capabilities, min_packet_size, packet_size_type
     )
@@ -234,7 +240,9 @@ def check_port_test_config(
         port_struct.capabilities, max_packet_size, packet_size_type
     )
     check_needed_packet_length(
-        port_struct, min_packet_size, test_conf.use_micro_tpld_on_demand
+        port_struct,
+        min_packet_size,
+        test_conf.frame_size_config.use_micro_tpld_on_demand,
     )
     check_port_modifiers(
         port_struct.capabilities, port_struct.port_conf, is_stream_based
@@ -245,8 +253,10 @@ def check_port_test_config(
 def check_test_config(
     control_ports: List["PortStruct"], test_conf: "TestConfiguration"
 ) -> None:
-    is_stream_based = test_conf.flow_creation_type.is_stream_based
-    scope = test_conf.tid_allocation_scope
+    is_stream_based = (
+        test_conf.test_execution_config.flow_creation_config.flow_creation_type.is_stream_based
+    )
+    scope = test_conf.test_execution_config.flow_creation_config.tid_allocation_scope
     for port_struct in control_ports:
         check_port_test_config(port_struct, test_conf)
     check_tid_limitations(control_ports, scope, is_stream_based)
@@ -265,20 +275,21 @@ def check_tester_sync_start(
 def check_testers(
     testers: List["xoa_testers.L23Tester"], test_conf: "TestConfiguration"
 ) -> None:
+    use_port_sync_start = (
+        test_conf.test_execution_config.port_scheduling_config.use_port_sync_start
+    )
     for tester in testers:
-        check_tester_sync_start(tester, test_conf.use_port_sync_start)
+        check_tester_sync_start(tester, use_port_sync_start)
 
 
-def check_test_type_config(test_types: List[AllTestType]):
-    for test_type_conf in test_types:
-        if (
-            test_type_conf.test_type.is_back_to_back
-        ):  # back to back require frame duration
+def check_test_type_config(test_types: List[Tuple[const.TestType, AllTestType]]):
+    for test_type, test_type_conf in test_types:
+        if test_type.is_back_to_back:  # back to back require frame duration
             if test_type_conf.common_options.duration_type.is_time_duration:
-                raise exceptions.FrameDurationRequire(test_type_conf.test_type.value)
+                raise exceptions.FrameDurationRequire(test_type.value)
         else:  # other test type require time duration
             if not test_type_conf.common_options.duration_type.is_time_duration:
-                raise exceptions.TimeDurationRequire(test_type_conf.test_type.value)
+                raise exceptions.TimeDurationRequire(test_type.value)
 
 
 def check_config(

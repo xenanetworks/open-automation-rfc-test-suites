@@ -161,10 +161,10 @@ class StreamStruct:
         self._stream = stream
         base_mac = (
             test_conf.multi_stream_config.multi_stream_mac_base_address
-            if test_conf.flow_creation_type.is_stream_based
-            else test_conf.mac_base_address
+            if test_conf.test_execution_config.flow_creation_config.flow_creation_type.is_stream_based
+            else test_conf.test_execution_config.flow_creation_config.mac_base_address
         )
-        self._flow_creation_type = test_conf.flow_creation_type
+        self._flow_creation_type = test_conf..test_execution_config.flow_creation_config.flow_creation_type
         self._addr_coll = get_address_collection(
             self._tx_port,
             self.rx_port,
@@ -179,7 +179,8 @@ class StreamStruct:
                 self._tx_port.port_conf.profile.segment_id_list
             ),
             self._stream.payload.content.set(
-                test_conf.payload_type.to_xmp(), f"0x{test_conf.payload_pattern}"
+                test_conf.payload_type.to_xmp(),
+                f"0x{test_conf.frame_size_config  .payload_pattern}",
             ),
             self._stream.tpld_id.set(test_payload_identifier=self._tpldid),
             self._stream.insert_packets_checksum.set(enums.OnOff.ON),
@@ -187,7 +188,8 @@ class StreamStruct:
         await self.set_packet_header()
         await self.setup_modifier()
         self.init_rx_tables(
-            test_conf.arp_refresh_enabled, test_conf.use_gateway_mac_as_dmac
+            test_conf.test_execution_config.l23_learning_options.arp_refresh_enabled,
+            test_conf.test_execution_config.l23_learning_options.use_gateway_mac_as_dmac,
         )
 
     def init_rx_tables(

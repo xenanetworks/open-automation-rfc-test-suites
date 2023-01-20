@@ -8,17 +8,18 @@ from .model import (
     ProtocolSegmentProfileConfig,
 )
 
+PortConfType = List[PortConfiguration]
+
 
 class PluginModel2544(BaseModel):  # Main Model
     test_configuration: TestConfiguration
     protocol_segments: List[ProtocolSegmentProfileConfig]
-    ports_configuration: List[PortConfiguration]
+    ports_configuration: PortConfType
     test_types_configuration: TestTypesConfiguration
 
     def set_ports_rx_tx_type(self) -> None:
-        direction = self.test_configuration.direction
-        for config_index, port_config in self.ports_configuration.items():
-            port_config.set_name(config_index)
+        direction = self.test_configuration.topology_config.direction
+        for port_config in self.ports_configuration:
             if port_config.is_loop:
                 continue
             elif direction == const.TrafficDirection.EAST_TO_WEST:
@@ -33,22 +34,24 @@ class PluginModel2544(BaseModel):  # Main Model
                     port_config.set_rx_port(False)
 
     def set_profile(self) -> None:
-        for port_config in self.ports_configuration.values():
-            profile_id = port_config.profile_id
-            port_config.set_profile(self.protocol_segments[profile_id].copy(deep=True))
+        for port_config in self.ports_configuration:
+            profile_id = port_config.protocol_segment_profile_id
+            profile = [i for i in self.protocol_segments if i.id == profile_id][0]
+            port_config.set_profile(profile.copy(deep=True))
 
     def __init__(self, **data: Dict[str, Any]) -> None:
         super().__init__(**data)
         self.set_ports_rx_tx_type()
+
         self.check_port_groups_and_peers()
         self.set_profile()
 
     @validator("ports_configuration", always=True)
     def check_ip_properties(cls, v: "PortConfType") -> "PortConfType":
-        for _, port_config in v.items():
+        for port_config in v:
             if (
                 port_config.profile.protocol_version.is_l3
-                and port_config.ip_properties.address.is_empty
+                and port_config.ip_address.address.is_empty
             ):
                 raise exceptions.IPAddressMissing()
         return v
@@ -59,7 +62,9 @@ class PluginModel2544(BaseModel):  # Main Model
     ) -> "PortConfType":
         require_ports = 2
         if "test_configuration" in values:
-            topology: const.TestTopology = values["test_configuration"].topology
+            topology: const.TestTopology = values[
+                "test_configuration"
+            ].topology_config.topology
             if topology.is_pair_topology:
                 require_ports = 1
             if len(v) < require_ports:
@@ -67,10 +72,10 @@ class PluginModel2544(BaseModel):  # Main Model
         return v
 
     def check_port_groups_and_peers(self) -> None:
-        topology = self.test_configuration.topology
+        topology = self.test_configuration.topology_config.topology
         ports_in_east = ports_in_west = 0
         uses_port_peer = topology.is_pair_topology
-        for port_config in self.ports_configuration.values():
+        for port_config in self.ports_configuration:
             if not topology.is_mesh_topology:
                 ports_in_east, ports_in_west = self.count_port_group(
                     port_config, uses_port_peer, ports_in_east, ports_in_west
@@ -87,8 +92,10 @@ class PluginModel2544(BaseModel):  # Main Model
         cls, v: "PortConfType", values: Dict[str, Any]
     ) -> "PortConfType":
         if "test_configuration" in values:
-            flow_creation_type = values["test_configuration"].flow_creation_type
-            for _, port_config in v.items():
+            flow_creation_type = values[
+                "test_configuration"
+            ].test_execution_config.flow_creation_config.flow_creation_type
+            for port_config in v:
                 if (
                     not flow_creation_type.is_stream_based
                 ) and port_config.profile.protocol_version.is_l3:
@@ -103,7 +110,9 @@ class PluginModel2544(BaseModel):  # Main Model
             for k, p in values["ports_configuration"].items():
                 if (
                     p.port_group == const.PortGroup.UNDEFINED
-                    and not values["test_configuration"].topology.is_mesh_topology
+                    and not values[
+                        "test_configuration"
+                    ].topology_config.topology.is_mesh_topology
                 ):
                     raise exceptions.PortGroupNeeded()
         return v
@@ -133,7 +142,9 @@ class PluginModel2544(BaseModel):  # Main Model
             v.throughput_test.enabled
             and v.throughput_test.rate_iteration_options.result_scope
             == const.RateResultScopeType.PER_SOURCE_PORT
-            and not values["test_configuration"].flow_creation_type.is_stream_based
+            and not values[
+                "test_configuration"
+            ].test_execution_config.flow_creation_config.flow_creation_type.is_stream_based
         ):
             raise exceptions.ModifierBasedNotSupportPerPortResult()
         return v
@@ -160,28 +171,11 @@ class PluginModel2544(BaseModel):  # Main Model
     @staticmethod
     def check_port_peer(
         port_config: "PortConfiguration",
-        ports_configuration: Dict[str, "PortConfiguration"],
+        ports_configuration: List["PortConfiguration"],
     ) -> None:
-        peer_config_slot = port_config.peer_config_slot
-        if not peer_config_slot or peer_config_slot not in ports_configuration:
+        peer_slot = port_config.peer_slot
+        if peer_slot is None or peer_slot >= len(ports_configuration):
             raise exceptions.PortPeerNeeded()
-        peer_config = ports_configuration[peer_config_slot]
+        peer_config = ports_configuration[peer_slot]
         if not port_config.is_pair(peer_config) or not peer_config.is_pair(port_config):
             raise exceptions.PortPeerInconsistent()
-
-    @property
-    def in_same_ipnetwork(self) -> bool:
-        networks = set(
-            [
-                p.ip_properties.address.network(p.ip_properties.routing_prefix)
-                for p in self.ports_configuration.values()
-            ]
-        )
-        return len(networks) == 1
-
-    @property
-    def with_same_gateway(self) -> bool:
-        gateways = set(
-            [p.ip_properties.gateway for p in self.ports_configuration.values()]
-        )
-        return len(gateways) == 1

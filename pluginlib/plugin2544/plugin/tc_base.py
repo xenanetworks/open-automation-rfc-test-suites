@@ -43,7 +43,7 @@ class TestCaseProcessor:
 
     async def prepare(self) -> None:
         if (not self.resources.has_l3) or (
-            not self.resources.test_conf.arp_refresh_enabled
+            not self.resources.test_conf.test_execution_config.l23_learning_options.arp_refresh_enabled
         ):
             return None
         self.address_refresh_handler = await setup_address_arp_refresh(self.resources)
@@ -355,7 +355,7 @@ def check_if_frame_loss_success(
     frame_loss_conf: "FrameLossRateTest", result: "FinalStatistic"
 ) -> bool:
     is_test_passed = True
-    if frame_loss_conf.use_pass_fail_criteria:
+    if frame_loss_conf.use_pass_criteria:
         if frame_loss_conf.acceptable_loss_type == const.AcceptableLossType.PERCENT:
             if result.total.rx_loss_percent > frame_loss_conf.acceptable_loss:
                 is_test_passed = False

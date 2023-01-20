@@ -15,10 +15,10 @@ def gen_macaddress(first_three_bytes: str, index: int) -> "field.MacAddress":
 
 
 def is_same_ipnetwork(port_struct: "PortStruct", peer_struct: "PortStruct") -> bool:
-    port_properties = port_struct.port_conf.ip_properties
-    peer_properties = peer_struct.port_conf.ip_properties
+    port_properties = port_struct.port_conf.ip_address
+    peer_properties = peer_struct.port_conf.ip_address
     if not port_properties or not peer_properties:
-        raise ValueError("Please check IP properties values")
+        return False
     return port_properties.network == peer_properties.network
 
 
