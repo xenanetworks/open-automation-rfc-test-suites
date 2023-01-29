@@ -22,6 +22,8 @@ from .statistics import (
 )
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
 from ..utils import constants as const, protocol_segments as ps, exceptions
+from collections import defaultdict
+
 
 if TYPE_CHECKING:
     from .structure import PortStruct
@@ -164,7 +166,9 @@ class StreamStruct:
             if test_conf.test_execution_config.flow_creation_config.flow_creation_type.is_stream_based
             else test_conf.test_execution_config.flow_creation_config.mac_base_address
         )
-        self._flow_creation_type = test_conf..test_execution_config.flow_creation_config.flow_creation_type
+        self._flow_creation_type = (
+            test_conf.test_execution_config.flow_creation_config.flow_creation_type
+        )
         self._addr_coll = get_address_collection(
             self._tx_port,
             self.rx_port,
@@ -179,7 +183,7 @@ class StreamStruct:
                 self._tx_port.port_conf.profile.segment_id_list
             ),
             self._stream.payload.content.set(
-                test_conf.payload_type.to_xmp(),
+                test_conf.frame_size_config.payload_type.to_xmp(),
                 f"0x{test_conf.frame_size_config  .payload_pattern}",
             ),
             self._stream.tpld_id.set(test_payload_identifier=self._tpldid),
@@ -199,12 +203,12 @@ class StreamStruct:
             return
         if self._stream_offset:
             if self._tx_port.protocol_version.is_ipv4:
-                dst_addr = self._addr_coll.dst_ipv4_addr
+                dst_addr = self._addr_coll.dst_addr
                 self.rx_port.properties.arp_trunks.add(
                     RXTableData(dst_addr, self._addr_coll.dmac)
                 )
-            else:
-                dst_addr = self._addr_coll.dst_ipv6_addr
+            elif self._tx_port.protocol_version.is_ipv6:
+                dst_addr = self._addr_coll.dst_addr
                 self.rx_port.properties.ndp_trunks.add(
                     RXTableData(dst_addr, self._addr_coll.dmac)
                 )
@@ -265,14 +269,14 @@ class StreamStruct:
             if segment.type.is_ipv4:
                 ps.setup_segment_ipv4(
                     segment,
-                    self._addr_coll.src_ipv4_addr,
-                    self._addr_coll.dst_ipv4_addr,
+                    self._addr_coll.src_addr,
+                    self._addr_coll.dst_addr,
                 )
             if segment.type.is_ipv6:
                 ps.setup_segment_ipv6(
                     segment,
-                    self._addr_coll.src_ipv6_addr,
-                    self._addr_coll.dst_ipv6_addr,
+                    self._addr_coll.src_addr,
+                    self._addr_coll.dst_addr,
                 )
 
         await self._stream.packet.header.data.set(f"0x{profile.prepare().hex()}")
@@ -322,31 +326,33 @@ def get_address_collection(
     arp_mac: MacAddress,
     stream_offset: Optional[StreamOffset] = None,
 ) -> "AddressCollection":
+    default_none = defaultdict(None)
+    if (
+        port_struct.port_conf.ip_address is None
+        or peer_struct.port_conf.ip_address is None
+    ):
+        src_network = dst_network = default_none
+        src_addr = dst_addr = None
+    else:
+        src_network = port_struct.port_conf.ip_address.network
+        dst_network = peer_struct.port_conf.ip_address.network
+        cls_src = IPv4Address if port_struct.port_conf.ip_address else IPv6Address
+        cls_dst = IPv4Address if peer_struct.port_conf.ip_address else IPv6Address
+        src_addr = port_struct.port_conf.ip_address.address
+        dst_addr = peer_struct.port_conf.ip_address.dst_addr
     if stream_offset:
         return AddressCollection(
             arp_mac=arp_mac,
             smac=gen_macaddress(mac_base_address, stream_offset.tx_offset),
             dmac=gen_macaddress(mac_base_address, stream_offset.rx_offset),
-            src_ipv4_addr=IPv4Address(
-                port_struct.port_conf.ipv4_properties.network[stream_offset.tx_offset]
-            ),
-            dst_ipv4_addr=IPv4Address(
-                peer_struct.port_conf.ipv4_properties.network[stream_offset.rx_offset]
-            ),
-            src_ipv6_addr=IPv6Address(
-                port_struct.port_conf.ipv6_properties.network[stream_offset.tx_offset]
-            ),
-            dst_ipv6_addr=IPv6Address(
-                peer_struct.port_conf.ipv6_properties.network[stream_offset.rx_offset]
-            ),
+            src_addr=cls_src(src_network[stream_offset.tx_offset]),
+            dst_addr=cls_dst(dst_network[stream_offset.rx_offset]),
         )
     else:
         return AddressCollection(
             arp_mac=arp_mac,
             smac=port_struct.properties.native_mac_address,
             dmac=peer_struct.properties.native_mac_address,
-            src_ipv4_addr=port_struct.port_conf.ipv4_properties.address,
-            dst_ipv4_addr=peer_struct.port_conf.ipv4_properties.dst_addr,
-            src_ipv6_addr=port_struct.port_conf.ipv6_properties.address,
-            dst_ipv6_addr=peer_struct.port_conf.ipv6_properties.dst_addr,
+            src_addr=src_addr,
+            dst_addr=dst_addr,
         )

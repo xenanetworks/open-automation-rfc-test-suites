@@ -43,7 +43,9 @@ async def setup_streams(
     for port_struct in port_structs:
         await port_struct.configure_streams(test_conf)
         # set should stop on los before start traffic, can monitor sync status when traffic start
-        port_struct.set_should_stop_on_los(test_conf.should_stop_on_los)
+        port_struct.set_should_stop_on_los(
+            test_conf.test_execution_config.reset_error_handling.should_stop_on_los
+        )
 
 
 def get_stream_offsets(

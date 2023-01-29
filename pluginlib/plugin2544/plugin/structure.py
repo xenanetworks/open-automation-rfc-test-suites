@@ -26,8 +26,7 @@ if TYPE_CHECKING:
         LatencyTest,
         FrameLossRateTest,
         BackToBackTest,
-        IPV4AddressProperties,
-        IPV6AddressProperties,
+        IPAddressProperties,
     )
 
 
@@ -302,7 +301,7 @@ class PortStruct:
             wild="0.0.0.0",
         )
 
-    async def set_ipv6_address(self, ipv6_properties: "IPV6AddressProperties") -> None:
+    async def set_ipv6_address(self, ipv6_properties: "IPAddressProperties") -> None:
         await self.port_ins.net_config.ipv6.address.set(
             ipv6_address=ipv6_properties.address,
             gateway=ipv6_properties.gateway,
