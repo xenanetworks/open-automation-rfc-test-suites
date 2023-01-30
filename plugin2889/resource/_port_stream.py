@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from xoa_driver.misc import GenuineStream
     from .test_resource import TestResource
 
-from plugin2889.model.test_suite import RateDefinition
+from plugin2889.dataset import RateDefinition
 from plugin2889.plugin import rate_helper
 from plugin2889.plugin import utils
 from plugin2889.dataset import AddressCollection, IPv4Address, IPv6Address, MacAddress

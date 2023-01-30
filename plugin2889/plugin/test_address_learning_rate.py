@@ -9,7 +9,7 @@ from plugin2889.plugin.dataset import AddressLearningRateRunProps
 from plugin2889.resource.manager import ResourcesManager
 from plugin2889.util.logger import logger
 from plugin2889.statistics import ResultData
-from plugin2889.model.test_suite import AddressLearningRateConfiguration
+from plugin2889.dataset import AddressLearningRateConfiguration
 
 
 class AddressLearningRateTest(AddressLearningBase[AddressLearningRateConfiguration, Decimal]):

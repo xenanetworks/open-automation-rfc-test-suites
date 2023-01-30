@@ -21,7 +21,7 @@ from xoa_core.types import PortIdentity
 
 from plugin2889.model import exceptions
 from plugin2889.dataset import IPv4Address, IPv6Address, MacAddress, PortPair
-from plugin2889.model.test_suite import PortConfiguration, PortRoleHandler
+from plugin2889.dataset import PortConfiguration, PortRoleHandler
 from plugin2889.model.protocol_segment import SegmentType, PortProtocolVersion
 from plugin2889.const import (
     PortGroup,

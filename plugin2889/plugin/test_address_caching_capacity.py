@@ -8,7 +8,7 @@ from plugin2889.plugin.dataset import BaseRunProps
 from plugin2889.resource.manager import ResourcesManager
 from plugin2889.util.logger import logger
 from plugin2889.statistics import ResultData
-from plugin2889.model.test_suite import AddressCachingCapacityConfiguration
+from plugin2889.dataset import AddressCachingCapacityConfiguration
 
 
 class AddressCachingCapacityTest(AddressLearningBase[AddressCachingCapacityConfiguration, int]):

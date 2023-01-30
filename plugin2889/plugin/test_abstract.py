@@ -6,7 +6,7 @@ from xoa_core.types import PortIdentity
 
 from plugin2889.const import TestStatus
 from plugin2889.plugin.dataset import BaseRunProps, TestSuiteDataSharing
-from plugin2889.model.test_suite import (
+from plugin2889.dataset import (
     TestSuiteConfiguration2889,
     UnionTestSuitConfiguration,
 )

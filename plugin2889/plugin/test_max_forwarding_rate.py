@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from plugin2889.const import PortGroup
 from plugin2889.dataset import PortPair
-from plugin2889.model.test_suite import MaxForwardingRateConfiguration
+from plugin2889.dataset import MaxForwardingRateConfiguration
 from plugin2889.plugin.test_forwarding import ForwardingBase
 from plugin2889.plugin.utils import group_by_port_property
 if TYPE_CHECKING:
