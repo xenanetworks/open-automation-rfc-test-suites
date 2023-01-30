@@ -16,7 +16,7 @@ from plugin2889.model import exceptions
 from plugin2889.test_manager import L23TestManager
 from plugin2889.statistics import ResultData, StatisticsProcessor
 from plugin2889.dataset import MacAddress, PortPair
-from plugin2889.model.test_suite import (
+from plugin2889.dataset import (
     AddressCachingCapacityConfiguration,
     AddressLearningRateConfiguration,
     RateIterationOptions,

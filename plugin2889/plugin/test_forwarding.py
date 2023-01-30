@@ -4,7 +4,7 @@ from typing import Generator, TypeVar
 from loguru import logger
 
 from plugin2889 import const
-from plugin2889.model.test_suite import MaxForwardingRateConfiguration, RateSubTestConfiguration
+from plugin2889.dataset import MaxForwardingRateConfiguration, RateSubTestConfiguration
 from plugin2889.plugin.base_class import TestBase
 from plugin2889.plugin.dataset import ForwadingTestRunProps
 from plugin2889.plugin.utils import sleep_log

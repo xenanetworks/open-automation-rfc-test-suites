@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 from plugin2889.model import exceptions
 from plugin2889.const import DELAY_CREATE_PORT_PAIR, INTERVAL_CLEAR_STATISTICS, PacketSizeType
 from plugin2889.dataset import MacAddress, PortPair
-from plugin2889.model.test_suite import TestSuiteConfiguration2889
+from plugin2889.dataset import TestSuiteConfiguration2889
 from plugin2889.plugin.utils import sleep_log
 from plugin2889.resource.test_resource import TestResource
 from plugin2889.util.logger import logger

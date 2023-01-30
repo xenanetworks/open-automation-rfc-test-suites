@@ -4,7 +4,7 @@ from typing import Dict, Generator, Optional
 from loguru import logger
 
 from plugin2889 import const
-from plugin2889.model.test_suite import CongestionControlConfiguration
+from plugin2889.dataset import CongestionControlConfiguration
 from plugin2889.plugin.base_class import TestBase, TrafficInfo
 from plugin2889.plugin.utils import PortPairs, sleep_log, group_by_port_property
 from plugin2889.dataset import CurrentIterProps, PortPair, StatisticsData

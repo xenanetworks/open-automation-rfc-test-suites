@@ -11,7 +11,7 @@ from plugin2889.plugin.utils import PortPairs, sleep_log, group_by_port_property
 from plugin2889.resource.manager import ResourcesManager
 from plugin2889.util.logger import logger
 from plugin2889.statistics import ResultData
-from plugin2889.model.test_suite import BroadcastForwardingConfiguration
+from plugin2889.dataset import BroadcastForwardingConfiguration
 
 
 @dataclass

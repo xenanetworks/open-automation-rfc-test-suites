@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Generator, Optional
 
 from plugin2889 import const
-from plugin2889.model.test_suite import RateSubTestConfiguration
+from plugin2889.dataset import RateSubTestConfiguration
 from plugin2889.plugin.base_class import BinarySearchMixin, DecimalBinarySearch, TestBase, TrafficInfo
 from plugin2889.plugin.utils import sleep_log
 from plugin2889.util.logger import logger

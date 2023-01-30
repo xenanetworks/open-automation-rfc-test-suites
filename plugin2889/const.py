@@ -27,6 +27,25 @@ DEFAULT_INTERFRAME_GAP = 20
 DECIMAL_100 = Decimal(100)
 WAIT_SYNC_STATE_TIMEOUT = 30
 INVALID_PORT_ROLE = 'invalid port role'
+DEFAULT_MIXED_PACKET_SIZE = (
+    56,
+    60,
+    64,
+    70,
+    78,
+    92,
+    256,
+    496,
+    512,
+    570,
+    576,
+    594,
+    1438,
+    1518,
+    9216,
+    16360,
+)
+MIXED_DEFAULT_WEIGHTS = (0, 0, 0, 0, 57, 3, 5, 1, 2, 5, 1, 4, 4, 18, 0, 0)
 
 
 class Enum(CaseSensitiveEnum):

@@ -18,7 +18,7 @@ from plugin2889.resource._port_statistics import PortStatistics
 from plugin2889.resource._traffic import Traffic
 from plugin2889.util.logger import logger
 from plugin2889.plugin.utils import sleep_log
-from plugin2889.model.test_suite import PortConfiguration
+from plugin2889.dataset import PortConfiguration
 
 
 class TestResource:

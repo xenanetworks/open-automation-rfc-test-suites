@@ -6,7 +6,7 @@ from typing import Dict, Generator, List, Optional
 from loguru import logger
 
 from plugin2889 import const
-from plugin2889.model.test_suite import ForwardPressureConfiguration
+from plugin2889.dataset import ForwardPressureConfiguration
 from plugin2889.plugin import rate_helper
 from plugin2889.plugin.base_class import TestBase
 from plugin2889.plugin.utils import PortPairs, sleep_log, group_by_port_property
