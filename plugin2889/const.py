@@ -113,8 +113,8 @@ class IPVersion(Enum):
 
 
 class LearningPortDMacMode(Enum):
-    USE_TEST_PORT_MAC = "UseTestPortMac"
-    USE_BROADCAST = "UseBroadcast"
+    USE_TEST_PORT_MAC = "usetestportmac"
+    USE_BROADCAST = "usebroadcast"
 
     @property
     def is_use_broadcast(self):
@@ -122,8 +122,8 @@ class LearningPortDMacMode(Enum):
 
 
 class LearningSequencePortDMacMode(Enum):
-    USE_INCREMENTING_MAC_ADDRESSES = "UseIncrementingMacAddresses"
-    USE_RANDOM_MAC_ADDRESSES = "UseRandomMacAddresses"
+    USE_INCREMENTING_MAC_ADDRESSES = "useincrementingmacaddresses"
+    USE_RANDOM_MAC_ADDRESSES = "userandommacaddresses"
 
     @property
     def is_incr(self):
@@ -135,8 +135,8 @@ class LearningSequencePortDMacMode(Enum):
 
 
 class TestPortMacMode(Enum):
-    USE_PORT_NATIVE_MAC = "UsePortNativeMac"
-    USE_LEARNING_MAC_BASE_ADDRESS = "UseLearnMacBaseAddress"
+    USE_PORT_NATIVE_MAC = "useportnativemac"
+    USE_LEARNING_MAC_BASE_ADDRESS = "uselearnmacbaseaddress"
 
     @property
     def is_use_learning_base_address(self):
