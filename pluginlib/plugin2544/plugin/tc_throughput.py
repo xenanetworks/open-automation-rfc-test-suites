@@ -4,19 +4,19 @@ from .statistics import FinalStatistic
 from .test_resource import ResourceManager
 
 from .structure import PortStruct
-from ..model import ThroughputTest
+from .test_type_config import ThroughputConfig
 
 
 class ThroughputBoutEntry:
-    def __init__(self, throughput_conf: "ThroughputTest", port_struct: "PortStruct"):
+    def __init__(self, throughput_conf: "ThroughputConfig", port_struct: "PortStruct"):
         self.current = (
             self.rate_percent
-        ) = self.next = throughput_conf.rate_iteration_options.initial_value_pct
+        ) = self.next = throughput_conf.initial_value_pct
         self.left_bound: float = (
-            throughput_conf.rate_iteration_options.minimum_value_pct
+            throughput_conf.minimum_value_pct
         )
         self.right_bound: float = (
-            throughput_conf.rate_iteration_options.maximum_value_pct
+            throughput_conf.maximum_value_pct
         )
         self._last_move: int = 0
         self._port_struct: PortStruct = port_struct
@@ -38,7 +38,7 @@ class ThroughputBoutEntry:
         self._last_move = -1
         if (
             abs((self.left_bound + self.right_bound) / 2 - self.left_bound)
-            < self._throughput_conf.rate_iteration_options.value_resolution_pct
+            < self._throughput_conf.value_resolution_pct
         ):
             self.next = self.right_bound
             self.left_bound = self.right_bound
@@ -51,11 +51,11 @@ class ThroughputBoutEntry:
 
         if (
             abs((self.left_bound + self.right_bound) / 2 - self.right_bound)
-            < self._throughput_conf.rate_iteration_options.value_resolution_pct
+            < self._throughput_conf.value_resolution_pct
         ):
             self.next = self.left_bound
             self.right_bound = self.left_bound
-        if self._throughput_conf.rate_iteration_options.search_type.is_fast:
+        if self._throughput_conf.search_type.is_fast:
             self.next = max(
                 self.current * (1.0 - loss_ratio),
                 self.left_bound,
@@ -82,14 +82,14 @@ class ThroughputBoutEntry:
         if not result:
             self._port_should_continue = True
             return
-        if self._throughput_conf.rate_iteration_options.result_scope.is_per_source_port:
+        if self._throughput_conf.is_per_source_port:
             loss_ratio = self._port_struct.statistic.loss_ratio
         else:
             loss_ratio = result.total.rx_loss_percent
         loss_ratio_pct = loss_ratio * 100.0
         if loss_ratio_pct <= self._throughput_conf.acceptable_loss_pct:
             if (
-                self._throughput_conf.rate_iteration_options.result_scope.is_per_source_port
+                self._throughput_conf.is_per_source_port
             ):
                 for stream in self._port_struct.stream_structs:
                     stream.set_best_result()
@@ -105,9 +105,9 @@ class ThroughputBoutEntry:
 
 
 def get_initial_throughput_boundaries(
-    throughput_conf: "ThroughputTest", resources: "ResourceManager"
+    throughput_conf: "ThroughputConfig", resources: "ResourceManager"
 ) -> List["ThroughputBoutEntry"]:
-    if throughput_conf.rate_iteration_options.result_scope.is_per_source_port:
+    if throughput_conf.is_per_source_port:
         return [
             ThroughputBoutEntry(throughput_conf, port_struct)
             for port_struct in resources.tx_ports

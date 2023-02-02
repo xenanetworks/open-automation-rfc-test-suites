@@ -1,11 +1,10 @@
-from typing import Any, Dict, Iterable, List, Union, Tuple
+from typing import Any, Dict, Union
 from pydantic import BaseModel, Field, validator
 from ..utils.constants import (
     DurationType,
     DurationUnit,
     SearchType,
     RateResultScopeType,
-    TestType,
     LatencyModeStr,
     AcceptableLossType,
 )
@@ -13,14 +12,10 @@ from ..utils import exceptions
 from ..utils import constants
 
 
-class Repetition(BaseModel):
-    repetition: int = Field(gt=0)
-
-
 class CommonOptions(BaseModel):
-    duration_type: DurationType
-    duration: float
-    duration_unit: DurationUnit
+    duration_type: DurationType = DurationType.FRAME
+    duration: float = 1.0
+    duration_unit: DurationUnit = DurationUnit.FRAME
     repetition: int = Field(gt=0)
 
     @validator("duration_unit", always=True)
@@ -32,10 +27,6 @@ class CommonOptions(BaseModel):
             if cur > constants.MAX_PACKET_LIMIT_VALUE:
                 raise exceptions.PacketLimitOverflow(cur)
         return v
-
-    @property
-    def actual_duration(self) -> float:
-        return self.duration * self.duration_unit.scale
 
 
 class RateIterationOptions(BaseModel):
@@ -67,7 +58,14 @@ class ThroughputTest(BaseModel):
 class RateSweepOptions(BaseModel):
     start_value_pct: float
     end_value_pct: float
-    step_value_pct: float
+    step_value_pct: float = Field(gt=0.0)
+
+    @validator("end_value_pct")
+    def validate_end_value(cls, end_value_pct: float, values: Dict[str, Any]) -> float:
+        if "start_value_pct" in values:
+            if end_value_pct < values["start_value_pct"]:
+                raise exceptions.RangeRestriction()
+        return end_value_pct
 
 
 class BurstSizeIterationOptions(BaseModel):
@@ -89,27 +87,6 @@ class BurstSizeIterationOptions(BaseModel):
     #     self.start_value_pct = self.start_value_pct * throughput_rate / 100
     #     self.end_value_pct = self.end_value_pct * throughput_rate / 100
     #     self.step_value_pct = self.step_value_pct * throughput_rate / 100
-
-    @property
-    def rate_sweep_list(self) -> Iterable[float]:
-        start_value_pct = self.start_value_pct
-        end_value_pct = self.end_value_pct
-        step_value_pct = self.step_value_pct
-        if start_value_pct > end_value_pct:
-            raise exceptions.RangeRestriction()
-        if step_value_pct <= 0.0:
-            raise exceptions.StepValueRestriction()
-        pct = start_value_pct
-        while True:
-            yield pct
-            if pct == end_value_pct:
-                break
-            elif pct < end_value_pct:
-                pct += step_value_pct
-            if pct > end_value_pct:
-                break
-        if pct != end_value_pct:
-            yield end_value_pct
 
 
 class LatencyTest(BaseModel):
@@ -138,7 +115,7 @@ class FrameLossRateTest(BaseModel):
 
 class BackToBackTest(BaseModel):
     enabled: bool
-    common_options: Repetition
+    common_options: CommonOptions
     rate_sweep_options: RateSweepOptions
     burst_size_iteration_options: BurstSizeIterationOptions
 
@@ -151,18 +128,3 @@ class TestTypesConfiguration(BaseModel):
     latency_test: LatencyTest
     frame_loss_rate_test: FrameLossRateTest
     back_to_back_test: BackToBackTest
-
-    # Computed Properties
-
-    @property
-    def available_test(self) -> List[Tuple[TestType, AllTestType]]:
-        return [
-            (test_type, test_type_config)
-            for test_type, test_type_config in (
-                (TestType.THROUGHPUT, self.throughput_test),
-                (TestType.LATENCY_JITTER, self.latency_test),
-                (TestType.FRAME_LOSS_RATE, self.frame_loss_rate_test),
-                (TestType.BACK_TO_BACK, self.back_to_back_test),
-            )
-            if test_type_config.enabled
-        ]

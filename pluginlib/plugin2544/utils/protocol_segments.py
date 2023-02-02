@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     from ..model import ProtocolSegment
@@ -38,7 +38,7 @@ def setup_segment_ipv4(
 def setup_segment_ipv6(
     segment: "ProtocolSegment", src_ipv6: "IPv6Address", dst_ipv6: "IPv6Address"
 ) -> None:
-    if segment[IPV6_ADDRESS_SRC].is_all_zero:
+    if not src_ipv6 or segment[IPV6_ADDRESS_SRC].is_all_zero:
         segment[IPV6_ADDRESS_SRC] = src_ipv6.to_binary_string()
-    if segment[IPV6_ADDRESS_DST].is_all_zero:
+    if not dst_ipv6 or segment[IPV6_ADDRESS_DST].is_all_zero:
         segment[IPV6_ADDRESS_DST] = dst_ipv6.to_binary_string()

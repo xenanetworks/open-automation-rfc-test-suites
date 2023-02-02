@@ -12,7 +12,7 @@ async def setup_source_port_rates(
     current_packet_size: float,
 ) -> None:  # SetupSourcePortRatesForLearning
     for port_struct in resources.tx_ports:
-        if resources.test_conf.test_execution_config.flow_creation_config.flow_creation_type.is_stream_based:
+        if resources.test_conf.is_stream_based:
             await _setup_source_port_rate_stream_mode(
                 port_struct,
                 current_packet_size,

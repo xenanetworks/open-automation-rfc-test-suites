@@ -18,31 +18,33 @@ async def set_arp_request(
     peer_struct: "PortStruct",
     use_gateway_mac_as_dmac: bool,
 ) -> "MacAddress":
+    ip_properties = port_struct.port_conf.ip_address
+    peer_ip_properties = peer_struct.port_conf.ip_address
     if any(
         (
             not use_gateway_mac_as_dmac,
-            port_struct.port_conf.ip_address is None,
-            port_struct.port_conf.ip_address is not None
-            and port_struct.port_conf.ip_address.gateway.is_empty,
+            ip_properties
+            and ip_properties.gateway.is_empty,
             not port_struct.port_conf.profile.protocol_version.is_l3,
             is_same_ipnetwork(port_struct, peer_struct),
         )
     ):
         # return an empty Macaddress if no arp mac
         return MacAddress()
-    ip_properties = port_struct.port_conf.ip_address
-    peer_ip_properties = peer_struct.port_conf.ip_address
-    is_gateway_scenario = not ip_properties.gateway == peer_ip_properties.gateway
-    if is_gateway_scenario:
-        destination_ip = ip_properties.gateway
-    elif ip_properties.gateway.is_empty and ip_properties.remote_loop_address:
-        destination_ip = ip_properties.remote_loop_address
+    if ip_properties and peer_ip_properties:
+        is_gateway_scenario = not ip_properties.gateway == peer_ip_properties.gateway   # ignore
+        if is_gateway_scenario:
+            destination_ip = ip_properties.gateway
+        elif ip_properties.gateway.is_empty and ip_properties.remote_loop_address:
+            destination_ip = ip_properties.remote_loop_address
+        else:
+            destination_ip = peer_ip_properties.public_address
+        arp_mac = await send_arp_request(port_struct, ip_properties.address, destination_ip)
+        if is_gateway_scenario:
+            port_struct.port_conf.ip_gateway_mac_address = arp_mac
+        return arp_mac
     else:
-        destination_ip = peer_ip_properties.public_address
-    arp_mac = await send_arp_request(port_struct, ip_properties.address, destination_ip)
-    if is_gateway_scenario:
-        port_struct.port_conf.ip_gateway_mac_address = arp_mac
-    return arp_mac
+        return MacAddress()
 
 
 def get_packet_header(

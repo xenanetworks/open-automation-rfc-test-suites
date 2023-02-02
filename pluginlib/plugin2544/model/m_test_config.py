@@ -47,66 +47,66 @@ class FrameSize(BaseModel):
                     raise exceptions.SmallerThanZeroError(i)
         return v
 
-    @property
-    def mixed_packet_length(self) -> List[int]:
-        mix_size_length_dic = self.mixed_length_config.dict()
-        return [
-            const.MIXED_PACKET_SIZE[index]
-            if not (mix_size_length_dic.get(f"field_{index}", 0))
-            else mix_size_length_dic.get(f"field_{index}", 0)
-            for index in range(len(const.MIXED_PACKET_SIZE))
-        ]
+    # @property
+    # def mixed_packet_length(self) -> List[int]:
+    #     mix_size_length_dic = self.mixed_length_config.dict()
+    #     return [
+    #         const.MIXED_PACKET_SIZE[index]
+    #         if not (mix_size_length_dic.get(f"field_{index}", 0))
+    #         else mix_size_length_dic.get(f"field_{index}", 0)
+    #         for index in range(len(const.MIXED_PACKET_SIZE))
+    #     ]
 
-    @property
-    def mixed_average_packet_size(self) -> int:
-        weighted_size = 0.0
-        for index, size in enumerate(self.mixed_packet_length):
-            weight = self.mixed_sizes_weights[index]
-            weighted_size += size * weight
-        return int(round(weighted_size / 100.0))
+    # @property
+    # def mixed_average_packet_size(self) -> int:
+    #     weighted_size = 0.0
+    #     for index, size in enumerate(self.mixed_packet_length):
+    #         weight = self.mixed_sizes_weights[index]
+    #         weighted_size += size * weight
+    #     return int(round(weighted_size / 100.0))
 
-    @property
-    def packet_size_list(self) -> List[int]:
-        packet_size_type = self.packet_size_type
-        if packet_size_type == const.PacketSizeType.IETF_DEFAULT:
-            return list(const.DEFAULT_PACKET_SIZE_LIST)
-        elif packet_size_type == const.PacketSizeType.CUSTOM:
-            return list(sorted(self.custom_packet_sizes))
-        elif packet_size_type == const.PacketSizeType.MIX:
-            return [self.mixed_average_packet_size]
+    # @property
+    # def packet_size_list(self) -> List[int]:
+    #     packet_size_type = self.packet_size_type
+    #     if packet_size_type == const.PacketSizeType.IETF_DEFAULT:
+    #         return list(const.DEFAULT_PACKET_SIZE_LIST)
+    #     elif packet_size_type == const.PacketSizeType.CUSTOM:
+    #         return list(sorted(self.custom_packet_sizes))
+    #     elif packet_size_type == const.PacketSizeType.MIX:
+    #         return [self.mixed_average_packet_size]
 
-        elif packet_size_type == const.PacketSizeType.RANGE:
-            return list(
-                range(
-                    self.fixed_packet_start_size,
-                    self.fixed_packet_end_size + self.fixed_packet_step_size,
-                    self.fixed_packet_step_size,
-                )
-            )
+    #     elif packet_size_type == const.PacketSizeType.RANGE:
+    #         return list(
+    #             range(
+    #                 self.fixed_packet_start_size,
+    #                 self.fixed_packet_end_size + self.fixed_packet_step_size,
+    #                 self.fixed_packet_step_size,
+    #             )
+    #         )
 
-        elif packet_size_type in {
-            const.PacketSizeType.INCREMENTING,
-            const.PacketSizeType.BUTTERFLY,
-            const.PacketSizeType.RANDOM,
-        }:
+    #     elif packet_size_type in {
+    #         const.PacketSizeType.INCREMENTING,
+    #         const.PacketSizeType.BUTTERFLY,
+    #         const.PacketSizeType.RANDOM,
+    #     }:
 
-            return [(self.varying_packet_min_size + self.varying_packet_max_size) // 2]
-        else:
-            raise exceptions.FrameSizeTypeError(packet_size_type.value)
+    #         return [(self.varying_packet_min_size + self.varying_packet_max_size) // 2]
+    #     else:
+    #         raise exceptions.FrameSizeTypeError(packet_size_type.value)
 
-    @property
-    def size_range(self) -> Tuple[int, int]:
-        if self.packet_size_type in [
-            const.PacketSizeType.INCREMENTING,
-            const.PacketSizeType.RANDOM,
-            const.PacketSizeType.BUTTERFLY,
-        ]:
-            min_size = self.varying_packet_min_size
-            max_size = self.varying_packet_max_size
-        else:
-            # Packet length is useless when mixed
-            min_size = max_size = int(self.mixed_average_packet_size)
-        return (min_size, max_size)
+    # @property
+    # def size_range(self) -> Tuple[int, int]:
+    #     if self.packet_size_type in [
+    #         const.PacketSizeType.INCREMENTING,
+    #         const.PacketSizeType.RANDOM,
+    #         const.PacketSizeType.BUTTERFLY,
+    #     ]:
+    #         min_size = self.varying_packet_min_size
+    #         max_size = self.varying_packet_max_size
+    #     else:
+    #         # Packet length is useless when mixed
+    #         min_size = max_size = int(self.mixed_average_packet_size)
+    #     return (min_size, max_size)
 
 
 class MultiStreamConfig(BaseModel):
@@ -198,7 +198,7 @@ class TestExecutionConfig(BaseModel):
     repeat_test_until_stopped: bool = False
 
 
-class TestConfiguration(BaseModel):
+class TestConfigModel(BaseModel):
     topology_config: TopologyConfig
     frame_size_config: FrameSizeConfig
     multi_stream_config: MultiStreamConfig

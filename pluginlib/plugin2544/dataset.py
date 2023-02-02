@@ -2,7 +2,7 @@ from typing import Any, List, Tuple, Dict
 from pydantic import BaseModel, validator
 from .utils import exceptions, constants as const
 from .model import (
-    TestConfiguration,
+    TestConfigModel,
     TestTypesConfiguration,
     PortConfiguration,
     ProtocolSegmentProfileConfig,
@@ -12,7 +12,7 @@ PortConfType = List[PortConfiguration]
 
 
 class PluginModel2544(BaseModel):  # Main Model
-    test_configuration: TestConfiguration
+    test_configuration: TestConfigModel
     protocol_segments: List[ProtocolSegmentProfileConfig]
     ports_configuration: PortConfType
     test_types_configuration: TestTypesConfiguration
@@ -51,7 +51,7 @@ class PluginModel2544(BaseModel):  # Main Model
         for port_config in v:
             if (
                 port_config.profile.protocol_version.is_l3
-                and port_config.ip_address.address.is_empty
+                and (not port_config.ip_address or port_config.ip_address.address.is_empty)
             ):
                 raise exceptions.IPAddressMissing()
         return v

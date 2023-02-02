@@ -33,12 +33,12 @@ class AddressCollection:
     smac: MacAddress = MacAddress()
     dmac: MacAddress = MacAddress()
     arp_mac: MacAddress = MacAddress()
-    src_addr: Union[IPv4Address, IPv6Address] = IPv4Address("0.0.0.0")
-    dst_addr: Union[IPv4Address, IPv6Address] = IPv4Address("0.0.0.0")
+    src_addr: Union[IPv4Address, IPv6Address, None] = None
+    dst_addr: Union[IPv4Address, IPv6Address, None] = None
 
     def get_addr_pair_by_protocol(
         self, protocol: PortProtocolVersion
-    ) -> Tuple[Union[IPv4Address, IPv6Address, MacAddress], ...]:
+    ) -> Tuple[Union[IPv4Address, IPv6Address, MacAddress, None], ...]:
         if protocol.is_ipv4:
             return self.src_addr, self.dst_addr
         elif protocol.is_ipv6:

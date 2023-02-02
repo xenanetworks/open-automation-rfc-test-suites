@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, List, Union, Tuple
 from xoa_driver.enums import ProtocolOption
-from ..model.m_test_type_config import AllTestType
 from ..utils import exceptions, constants as const
 from .common import find_dest_port_structs
 
@@ -9,10 +8,11 @@ if TYPE_CHECKING:
     from xoa_driver import testers as xoa_testers
     from xoa_driver.lli import commands
     from .structure import PortStruct
+    from .test_config import TestConfigData
+    from .test_type_config import AllTestTypeConfig
     from ..model import (
         ProtocolSegmentProfileConfig,
         PortConfiguration,
-        TestConfiguration,
     )
 
 
@@ -213,26 +213,19 @@ def check_micro_tpld(
 
 
 def check_port_test_config(
-    port_struct: "PortStruct", test_conf: "TestConfiguration"
+    port_struct: "PortStruct", test_conf: "TestConfigData"
 ) -> None:
 
-    is_stream_based = (
-        test_conf.test_execution_config.flow_creation_config.flow_creation_type.is_stream_based
-    )
-    if test_conf.frame_size_config.frame_sizes.packet_size_type.is_mix:
-        packet_size_list = test_conf.frame_size_config.frame_sizes.mixed_packet_length
+    if test_conf.frame_sizes.packet_size_type.is_mix:
+        packet_size_list = test_conf.mixed_packet_length
     else:
-        packet_size_list = test_conf.frame_size_config.frame_sizes.packet_size_list
-    packet_size_type = test_conf.frame_size_config.frame_sizes.packet_size_type
+        packet_size_list = test_conf.packet_size_list
+    packet_size_type = test_conf.frame_sizes.packet_size_type
     min_packet_size = min(packet_size_list)
     max_packet_size = max(packet_size_list)
     per_port_stream_count = test_conf.multi_stream_config.per_port_stream_count
-    check_payload_pattern(
-        port_struct.capabilities, test_conf.frame_size_config.payload_pattern
-    )
-    check_micro_tpld(
-        port_struct.capabilities, test_conf.frame_size_config.use_micro_tpld_on_demand
-    )
+    check_payload_pattern(port_struct.capabilities, test_conf.payload_pattern)
+    check_micro_tpld(port_struct.capabilities, test_conf.use_micro_tpld_on_demand)
     check_port_min_packet_length(
         port_struct.capabilities, min_packet_size, packet_size_type
     )
@@ -242,24 +235,24 @@ def check_port_test_config(
     check_needed_packet_length(
         port_struct,
         min_packet_size,
-        test_conf.frame_size_config.use_micro_tpld_on_demand,
+        test_conf.use_micro_tpld_on_demand,
     )
     check_port_modifiers(
-        port_struct.capabilities, port_struct.port_conf, is_stream_based
+        port_struct.capabilities, port_struct.port_conf, test_conf.is_stream_based
     )
-    check_stream_limitations(port_struct, per_port_stream_count, is_stream_based)
+    check_stream_limitations(
+        port_struct, per_port_stream_count, test_conf.is_stream_based
+    )
 
 
 def check_test_config(
-    control_ports: List["PortStruct"], test_conf: "TestConfiguration"
+    control_ports: List["PortStruct"], test_conf: "TestConfigData"
 ) -> None:
-    is_stream_based = (
-        test_conf.test_execution_config.flow_creation_config.flow_creation_type.is_stream_based
-    )
-    scope = test_conf.test_execution_config.flow_creation_config.tid_allocation_scope
     for port_struct in control_ports:
         check_port_test_config(port_struct, test_conf)
-    check_tid_limitations(control_ports, scope, is_stream_based)
+    check_tid_limitations(
+        control_ports, test_conf.tid_allocation_scope, test_conf.is_stream_based
+    )
 
 
 def check_tester_sync_start(
@@ -273,29 +266,27 @@ def check_tester_sync_start(
 
 
 def check_testers(
-    testers: List["xoa_testers.L23Tester"], test_conf: "TestConfiguration"
+    testers: List["xoa_testers.L23Tester"], test_conf: "TestConfigData"
 ) -> None:
-    use_port_sync_start = (
-        test_conf.test_execution_config.port_scheduling_config.use_port_sync_start
-    )
+    use_port_sync_start = test_conf.use_port_sync_start
     for tester in testers:
         check_tester_sync_start(tester, use_port_sync_start)
 
 
-def check_test_type_config(test_types: List[Tuple[const.TestType, AllTestType]]):
-    for test_type, test_type_conf in test_types:
-        if test_type.is_back_to_back:  # back to back require frame duration
-            if test_type_conf.common_options.duration_type.is_time_duration:
-                raise exceptions.FrameDurationRequire(test_type.value)
+def check_test_type_config(test_type_conf: List["AllTestTypeConfig"]):
+    for conf in test_type_conf:
+        if conf.test_type.is_back_to_back:  # back to back require frame duration
+            if conf.is_time_duration:
+                raise exceptions.FrameDurationRequire(conf.test_type.value)
         else:  # other test type require time duration
-            if not test_type_conf.common_options.duration_type.is_time_duration:
-                raise exceptions.TimeDurationRequire(test_type.value)
+            if not conf.is_time_duration:
+                raise exceptions.TimeDurationRequire(conf.test_type.value)
 
 
 def check_config(
     testers: List["xoa_testers.L23Tester"],
     control_ports: List["PortStruct"],
-    test_conf: "TestConfiguration",
+    test_conf: "TestConfigData",
 ) -> None:
     check_testers(testers, test_conf)
     check_ports(control_ports)

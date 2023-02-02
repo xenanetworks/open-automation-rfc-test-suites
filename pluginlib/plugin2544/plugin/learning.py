@@ -89,6 +89,8 @@ async def get_address_learning_packet(
 ) -> List[str]:  # GetAddressLearningPacket
     """ARP REFRESH STEP 2: generate learning packet according to address_refresh_data_set"""
     dmac = MacAddress("FF:FF:FF:FF:FF:FF")
+    if not port_struct.port_conf.ip_address:
+        raise exceptions.IPAddressMissing()
     gateway = port_struct.port_conf.ip_address.gateway
     sender_ip = port_struct.port_conf.ip_address.address
     if use_gateway and not gateway.is_empty:
@@ -139,7 +141,7 @@ async def setup_address_refresh(
             packet_list = await get_address_learning_packet(
                 port_struct,
                 arp_data,
-                resources.test_conf.test_execution_config.l23_learning_options.  use_gateway_mac_as_dmac,
+                resources.test_conf.use_gateway_mac_as_dmac,
             )
             for packet in packet_list:
                 address_refresh_tokens.append(
@@ -157,7 +159,8 @@ async def setup_address_arp_refresh(
 ) -> "AddressRefreshHandler":  # SetupAddressArpRefresh
     address_refresh_tokens = await setup_address_refresh(resources)
     return AddressRefreshHandler(
-        address_refresh_tokens, resources.test_conf.arp_refresh_period_second
+        address_refresh_tokens,
+        resources.test_conf.arp_refresh_period_second,
     )
 
 
@@ -282,11 +285,15 @@ async def add_flow_based_learning_preamble_steps(
     resources: "ResourceManager",
     current_packet_size: float,
 ) -> None:  # AddFlowBasedLearningPreambleSteps
-    if not resources.test_conf.use_flow_based_learning_preamble:
+    if (
+        not resources.test_conf.use_flow_based_learning_preamble
+    ):
         return
     resources.set_rate_percent(resources.test_conf.learning_rate_pct)
     await setup_source_port_rates(resources, current_packet_size)
-    await resources.set_frame_limit(resources.test_conf.flow_based_learning_frame_count)
+    await resources.set_frame_limit(
+        resources.test_conf.flow_based_learning_frame_count
+    )
     await resources.start_traffic()
     while resources.test_running():
         await resources.query_traffic_status()
@@ -315,12 +322,12 @@ async def add_mac_learning_steps(
 ) -> None:
     if (
         require_mode
-        != resources.test_conf.test_execution_config.mac_learning_options.mac_learning_mode
+        != resources.test_conf.mac_learning_mode
     ):
         return
 
     mac_learning_frame_count = (
-        resources.test_conf.test_execution_config.mac_learning_options.mac_learning_frame_count
+        resources.test_conf.mac_learning_frame_count
     )
     none_mac = "FFFFFFFFFFFF"
     four_f = "FFFF"

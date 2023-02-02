@@ -263,6 +263,9 @@ class AcceptableLossType(CaseInsensitiveEnum):
     PERCENT = "percent"
     FRAME = "frames"
 
+    @property
+    def is_percentage(self) -> bool:
+        return self == AcceptableLossType.PERCENT
 
 class PortRateCapProfile(CaseInsensitiveEnum):
     PHYSICAL = "physical_port_rate"
@@ -513,6 +516,10 @@ class PortProtocolVersion(CaseInsensitiveEnum):
 class IPVersion(CaseInsensitiveEnum):
     IPV4 = 4
     IPV6 = 6
+
+    @property
+    def is_ipv4(self) -> bool:
+        return self == type(self).IPV4
 
 
 class ARPSenarioType(CaseInsensitiveEnum):

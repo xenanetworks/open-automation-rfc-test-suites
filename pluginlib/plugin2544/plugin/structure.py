@@ -11,22 +11,21 @@ from .data_model import (
 from .statistics import Statistic
 from .stream_struct import StreamStruct
 from ..utils import exceptions, constants as const
-from ..utils.field import MacAddress
+from ..utils.field import MacAddress, IPv4Address, IPv6Address
 
 if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity
     from xoa_driver import ports as xoa_ports, testers as xoa_testers
     from xoa_driver.lli import commands
     from ..utils.interfaces import TestSuitePipe
+    from .test_config import TestConfigData
     from ..model import (
         FrameSize,
-        TestConfiguration,
         PortConfiguration,
         ThroughputTest,
         LatencyTest,
         FrameLossRateTest,
         BackToBackTest,
-        IPAddressProperties,
     )
 
 
@@ -167,7 +166,7 @@ class PortStruct:
     async def set_stagger_step(self, port_stagger_steps: int) -> None:
         if not port_stagger_steps:
             return
-        await self.port_ins.tx_config.delay.set()  # P_TXDELAY
+        await self.port_ins.tx_config.delay.set(port_stagger_steps)  # P_TXDELAY
 
     async def set_fec_mode(self, fec_mode: const.FECModeStr) -> None:
         """Loki-100G-5S-2P  module 4 * 25G support FC_FEC mode"""
@@ -292,22 +291,29 @@ class PortStruct:
     async def set_latency_mode(self, latency_mode: "const.LatencyModeStr"):
         await self.port_ins.latency_config.mode.set(latency_mode.to_xmp())
 
-    async def set_ipv4_address(self, ipv4_properties: "IPV4AddressProperties") -> None:
-        subnet_mask = ipv4_properties.routing_prefix.to_ipv4()
-        await self.port_ins.net_config.ipv4.address.set(
-            ipv4_address=ipv4_properties.address,
-            subnet_mask=subnet_mask,
-            gateway=ipv4_properties.gateway,
-            wild="0.0.0.0",
-        )
-
-    async def set_ipv6_address(self, ipv6_properties: "IPAddressProperties") -> None:
-        await self.port_ins.net_config.ipv6.address.set(
-            ipv6_address=ipv6_properties.address,
-            gateway=ipv6_properties.gateway,
-            subnet_prefix=ipv6_properties.routing_prefix,
-            wildcard_prefix=128,
-        )
+    async def set_ip_address(self) -> None:
+        ip_properties = self._port_conf.ip_address
+        if not ip_properties:
+            return
+        if isinstance(ip_properties.address, IPv4Address) and isinstance(
+            ip_properties.gateway, IPv4Address
+        ):
+            subnet_mask = ip_properties.routing_prefix.to_ipv4()
+            await self.port_ins.net_config.ipv4.address.set(
+                ipv4_address=ip_properties.address,
+                subnet_mask=subnet_mask,
+                gateway=ip_properties.gateway,
+                wild="0.0.0.0",
+            )
+        elif isinstance(ip_properties.address, IPv6Address) and isinstance(
+            ip_properties.gateway, IPv6Address
+        ):
+            await self.port_ins.net_config.ipv6.address.set(
+                ipv6_address=ip_properties.address,
+                gateway=ip_properties.gateway,
+                subnet_prefix=ip_properties.routing_prefix,
+                wildcard_prefix=128,
+            )
 
     async def set_mac_address(self, mac_addr: str) -> None:
         await self.port_ins.net_config.mac_address.set(mac_addr)
@@ -386,20 +392,13 @@ class PortStruct:
         )
         self._stream_structs.append(stream_struct)
 
-    async def configure_streams(self, test_conf: "TestConfiguration") -> None:
+    async def configure_streams(self, test_conf: "TestConfigData") -> None:
         for header_segment in self._port_conf.profile.segments:
             for field_value_range in header_segment.value_ranges:
                 if field_value_range.restart_for_each_port:
                     field_value_range.reset()
         for stream_struct in self._stream_structs:
             await stream_struct.configure(test_conf)
-
-    async def set_ip_address(self) -> None:
-        if self._port_conf.profile.protocol_version.is_ipv4:
-            # ip address, net mask, gateway
-            await self.set_ipv4_address(self._port_conf.ipv4_properties)
-        elif self._port_conf.profile.protocol_version.is_ipv6:
-            await self.set_ipv6_address(self._port_conf.ipv6_properties)
 
     async def set_streams_packet_size(
         self, packet_size_type: "enums.LengthType", min_size: int, max_size: int
@@ -412,13 +411,11 @@ class PortStruct:
         )
 
     async def setup_port(
-        self, test_conf: "TestConfiguration", latency_mode: "const.LatencyModeStr"
+        self, test_conf: "TestConfigData", latency_mode: "const.LatencyModeStr"
     ) -> None:
-        if (
-            not test_conf.test_execution_config.flow_creation_config.flow_creation_type.is_stream_based
-        ):
+        if not test_conf.is_stream_based:
             mac = gen_macaddress(
-                test_conf.multi_stream_config.multi_stream_mac_base_address,
+                test_conf.multi_stream_mac_base_address,
                 self.properties.test_port_index,
             )
             await self.set_mac_address(str(mac))
@@ -428,7 +425,7 @@ class PortStruct:
         await self.set_interframe_gap(int(self._port_conf.inter_frame_gap))
         await self.set_pause_mode(self._port_conf.pause_mode_enabled)
         await self.set_latency_mode(latency_mode)
-        await self.set_tpld_mode(test_conf.frame_size_config.use_micro_tpld_on_demand)
+        await self.set_tpld_mode(test_conf.use_micro_tpld_on_demand)
         await self.set_reply()
         await self.set_ip_address()
         await self.set_broadr_reach_mode(self._port_conf.broadr_reach_mode)
@@ -438,10 +435,8 @@ class PortStruct:
         await self.set_auto_negotiation(self._port_conf.auto_neg_enabled)
         await self.set_max_header(self._port_conf.profile.packet_header_length)
         await self.set_sweep_reduction(self._port_conf.speed_reduction_ppm)
-        await self.set_stagger_step(
-            test_conf.test_execution_config.port_scheduling_config.port_stagger_steps
-        )
-        await self.set_packet_size_if_mix(test_conf.frame_size_config.frame_sizes)
+        await self.set_stagger_step(test_conf.port_stagger_steps)
+        await self.set_packet_size_if_mix(test_conf.frame_sizes)
         self._get_use_port_speed()
 
     async def set_rx_tables(self) -> None:

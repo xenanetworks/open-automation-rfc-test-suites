@@ -2,15 +2,7 @@ import asyncio
 import time
 from copy import deepcopy
 import math
-from typing import List, Optional, Protocol, TYPE_CHECKING
-from .tc_back_to_back import BackToBackBoutEntry
-from ..model.m_test_type_config import (
-    AllTestType,
-    BackToBackTest,
-    FrameLossRateTest,
-    LatencyTest,
-    ThroughputTest,
-)
+from typing import List, Optional, TYPE_CHECKING
 from .learning import (
     AddressRefreshHandler,
     add_L3_learning_preamble_steps,
@@ -22,9 +14,16 @@ from .learning import (
 from .setup_source_port_rates import setup_source_port_rates
 from .statistics import FinalStatistic, StatisticParams
 from .tc_throughput import get_initial_throughput_boundaries
-from .tc_back_to_back import get_initial_back_to_back_boundaries
+from .tc_back_to_back import get_initial_back_to_back_boundaries, BackToBackBoutEntry
 from .test_result import aggregate_data
 from ..utils import constants as const
+from .test_type_config import (
+    LatencyConfig,
+    ThroughputConfig,
+    BackToBackConfig,
+    FrameLossConfig,
+    AllTestTypeConfig,
+)
 
 if TYPE_CHECKING:
     from .test_resource import ResourceManager
@@ -43,29 +42,33 @@ class TestCaseProcessor:
 
     async def prepare(self) -> None:
         if (not self.resources.has_l3) or (
-            not self.resources.test_conf.test_execution_config.l23_learning_options.arp_refresh_enabled
+            not self.resources.test_conf.arp_refresh_enabled
         ):
             return None
         self.address_refresh_handler = await setup_address_arp_refresh(self.resources)
 
     async def run(
         self,
-        test_type_conf: "AllTestType",
+        test_type_conf: "AllTestTypeConfig",
         current_packet_size: float,
         iteration: int,
     ) -> None:
-        if isinstance(test_type_conf, ThroughputTest):
-            await self._throughput(test_type_conf, current_packet_size, iteration)
-        elif isinstance(test_type_conf, LatencyTest):
+        if isinstance(test_type_conf, ThroughputConfig):
+            await self._throughput(
+                test_type_conf, current_packet_size, iteration
+            )
+        elif isinstance(test_type_conf, LatencyConfig):
             await self._latency(
                 test_type_conf, current_packet_size, iteration
             )  # type:ignore
-        elif isinstance(test_type_conf, FrameLossRateTest):
+        elif isinstance(test_type_conf, FrameLossConfig):
             await self._frame_loss(
                 test_type_conf, current_packet_size, iteration
             )  # type:ignore
-        elif isinstance(test_type_conf, BackToBackTest):
-            await self._back_to_back(test_type_conf, current_packet_size, iteration)
+        elif isinstance(test_type_conf, BackToBackConfig):
+            await self._back_to_back(
+                test_type_conf, current_packet_size, iteration
+            )
 
     async def add_learning_steps(self, current_packet_size: float) -> None:
         await self.resources.stop_traffic()
@@ -76,12 +79,12 @@ class TestCaseProcessor:
         )
 
     async def start_test(
-        self, test_type_conf: "AllTestType", current_packet_size: float
+        self, test_type_conf: "AllTestTypeConfig", current_packet_size: float
     ) -> None:
         await setup_source_port_rates(self.resources, current_packet_size)
-        if test_type_conf.common_options.duration_type.is_time_duration:
+        if test_type_conf.is_time_duration:
             await self.resources.set_tx_time_limit(
-                test_type_conf.common_options.actual_duration * 1_000_000
+                test_type_conf.actual_duration * 1_000_000
             )
 
         await self.resources.clear_statistic()
@@ -92,19 +95,19 @@ class TestCaseProcessor:
         start_time = time.time()
         while True:
             data = await aggregate_data(self.resources, params, is_final=False)
-            self.xoa_out.send_statistics(data)
+            # self.xoa_out.send_statistics(data)
             if self.resources.should_quit(start_time, params.duration):
                 break
             self.resources.tell_progress(start_time, params.duration)
             await asyncio.sleep(const.INTERVAL_SEND_STATISTICS)
         await asyncio.sleep(const.DELAY_STATISTICS)
         data = await aggregate_data(self.resources, params, is_final=True)
-        self.xoa_out.send_statistics(data)
+        # self.xoa_out.send_statistics(data)
         return data
 
     async def _latency(
         self,
-        test_type_conf: "LatencyTest",
+        test_type_conf: "LatencyConfig",
         current_packet_size: float,
         repetition: int,
     ):
@@ -112,7 +115,7 @@ class TestCaseProcessor:
         if test_type_conf.use_relative_to_throughput and self._throughput_map:
             factor = self._throughput_map.get(current_packet_size, 100.0) / 100.0
 
-        for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
+        for rate_percent in test_type_conf.rate_sweep_list:
             # tx_rate_nominal_percent = rate_percent
             rate_percent = rate_percent * factor
             params = StatisticParams(
@@ -120,10 +123,10 @@ class TestCaseProcessor:
                 rate_percent=rate_percent,
                 frame_size=current_packet_size,
                 repetition=repetition,
-                duration=test_type_conf.common_options.actual_duration,
+                duration=test_type_conf.actual_duration,
             )
-            self.resources.set_rate_percent(rate_percent)
             await self.add_learning_steps(current_packet_size)
+            self.resources.set_rate_percent(rate_percent)   # set rate percent must after learning.
             await self.start_test(test_type_conf, current_packet_size)
             result = await self.collect(params)
             await self.resources.set_tx_time_limit(0)
@@ -132,11 +135,11 @@ class TestCaseProcessor:
 
     async def _frame_loss(
         self,
-        test_type_conf: "FrameLossRateTest",
+        test_type_conf: "FrameLossConfig",
         current_packet_size: float,
         repetition: int,
     ):
-        for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
+        for rate_percent in test_type_conf.rate_sweep_list:
             self.resources.set_rate_percent(rate_percent)
             await self.add_learning_steps(current_packet_size)
             await self.start_test(test_type_conf, current_packet_size)
@@ -145,7 +148,7 @@ class TestCaseProcessor:
                 rate_percent=rate_percent,
                 frame_size=current_packet_size,
                 repetition=repetition,
-                duration=test_type_conf.common_options.actual_duration,
+                duration=test_type_conf.actual_duration,
             )
             result = await self.collect(params)
             await self.resources.set_tx_time_limit(0)
@@ -154,7 +157,7 @@ class TestCaseProcessor:
 
     async def _throughput(
         self,
-        test_type_conf: "ThroughputTest",
+        test_type_conf: "ThroughputConfig",
         current_packet_size: float,
         repetition: int,
     ):
@@ -166,8 +169,8 @@ class TestCaseProcessor:
             test_case_type=test_type_conf.test_type,
             frame_size=current_packet_size,
             repetition=repetition,
-            duration=test_type_conf.common_options.actual_duration,
-            rate_result_scope=test_type_conf.rate_iteration_options.result_scope,
+            duration=test_type_conf.actual_duration,
+            rate_result_scope=test_type_conf.result_scope,
         )
         while True:
             for boundary in boundaries:
@@ -185,7 +188,7 @@ class TestCaseProcessor:
             await self.resources.set_tx_time_limit(0)
             if not should_continue:
                 break
-        if not test_type_conf.rate_iteration_options.result_scope.is_per_source_port:
+        if not test_type_conf.is_per_source_port:
             final = boundaries[0].best_final_result
             # record the max throughput rate
             if final is not None:
@@ -213,7 +216,7 @@ class TestCaseProcessor:
                 frame_size=params.frame_size,
                 repetition=params.repetition,
                 tx_rate_percent=params.rate_percent,
-                rate_result_scope=test_type_conf.rate_iteration_options.result_scope,
+                rate_result_scope=test_type_conf.result_scope,
                 port_data=[
                     port_struct.statistic for port_struct in self.resources.port_structs
                 ],
@@ -223,19 +226,19 @@ class TestCaseProcessor:
 
     async def _back_to_back(
         self,
-        test_type_conf: "BackToBackTest",
+        test_type_conf: "BackToBackConfig",
         current_packet_size: float,
         repetition: int,
     ) -> None:
         result = None
         await self.add_learning_steps(current_packet_size)
-        for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
+        for rate_percent in test_type_conf.rate_sweep_list:
             params = StatisticParams(
                 test_case_type=test_type_conf.test_type,
                 rate_percent=rate_percent,
                 frame_size=current_packet_size,
                 repetition=repetition,
-                duration=test_type_conf.common_options.actual_duration,
+                duration=test_type_conf.actual_duration,
             )
             self.resources.set_rate_percent(rate_percent)
             boundaries = get_initial_back_to_back_boundaries(
@@ -278,22 +281,27 @@ class TestCaseProcessor:
         return final
 
     def _average_per_frame_size(
-        self, test_type_conf: "AllTestType", frame_size: float
+        self, test_type_conf: "AllTestTypeConfig", frame_size: float
     ) -> None:
+        final: Optional[FinalStatistic] = None
         result = self.test_results[test_type_conf.test_type][frame_size]
-        if isinstance(test_type_conf, ThroughputTest):
+        if isinstance(test_type_conf, ThroughputConfig):
             """throughput test calculate average based on same frame size"""
             statistic_lists = []
             for s in result.values():
                 statistic_lists.extend(s)
-            self._average_statistic(statistic_lists)
+            final = self._average_statistic(statistic_lists)
+            if final:
+                self.xoa_out.send_statistics(final)
         else:
             """calculate average based on same frame size and same rate"""
             for statistic_lists in result.values():
-                self._average_statistic(statistic_lists)
+                final = self._average_statistic(statistic_lists)
+                if final:
+                    self.xoa_out.send_statistics(final)
 
     def cal_average(
-        self, test_type_conf: "AllTestType", frame_size: Optional[float] = None
+        self, test_type_conf: "AllTestTypeConfig", frame_size: Optional[float] = None
     ) -> None:
         if frame_size:
             result = self.test_results[test_type_conf.test_type][frame_size]
@@ -352,14 +360,14 @@ class TestCaseProcessor:
 
 
 def check_if_frame_loss_success(
-    frame_loss_conf: "FrameLossRateTest", result: "FinalStatistic"
+    frame_loss_conf: "FrameLossConfig", result: "FinalStatistic"
 ) -> bool:
     is_test_passed = True
-    if frame_loss_conf.use_pass_criteria:
-        if frame_loss_conf.acceptable_loss_type == const.AcceptableLossType.PERCENT:
-            if result.total.rx_loss_percent > frame_loss_conf.acceptable_loss:
+    if frame_loss_conf.pass_criteria_loss:
+        if frame_loss_conf.is_percentage_pass_criteria:
+            if result.total.rx_loss_percent > frame_loss_conf.pass_criteria_loss:
                 is_test_passed = False
         else:
-            if result.total.rx_loss_frames > frame_loss_conf.acceptable_loss:
+            if result.total.rx_loss_frames > frame_loss_conf.pass_criteria_loss:
                 is_test_passed = False
     return is_test_passed

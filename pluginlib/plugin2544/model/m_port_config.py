@@ -1,4 +1,4 @@
-from ipaddress import IPv4Network, IPv6Network, ip_network, ip_address
+from ipaddress import IPv4Network, IPv6Network, ip_network, ip_address, IPv4Address as OriginIPv4Address, IPv6Address as OriginIPv6Address
 from typing import Union, Optional
 from pydantic import BaseModel, validator, Field
 from ..utils import constants as const
@@ -13,7 +13,7 @@ class IPAddressProperties(BaseModel):
     public_routing_prefix: Prefix = Prefix(24)
     gateway: Union[IPv4Address, IPv6Address] = IPv4Address("0.0.0.0")
     remote_loop_address: Union[IPv4Address, IPv6Address] = IPv4Address("0.0.0.0")
-    ip_version: const.IPVersion = const.IPVersion.IPV6
+    # ip_version: const.IPVersion = const.IPVersion.IPV6
 
     @property
     def network(self) -> Union["IPv4Network", "IPv6Network"]:
@@ -28,9 +28,10 @@ class IPAddressProperties(BaseModel):
         allow_reuse=True,
     )
     def set_address(
-        cls, v: Union[str, "IPv4Address", "IPv6Address"]
+        cls, origin_addr: Union[str, "IPv4Address", "IPv6Address"]
     ) -> Union["IPv4Address", "IPv6Address"]:
-        return ip_address(v)
+        address = ip_address(origin_addr)
+        return IPv4Address(address) if isinstance(address, OriginIPv4Address) else IPv6Address(address)
 
     @validator("routing_prefix", "public_routing_prefix", pre=True, allow_reuse=True)
     def set_prefix(cls, v: int) -> Prefix:
