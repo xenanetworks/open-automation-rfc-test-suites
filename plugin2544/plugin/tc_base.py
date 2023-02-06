@@ -125,8 +125,8 @@ class TestCaseProcessor:
                 repetition=repetition,
                 duration=test_type_conf.common_options.actual_duration,
             )
-            self.resources.set_rate_percent(rate_percent)
             await self.add_learning_steps(current_packet_size)
+            self.resources.set_rate_percent(rate_percent)
             await self.start_test(test_type_conf, current_packet_size)
             result = await self.collect(params)
             await self.resources.set_tx_time_limit(0)
@@ -140,8 +140,8 @@ class TestCaseProcessor:
         repetition: int,
     ):
         for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
-            self.resources.set_rate_percent(rate_percent)
             await self.add_learning_steps(current_packet_size)
+            self.resources.set_rate_percent(rate_percent)
             await self.start_test(test_type_conf, current_packet_size)
             params = StatisticParams(
                 test_case_type=test_type_conf.test_type,
