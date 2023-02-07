@@ -53,7 +53,7 @@ class Enum(CaseSensitiveEnum):
     def _missing_(cls, value):
         if isinstance(value, str):
             for member in cls:
-                if member.value == value.lower():
+                if member.name == value or member.value == value.lower():
                     return member
 
 
@@ -175,7 +175,7 @@ class PortGroup(Enum):
 
 
 class PortRateCapProfile(Enum):
-    PHYSICAL = "physical_port_rate"
+    PHYSICAL_PORT_RATE = "physical_port_rate"
     CUSTOM = "custom"
 
     @property
@@ -339,7 +339,7 @@ class FECModeStr(Enum):
 
 class PacketSizeType(Enum):
     IETF_DEFAULT = "ietf_default"
-    CUSTOM = "custom_sizes"
+    CUSTOM_SIZES = "custom_sizes"
     RANGE = "specified"
     INCREMENTING = "incrementing"
     BUTTERFLY = "butterfly"
@@ -348,7 +348,7 @@ class PacketSizeType(Enum):
 
     @property
     def is_custom(self) -> bool:
-        return self == type(self).CUSTOM
+        return self == type(self).CUSTOM_SIZES
 
     @property
     def is_mix(self) -> bool:
@@ -356,7 +356,7 @@ class PacketSizeType(Enum):
 
     @property
     def is_fix(self) -> bool:
-        return self in [type(self).IETF_DEFAULT, type(self).CUSTOM, type(self).RANGE]
+        return self in [type(self).IETF_DEFAULT, type(self).CUSTOM_SIZES, type(self).RANGE]
 
     def to_xmp(self):
         if self.is_fix:
