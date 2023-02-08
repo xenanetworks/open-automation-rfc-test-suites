@@ -93,14 +93,14 @@ class TestCaseProcessor:
         while True:
             start_time = time.time()
             data = await aggregate_data(self.resources, params, is_final=False)
-            self.xoa_out.send_statistics(data)
+            # self.xoa_out.send_statistics(data)
             if self.resources.should_quit(start_time, params.duration):
                 break
             self.resources.tell_progress(start_time, params.duration)
             await asyncio.sleep(const.INTERVAL_SEND_STATISTICS)
         await asyncio.sleep(const.DELAY_STATISTICS)
         data = await aggregate_data(self.resources, params, is_final=True)
-        self.xoa_out.send_statistics(data)
+        # self.xoa_out.send_statistics(data)
         return data
 
     async def _latency(
@@ -125,8 +125,8 @@ class TestCaseProcessor:
                 repetition=repetition,
                 duration=test_type_conf.common_options.actual_duration,
             )
-            self.resources.set_rate_percent(rate_percent)
             await self.add_learning_steps(current_packet_size)
+            self.resources.set_rate_percent(rate_percent)
             await self.start_test(test_type_conf, current_packet_size)
             result = await self.collect(params)
             await self.resources.set_tx_time_limit(0)
@@ -140,8 +140,8 @@ class TestCaseProcessor:
         repetition: int,
     ):
         for rate_percent in test_type_conf.rate_sweep_options.rate_sweep_list:
-            self.resources.set_rate_percent(rate_percent)
             await self.add_learning_steps(current_packet_size)
+            self.resources.set_rate_percent(rate_percent)
             await self.start_test(test_type_conf, current_packet_size)
             params = StatisticParams(
                 test_case_type=test_type_conf.test_type,
@@ -288,11 +288,15 @@ class TestCaseProcessor:
             statistic_lists = []
             for s in result.values():
                 statistic_lists.extend(s)
-            self._average_statistic(statistic_lists)
+            final = self._average_statistic(statistic_lists)
+            if final:
+                self.xoa_out.send_statistics(final)
         else:
             """calculate average based on same frame size and same rate"""
             for statistic_lists in result.values():
-                self._average_statistic(statistic_lists)
+                final = self._average_statistic(statistic_lists)
+                if final:
+                    self.xoa_out.send_statistics(final)
 
     def cal_average(
         self, test_type_conf: "AllTestType", frame_size: Optional[Decimal] = None
