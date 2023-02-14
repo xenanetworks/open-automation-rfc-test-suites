@@ -53,7 +53,7 @@ class Enum(CaseSensitiveEnum):
     def _missing_(cls, value):
         if isinstance(value, str):
             for member in cls:
-                if member.name == value or member.value == value.lower():
+                if member.name == value:
                     return member
 
 
@@ -299,7 +299,7 @@ class TestTopology(Enum):
         return self == type(self).PAIRS
 
 
-class LatencyModeStr(Enum):
+class LatencyMode(Enum):
     FIRST2LAST = "first_to_last"
     LAST2LAST = "last_to_last"
     FIRST2FIRST = "first_to_first"

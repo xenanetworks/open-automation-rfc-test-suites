@@ -57,7 +57,7 @@ from plugin2889.const import (
     StreamRateType,
     DurationTimeUnit,
     TestTopology,
-    LatencyModeStr,
+    LatencyMode,
     TidAllocationScope,
     TrafficDirection,
 )
@@ -469,7 +469,7 @@ class FrameSizeConfiguration(BaseModel):
 class GeneralTestConfiguration(BaseModel):
     frame_sizes: FrameSizeConfiguration
     rate_definition: RateDefinition
-    latency_mode: LatencyModeStr
+    latency_mode: LatencyMode
     toggle_sync_state: bool
     sync_off_duration: int
     sync_on_duration: int
@@ -506,9 +506,6 @@ class PortIdentity(BaseModel):
     @property
     def identity(self) -> str:
         return f"{self.chassis_index}-{self.module_index}-{self.port_index}"
-
-
-
 
 
 def hex_string_to_binary_string(hex: str) -> "BinaryString":
