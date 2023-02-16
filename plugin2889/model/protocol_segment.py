@@ -1,9 +1,9 @@
 import re
-from enum import Enum
 from typing import List, Optional
 from pydantic import BaseModel
 from pydantic.class_validators import validator
 from xoa_driver.enums import ProtocolOption, ModifierAction
+from plugin2889.const import Enum
 
 
 class BinaryString(str):

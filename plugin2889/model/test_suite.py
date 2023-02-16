@@ -40,7 +40,7 @@ from plugin2889.const import (
     StreamRateType,
     DurationTimeUnit,
     TestTopology,
-    LatencyModeStr,
+    LatencyMode,
     TidAllocationScope,
     TrafficDirection,
 )
@@ -448,7 +448,7 @@ class FrameSizeConfiguration(BaseModel):
         packet_size_type = self.packet_size_type
         if packet_size_type == PacketSizeType.IETF_DEFAULT:
             return DEFAULT_MIXED_PACKET_SIZE
-        elif packet_size_type == PacketSizeType.CUSTOM:
+        elif packet_size_type == PacketSizeType.CUSTOM_SIZES:
             return list(sorted(self.custom_packet_sizes))
         elif packet_size_type == PacketSizeType.MIX:
             return [self.mixed_average_packet_size]
@@ -473,7 +473,7 @@ class FrameSizeConfiguration(BaseModel):
 class GeneralTestConfiguration(BaseModel):
     frame_sizes: FrameSizeConfiguration
     rate_definition: RateDefinition
-    latency_mode: LatencyModeStr
+    latency_mode: LatencyMode
     toggle_sync_state: bool
     sync_off_duration: int
     sync_on_duration: int
