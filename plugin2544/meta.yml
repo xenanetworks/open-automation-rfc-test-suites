@@ -1,5 +1,5 @@
 name: "RFC-2544"
-version: "1.0.0"
+version: "1.0.1"
 core_version: ">=1.0.0" 
 author: 
   - "MC"
