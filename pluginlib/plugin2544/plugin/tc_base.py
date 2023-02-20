@@ -95,14 +95,14 @@ class TestCaseProcessor:
         start_time = time.time()
         while True:
             data = await aggregate_data(self.resources, params, is_final=False)
-            # self.xoa_out.send_statistics(data)
+            self.xoa_out.send_statistics(data)
             if self.resources.should_quit(start_time, params.duration):
                 break
             self.resources.tell_progress(start_time, params.duration)
             await asyncio.sleep(const.INTERVAL_SEND_STATISTICS)
         await asyncio.sleep(const.DELAY_STATISTICS)
         data = await aggregate_data(self.resources, params, is_final=True)
-        # self.xoa_out.send_statistics(data)
+        self.xoa_out.send_statistics(data)
         return data
 
     async def _latency(

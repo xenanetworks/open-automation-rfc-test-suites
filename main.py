@@ -113,7 +113,11 @@ def set_windows_loop_policy():
 async def subscribe(ctrl: controller.MainController, source: str) -> None:
     async for msg in ctrl.listen_changes(source, _filter={types.EMsgType.STATISTICS}):
         # T2544Displayer.display(json.loads(msg.payload.json()))
-        pass
+        if msg.payload.is_final:
+            with open('1.txt', 'a') as f:
+                f.write(msg.payload.json(indent=2))
+                f.write('\n')
+            pass
 
 
 async def start_test(
@@ -143,7 +147,7 @@ async def main() -> None:
         if not info:
             logger.error("Test suite is not recognised.")
             return None
-        new_data = converter(TestSuiteType(T_SUITE_NAME), app_data, info["schema"])
+        new_data = converter(TestSuiteType(T_SUITE_NAME), app_data)
         with open("2544.json", "w") as f:
             f.write(new_data)
         conf = json.loads(new_data)

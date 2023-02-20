@@ -1,6 +1,7 @@
+from __future__ import annotations
 import asyncio
 import time
-from typing import Dict, List, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 from xoa_driver import testers as xoa_testers, modules, enums, utils
 from .learning import add_mac_learning_steps
 from .config_checkers import check_config
@@ -19,9 +20,9 @@ if TYPE_CHECKING:
 class ResourceManager:
     def __init__(
         self,
-        testers: Dict[str, "xoa_testers.GenericAnyTester"],
-        all_confs: List["PortConfiguration"],
-        port_identities: List["PortIdentity"],
+        testers: dict[str, "xoa_testers.GenericAnyTester"],
+        all_confs: list["PortConfiguration"],
+        port_identities: list["PortIdentity"],
         test_conf: "TestConfigData",
         xoa_out: "TestSuitePipe",
     ):
@@ -29,11 +30,11 @@ class ResourceManager:
         self.__port_identities = port_identities
         self._validate_tester_type(testers.values(), xoa_testers.L23Tester)
         # type: ignore
-        self.__testers: Dict[str, "xoa_testers.L23Tester"] = testers
-        self.port_structs: List["PortStruct"] = []
+        self.__testers: dict[str, "xoa_testers.L23Tester"] = testers
+        self.port_structs: list["PortStruct"] = []
         self.xoa_out: "TestSuitePipe" = xoa_out
         self.__test_conf: "TestConfigData" = test_conf
-        self.mapping: Dict[str, List[int]] = {}
+        self.mapping: dict[str, list[int]] = {}
 
     @property
     def test_conf(self):
@@ -49,7 +50,7 @@ class ResourceManager:
             raise ValueError("")
 
     @property
-    def tx_ports(self) -> List["PortStruct"]:
+    def tx_ports(self) -> list["PortStruct"]:
         return [
             port_struct
             for port_struct in self.port_structs
@@ -57,7 +58,7 @@ class ResourceManager:
         ]
 
     @property
-    def rx_ports(self) -> List["PortStruct"]:
+    def rx_ports(self) -> list["PortStruct"]:
         return [
             port_struct
             for port_struct in self.port_structs
@@ -300,7 +301,7 @@ class ResourceManager:
         )
 
     async def start_traffic_sync(
-        self, tester: "xoa_testers.L23Tester", module_port_list: List[int]
+        self, tester: "xoa_testers.L23Tester", module_port_list: list[int]
     ) -> None:
         local_time = (await tester.time.get()).local_time
         delay_seconds = 2
