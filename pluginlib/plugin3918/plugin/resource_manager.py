@@ -191,10 +191,8 @@ class PortInstance:
         return self.__prepare().__await__()
 
     async def __prepare(self):
-        # if self.__reservation_status == enums.ReservedStatus.RESERVED_BY_OTHER:
         if self.reservation_status == enums.ReservedStatus.RESERVED_BY_OTHER:
             await self.port.reservation.set_relinquish()
-            # while self.__reservation_status != enums.ReservedStatus.RELEASED:
             while self.reservation_status != enums.ReservedStatus.RELEASED:
                 await sleep(0.01)
         tokens = [

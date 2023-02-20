@@ -99,7 +99,7 @@ async def main() -> None:
         if not info:
             logger.error("Test suite is not recognised.")
             return None
-        new_data = converter(TestSuiteType(T_SUITE_NAME), app_data, info["schema"])
+        new_data = converter(TestSuiteType(T_SUITE_NAME), app_data)
         with open(JSON_PATH, "w") as f:
             f.write(new_data)
         config = json.loads(new_data)

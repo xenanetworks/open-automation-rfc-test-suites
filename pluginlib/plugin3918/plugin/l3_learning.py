@@ -28,9 +28,9 @@ def has_ip_segment(
     stream_config: "ProtocolSegmentProfileConfig",
 ) -> Optional[IPVersion]:
     for i in stream_config.header_segments:
-        if i.segment_type == ProtocolOption.IPV4:
+        if i.type == ProtocolOption.IPV4:
             return IPVersion.IPV4
-        elif i.segment_type == ProtocolOption.IPV6:
+        elif i.type == ProtocolOption.IPV6:
             return IPVersion.IPV6
     return None
 

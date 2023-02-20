@@ -13,7 +13,6 @@ from ..utils.constants import (
 )
 from ..utils.field import MacAddress, NewIPv4Address, NewIPv6Address, Prefix
 from .protocol_segments import ProtocolSegmentProfileConfig
-from decimal import Decimal
 from pydantic import validator
 
 
@@ -124,7 +123,7 @@ class PortConfiguration(BaseModel):
     @validator("profile")
     def validate_ip(cls, v, values):
         has_ip_segment = False
-        segment_types = [i.segment_type for i in v.header_segments]
+        segment_types = [i.type for i in v.header_segments]
         if ProtocolOption.IPV4 in segment_types:
             has_ip_segment = True
             if values["ipv4_properties"].address in {NewIPv4Address("0.0.0.0"), ""}:
