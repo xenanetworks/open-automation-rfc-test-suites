@@ -208,9 +208,9 @@ class StreamRateType(Enum):
 
 
 class PortRateCapUnitInt(Enum):
-    GBPS = 1e9
-    MBPS = 1e6
-    KBPS = 1e3
+    FIELD_1E9_BPS = 1e9
+    FIELD_1E6_BPS = 1e6
+    FIELD_1E3_BPS = 1e3
     BPS = 1
 
 
