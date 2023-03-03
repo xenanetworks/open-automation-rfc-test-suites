@@ -651,9 +651,3 @@ class TestSuiteConfiguration2889(BaseModel):
 
         for port_conf in self.ports_configuration.values():
             port_conf.profile = self.protocol_segments[port_conf.profile_id].copy(deep=True)
-
-
-class CoreConfiguration(BaseModel):
-    username: str
-    port_identities: Dict[str, PortIdentity]
-    config: TestSuiteConfiguration2889

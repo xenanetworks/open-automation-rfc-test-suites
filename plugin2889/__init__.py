@@ -1,3 +1,6 @@
+import hashlib
+import traceback
+from pathlib import Path
 from typing import TYPE_CHECKING
 from xoa_core.types import PluginAbstract
 
@@ -29,6 +32,8 @@ TEST_TYPE_CLASS = {
     TestType.BROADCAST_FORWARDING: BroadcastForwardingTest,
 }
 
+TEST_ERROR_PATH = Path().resolve() / 'test_error'
+
 
 class TestSuite2889(PluginAbstract["TestSuiteConfiguration2889"]):
     def prepare(self) -> None:
@@ -54,3 +59,27 @@ class TestSuite2889(PluginAbstract["TestSuiteConfiguration2889"]):
     async def start(self) -> None:
         await self.__do_test()
         await self.__post_test()
+
+
+
+
+
+
+class TestSuite2889Testing(TestSuite2889):
+    def get_error_id(self, tb_exc: str) -> str:
+        return hashlib.md5(tb_exc.encode('utf-8')).hexdigest()
+
+    async def start(self) -> None:
+        TEST_ERROR_PATH.mkdir(exist_ok=True)
+        try:
+            await super().start()
+        except Exception:
+            tb_exc = traceback.format_exc()
+            error_id = self.get_error_id(tb_exc)
+            current_error_path = TEST_ERROR_PATH / error_id
+            current_error_path.mkdir(exist_ok=True)
+            with open(current_error_path / 'traceback.txt', 'w') as error_log:
+                traceback.print_exc(file=error_log)
+            self.xoa_out.send_statistics({
+                    'error_id': error_id
+            })
