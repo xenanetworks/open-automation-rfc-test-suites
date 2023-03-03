@@ -1,4 +1,5 @@
 import asyncio
+import time
 from collections import defaultdict
 from decimal import Decimal
 from functools import partial
@@ -148,8 +149,6 @@ class ResourcesManager:
 
     async def clear_statistic_counters(self) -> None:
         await asyncio.gather(*[r.statistics.clear() for r in self])
-        while not self.all_ports_is_sync:
-            await sleep_log(INTERVAL_CLEAR_STATISTICS)
 
     async def prepare_streams(self) -> None:
         crooutines = []
@@ -307,3 +306,16 @@ class ResourcesManager:
 
     async def set_stream_packet_limit(self, limit: int) -> None:
         await asyncio.gather(*[r.set_packet_limit(limit) for r in self])
+
+    async def check_port_link(self) -> None:
+        check_count = 0
+        start = int(time.time())
+        while not self.all_ports_is_sync:
+            logger.debug('Detected loss of link - retrying')
+            check_count += 1
+            if check_count > 30:
+                if self.__test_config.general_test_configuration.should_stop_on_los:
+                    raise exceptions.StopTestByLossSignal()
+                break
+
+            await sleep_log(1 - int(time.time() - start))

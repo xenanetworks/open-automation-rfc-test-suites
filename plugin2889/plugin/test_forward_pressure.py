@@ -155,6 +155,7 @@ class ForwardPressureTest(TestBase[ForwardPressureConfiguration]):
 
     async def setup_resources(self) -> None:
         await self.resources.reset_ports()
+        await self.resources.check_port_link()
         await self.resources.configure_ports()
         await self.__set_port_interframe_gap()
         await self.resources.map_pairs()
