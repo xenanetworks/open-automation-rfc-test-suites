@@ -22,7 +22,6 @@ class TestPortName:
 
 class CongestionControlTest(TestBase[CongestionControlConfiguration]):
     def test_suit_prepare(self):
-        self.create_statistics()
         self.port_name = TestPortName()
         self.uncongested_stream_index = -1
         self.resources = ResourcesManager(
@@ -31,6 +30,7 @@ class CongestionControlTest(TestBase[CongestionControlConfiguration]):
             port_identities=self.port_identities,
             port_pairs=self.__create_port_pairs(),
         )
+        self.create_statistics()
 
     def __create_port_pairs(self) -> "PortPairs":
         assert self.test_suit_config.port_role_handler

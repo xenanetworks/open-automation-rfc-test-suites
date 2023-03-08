@@ -27,6 +27,7 @@ class AddressCachingCapacityTest(AddressLearningBase[AddressCachingCapacityConfi
             port_pairs=self.create_port_pairs(),
             get_mac_address_function=self.get_mac_address,
         )
+        self.create_statistics()
 
     def do_testing_cycle(self) -> Generator[BaseRunProps, None, None]:
         packet_sizes = self.full_test_config.general_test_configuration.frame_sizes.packet_size_list

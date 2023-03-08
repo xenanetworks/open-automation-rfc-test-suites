@@ -21,6 +21,7 @@ class AddressLearningRateTest(AddressLearningBase[AddressLearningRateConfigurati
             port_pairs=self.create_port_pairs(),
             get_mac_address_function=self.get_mac_address,
         )
+        self.create_statistics()
 
     def do_testing_cycle(self) -> Generator[AddressLearningRateRunProps, None, None]:
         packet_sizes = self.full_test_config.general_test_configuration.frame_sizes.packet_size_list
