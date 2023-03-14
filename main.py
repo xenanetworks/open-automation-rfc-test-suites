@@ -16,7 +16,7 @@ from loguru import logger
 
 DEBUG = True
 BASE_PATH = Path.cwd()
-PLUGINS_PATH = BASE_PATH / "pluginlib"
+PLUGINS_PATH = BASE_PATH 
 INPUT_DATA_PATH = BASE_PATH / "test" / "2.v3918"
 JSON_PATH = BASE_PATH / "test" / "hello.json"
 T_SUITE_NAME = "RFC-3918"
