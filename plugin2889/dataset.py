@@ -38,6 +38,7 @@ from plugin2889.model import exceptions
 from plugin2889 import const
 from plugin2889.model.protocol_segment import BinaryString, ProtocolSegmentProfileConfig
 from plugin2889.const import (
+    DEFAULT_IETF_PACKET_SIZE,
     DEFAULT_MIXED_PACKET_SIZE,
     INVALID_PORT_ROLE,
     MIXED_DEFAULT_WEIGHTS,
@@ -443,7 +444,7 @@ class FrameSizeConfiguration(BaseModel):
     def packet_size_list(self) -> Iterable[int]:
         packet_size_type = self.packet_size_type
         if packet_size_type == PacketSizeType.IETF_DEFAULT:
-            return DEFAULT_MIXED_PACKET_SIZE
+            return DEFAULT_IETF_PACKET_SIZE
         elif packet_size_type == PacketSizeType.CUSTOM_SIZES:
             return list(sorted(self.custom_packet_sizes))
         elif packet_size_type == PacketSizeType.MIX:
