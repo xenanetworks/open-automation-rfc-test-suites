@@ -3,7 +3,7 @@ import contextlib
 import time
 from typing import Awaitable, TypeVar, AsyncGenerator
 
-from plugin2889.const import INTERVAL_CHECK_SHOULD_STOP_TRAFFIC
+from plugin2889.const import DELAY_WAIT_RESET_STATS, INTERVAL_CHECK_SHOULD_STOP_TRAFFIC
 from plugin2889.resource.manager import ResourcesManager
 from plugin2889.plugin.utils import sleep_log
 from plugin2889.util.logger import logger
@@ -38,6 +38,7 @@ class L23TestManager:
     async def __traffic_runner(self) -> AsyncGenerator[None, None]:
         logger.debug("\033[31mStart traffic on both ports...\x1B[0m")
         await self.__resources.clear_statistic_counters()
+        await sleep_log(DELAY_WAIT_RESET_STATS)
         await self.__resources.start_traffic()
         try:
             yield
