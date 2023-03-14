@@ -91,7 +91,4 @@ class BroadcastForwardingTest(TestBase[BroadcastForwardingConfiguration], Binary
             async for traffic_info in self.generate_traffic():
                 result = traffic_info.result
 
-            await sleep_log(const.DELAY_WAIT_TRAFFIC_STOP)
-            result = await self.staticstics_collect(is_live=False)
-            self.xoa_out.send_statistics(result)
-            logger.debug(result)
+            await self.send_final_staticstics()

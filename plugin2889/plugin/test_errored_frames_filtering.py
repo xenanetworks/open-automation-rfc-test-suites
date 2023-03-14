@@ -30,6 +30,13 @@ class TestStreamIndex(IntEnum):
     OVER_SIZE = 2
 
 
+@dataclass
+class StreamStats:
+    name: str = ''
+    tx: int = 0
+    rx: int = 0
+
+
 class ErroredFramesFilteringTest(TestBase[ErroredFramesFilteringConfiguration]):
     def test_suit_prepare(self) -> None:
         self.port_name: PortRolePortNameMapping
@@ -45,7 +52,6 @@ class ErroredFramesFilteringTest(TestBase[ErroredFramesFilteringConfiguration]):
     def create_port_pairs(self) -> "PortPairs":
         assert self.test_suit_config.port_role_handler
         group_by_result = group_by_port_property(self.full_test_config.ports_configuration, self.test_suit_config.port_role_handler, self.port_identities)
-        logger.debug(group_by_result)
         source_port_uuid = group_by_result.port_role_uuids[const.PortGroup.SOURCE][0]
         destination_port_uuid = group_by_result.port_role_uuids[const.PortGroup.DESTINATION][0]
         self.port_name = PortRolePortNameMapping(
@@ -121,6 +127,21 @@ class ErroredFramesFilteringTest(TestBase[ErroredFramesFilteringConfiguration]):
             await valid_stream.inject_err.frame_checksum.set()
             await sleep_log(const.INTERVAL_INJECT_FCS_ERROR)
 
+    def reprocess_result(self, result: "ResultData", is_live: bool = True) -> "ResultData":
+        stream_stats = []
+        for stream_idx, tx in result.ports[self.port_name.source].per_tx_stream.items():
+            stream_stats.append(StreamStats(
+                name=TestStreamIndex(stream_idx).name,
+                tx=tx.packet,
+                rx=result.ports[self.port_name.destination].per_rx_tpld_id[tx.tpld_id].packet,
+            ))
+        result.extra = {
+            "fcs_tx": {self.fcs_error_injected_count},
+            "fcs_rx": {result.total.fcs},
+            "streams": stream_stats,
+        }
+        return result
+
     async def run_test(self, run_props: ErroredFramesFilteringRunProps) -> None:
         self.fcs_error_injected_count = 0
         self.staticstics_collect = partial(
@@ -142,11 +163,5 @@ class ErroredFramesFilteringTest(TestBase[ErroredFramesFilteringConfiguration]):
         stop_time = int(time.time()) + self.test_suit_config.duration
         async for traffic_info in self.generate_traffic():
             await self.inject_fcs_error(stop_time)
-            result = traffic_info.result
 
-        await sleep_log(const.DELAY_WAIT_TRAFFIC_STOP)
-        result = await self.staticstics_collect(is_live=False)
-        logger.debug(result)
-        logger.debug(f"fcs error tx: {self.fcs_error_injected_count} rx: {result.total.fcs}")
-        for stream_idx, tx in result.ports[self.port_name.source].per_tx_stream.items():
-            logger.debug(f"{TestStreamIndex(stream_idx).name} tx: {tx.packet}, rx: {result.ports[self.port_name.destination].per_rx_tpld_id[tx.tpld_id].packet}")
+        await self.send_final_staticstics()

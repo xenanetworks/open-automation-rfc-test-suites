@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field
 from functools import partial
-from typing import Dict, Generator, Optional
+from typing import Generator
 from loguru import logger
 
 from plugin2889 import const
 from plugin2889.dataset import CongestionControlConfiguration
-from plugin2889.plugin.base_class import TestBase, TrafficInfo
+from plugin2889.plugin.base_class import TestBase
 from plugin2889.plugin.utils import PortPairs, sleep_log, group_by_port_property
 from plugin2889.dataset import CurrentIterProps, PortPair, StatisticsData
 from plugin2889.resource.manager import ResourcesManager
@@ -58,7 +58,7 @@ class CongestionControlTest(TestBase[CongestionControlConfiguration]):
             status = const.StatisticsStatus.FAIL
         return status
 
-    async def process_result_again(self, result: "ResultData") -> Dict[str, "StatisticsData"]:
+    async def reprocess_result(self, result: "ResultData", is_live: bool = True) -> "ResultData":
         resource_source_split = self.resources[self.port_name.source_split]
 
         # find the exact stream that from split port to uncongested port
@@ -84,10 +84,11 @@ class CongestionControlTest(TestBase[CongestionControlConfiguration]):
 
         result.total.loss = uncongested_result.loss
         result.total.loss_percent = uncongested_result.loss_percent
-        return {
+        result.extra = {
             'congested': congested_result,
             'uncongested': uncongested_result,
         }
+        return result
 
     def do_testing_cycle(self) -> Generator[CurrentIterProps, None, None]:
         packet_sizes = self.full_test_config.general_test_configuration.frame_sizes.packet_size_list
@@ -114,13 +115,7 @@ class CongestionControlTest(TestBase[CongestionControlConfiguration]):
         await self.resources.set_time_limit(self.test_suit_config.duration)
 
         self.statistics.reset_max()
-        result: Optional[ResultData] = None
-        traffic_info: Optional[TrafficInfo] = None
         async for traffic_info in self.generate_traffic():
-            processed_result = await self.process_result_again(traffic_info.result)
-            logger.debug(processed_result)
+            logger.debug(traffic_info)
 
-        await sleep_log(const.DELAY_WAIT_TRAFFIC_STOP)
-        result = await self.staticstics_collect(is_live=False)
-        # processed_result = await self.process_result_again(result)
-        self.xoa_out.send_statistics(result)
+        result = await self.send_final_staticstics()

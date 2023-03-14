@@ -3,6 +3,7 @@ from decimal import Decimal
 from pydantic import BaseModel
 from typing import (
     TYPE_CHECKING,
+    Any,
     Callable,
     Dict,
     Optional,
@@ -24,6 +25,7 @@ class ResultData(BaseModel):
     status: const.StatisticsStatus
     ports: Dict[str, StatisticsData] = {}
     is_live: bool
+    extra: Dict[str, Any] = {}
 
 
 class StatisticsProcessor:
