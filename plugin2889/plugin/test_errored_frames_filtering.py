@@ -83,7 +83,7 @@ class ErroredFramesFilteringTest(TestBase[ErroredFramesFilteringConfiguration]):
             return const.StatisticsStatus.FAIL
         return const.StatisticsStatus.SUCCESS
 
-    def calc_stream_packet_size(self) -> None:
+    def set_stream_packet_size(self) -> None:
         source_stream = self.resources[self.port_name.source].streams
 
         source_stream[TestStreamIndex.UNDER_SIZE].packet_size = \
@@ -120,12 +120,13 @@ class ErroredFramesFilteringTest(TestBase[ErroredFramesFilteringConfiguration]):
             )
         asyncio.gather(*coroutines)
 
-    async def inject_fcs_error(self, stop_time: int) -> None:
-        while int(time.time()) < stop_time:
-            valid_stream = self.resources[self.port_name.source].port.streams.obtain(TestStreamIndex.VALID)
-            self.fcs_error_injected_count += 1
+    async def inject_fcs_error(self) -> None:
+        valid_stream = self.resources[self.port_name.source].port.streams.obtain(TestStreamIndex.VALID)
+        try:
             await valid_stream.inject_err.frame_checksum.set()
-            await sleep_log(const.INTERVAL_INJECT_FCS_ERROR)
+            self.fcs_error_injected_count += 1
+        except Exception as e: # error when stream traffic off
+            logger.debug(str(e))
 
     def reprocess_result(self, result: "ResultData", is_live: bool = True) -> "ResultData":
         stream_stats = []
@@ -135,11 +136,11 @@ class ErroredFramesFilteringTest(TestBase[ErroredFramesFilteringConfiguration]):
                 tx=tx.packet,
                 rx=result.ports[self.port_name.destination].per_rx_tpld_id[tx.tpld_id].packet,
             ))
-        result.extra = {
-            "fcs_tx": {self.fcs_error_injected_count},
-            "fcs_rx": {result.total.fcs},
+        result.extra.update({
+            "fcs_tx": self.fcs_error_injected_count,
+            "fcs_rx": result.total.fcs,
             "streams": stream_stats,
-        }
+        })
         return result
 
     async def run_test(self, run_props: ErroredFramesFilteringRunProps) -> None:
@@ -156,12 +157,11 @@ class ErroredFramesFilteringTest(TestBase[ErroredFramesFilteringConfiguration]):
         await self.resources.mac_learning()
         await sleep_log(const.DELAY_LEARNING_MAC)
 
-        self.calc_stream_packet_size()
+        self.set_stream_packet_size()
         await self.set_stream_incrementing()
         await self.resources.set_stream_rate_and_packet_limit(0, run_props.rate_percent, self.test_suit_config.duration)
 
-        stop_time = int(time.time()) + self.test_suit_config.duration
-        async for traffic_info in self.generate_traffic():
-            await self.inject_fcs_error(stop_time)
+        async for _ in self.generate_traffic(sample_rate=5):
+            await self.inject_fcs_error()
 
         await self.send_final_staticstics()

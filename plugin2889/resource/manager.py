@@ -291,8 +291,8 @@ class ResourcesManager:
 
     async def reset_ports(self) -> None:
         coroutines = (
-            self.set_port_reset(),
             self.stop_traffic(),
+            self.set_port_reset(),
             self.set_port_speed_selection(),
             self.set_port_autoneg(),
             self.set_port_anlt(),

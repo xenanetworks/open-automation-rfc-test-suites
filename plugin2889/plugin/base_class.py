@@ -296,9 +296,9 @@ class TestBase(TestSuitAbstract[TCONFIG]):
 
     async def send_final_staticstics(self) -> "ResultData":
         await sleep_log(const.DELAY_WAIT_TRAFFIC_STOP)
-        result = await self.staticstics_collect(is_live=False)
+        result = self.reprocess_result(await self.staticstics_collect(is_live=False))
+        self.xoa_out.send_statistics(result)
         logger.debug(result)
-        self.xoa_out.send_statistics(self.reprocess_result(result))
         return result
 
 
@@ -327,7 +327,7 @@ class AddressLearningBase(TestBase[TCFG], BinarySearchMixin[T]):
     def create_port_pairs(self) -> "PortPairs":
         assert self.test_suit_config.port_role_handler, const.INVALID_PORT_ROLE
         group_by_result = group_by_port_property(self.full_test_config.ports_configuration, self.test_suit_config.port_role_handler, self.port_identities)
-        logger.debug(group_by_result)
+        # logger.debug(group_by_result)
 
         test_port_uuid = group_by_result.port_role_uuids[const.PortGroup.TEST_PORT][0]
         learning_port_uuid = group_by_result.port_role_uuids[const.PortGroup.LEARNING_PORT][0]

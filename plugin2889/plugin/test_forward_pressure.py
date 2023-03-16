@@ -75,7 +75,7 @@ class ForwardPressureTest(TestBase[ForwardPressureConfiguration]):
             destination=group_by_result.uuid_port_name[destination_port_uuid],
         )
         pairs = (PortPair(west=self.port_name.source, east=self.port_name.destination),)
-        logger.debug(pairs)
+        # logger.debug(pairs)
         return pairs
 
     async def __set_port_interframe_gap(self) -> None:
@@ -127,11 +127,11 @@ class ForwardPressureTest(TestBase[ForwardPressureConfiguration]):
         tx_result.tx_pps = self.port_rate_average.read(Direction.TX)
         rx_result.rx_pps = self.port_rate_average.read(Direction.RX)
 
-        result.extra = {
+        result.extra.update({
             Direction.TX.value: tx_result,
             Direction.RX.value: rx_result,
             'tx_util': tx_util,
-        }
+        })
         return result
 
     async def run_test(self, run_props: CurrentIterProps) -> None:

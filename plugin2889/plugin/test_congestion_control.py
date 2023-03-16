@@ -84,10 +84,10 @@ class CongestionControlTest(TestBase[CongestionControlConfiguration]):
 
         result.total.loss = uncongested_result.loss
         result.total.loss_percent = uncongested_result.loss_percent
-        result.extra = {
+        result.extra.update({
             'congested': congested_result,
             'uncongested': uncongested_result,
-        }
+        })
         return result
 
     def do_testing_cycle(self) -> Generator[CurrentIterProps, None, None]:

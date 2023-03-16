@@ -36,7 +36,7 @@ class L23TestManager:
 
     @contextlib.asynccontextmanager
     async def __traffic_runner(self) -> AsyncGenerator[None, None]:
-        logger.debug("\033[31mStart traffic on both ports...\x1B[0m")
+        logger.debug("\033[31mStart traffic...\x1B[0m")
         await self.__resources.clear_statistic_counters()
         await sleep_log(DELAY_WAIT_RESET_STATS)
         await self.__resources.start_traffic()
@@ -55,7 +55,6 @@ class L23TestManager:
         time_step = 1.0 / sampling_rate
         duration_accived = False
         async with self.__traffic_runner():
-            logger.debug(f"all_traffic_is_stop {self.__resources.all_traffic_is_stop}")
             while time.time() - start_ts <= duration + 2:  # traffic stop delay
                 begin = time.time()
                 time_clock = await self.__resources.get_time_elipsed()
@@ -65,5 +64,3 @@ class L23TestManager:
                 duration_accived = time_clock == duration
                 yield int(time_clock / (duration) * 100)
                 await sleep_log(round(time_step - (time.time() - begin), 3))
-            else:
-                logger.debug('all_traffic_is_stop')
