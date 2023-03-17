@@ -116,16 +116,10 @@ class StreamManager:
 
     async def set_rate_and_packet_limit_fraction(self, packet_size: int, rate_percent: Decimal, traffic_duration: int, rate_definition: RateDefinition) -> None:
         port_speed = await self.__resource.get_used_port_speed()
-        logger.debug(port_speed)
         rate_percent = rate_percent * Decimal(rate_definition.rate_fraction) / Decimal(100)
-        logger.debug(rate_percent)
         factor = (packet_size + DEFAULT_INTERFRAME_GAP) / (packet_size + self.__resource.interframe_gap)  # if interframe gap delta
-        logger.debug(factor)
         bps_rate_l1 = Decimal(factor) * Decimal(port_speed) * rate_percent / Decimal(100) / self.total_stream_count
-        logger.debug(bps_rate_l1)
         stream_packet_rate = bps_rate_l1 / Decimal(8) / (packet_size + DEFAULT_INTERFRAME_GAP)
-        logger.debug(stream_packet_rate)
-        logger.debug(traffic_duration)
         await asyncio.gather(*(
             self.set_rate_fraction(rate_percent),
             self.set_packet_limit(math.floor(stream_packet_rate * traffic_duration)),
