@@ -120,9 +120,11 @@ class ForwardPressureTest(TestBase[ForwardPressureConfiguration]):
         tx_util = self.__calc_max_port_util_from_result(result.ports[self.port_name.source].tx_pps, result.packet_size)
         logger.debug(tx_util)
 
-        if is_live:
-            self.port_rate_average.add(Direction.TX, tx_result.per_tx_stream[0].pps)
-            self.port_rate_average.add(Direction.RX, rx_result.per_rx_tpld_id[0].pps)
+        if is_live and tx_result.per_tx_stream and rx_result.per_rx_tpld_id:
+            tx_pps = list(tx_result.per_tx_stream.values())[0].pps
+            rx_pps = list(rx_result.per_rx_tpld_id.values())[0].pps
+            self.port_rate_average.add(Direction.TX, tx_pps)
+            self.port_rate_average.add(Direction.RX, rx_pps)
 
         tx_result.tx_pps = self.port_rate_average.read(Direction.TX)
         rx_result.rx_pps = self.port_rate_average.read(Direction.RX)
