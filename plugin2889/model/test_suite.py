@@ -622,38 +622,3 @@ class PortIdentity(BaseModel):
     @property
     def identity(self) -> str:
         return f"{self.chassis_index}-{self.module_index}-{self.port_index}"
-
-
-class TestSuiteConfiguration2889(BaseModel):
-    ports_configuration: Dict[str, PortConfiguration]
-    protocol_segments: Dict[str, ProtocolSegmentProfileConfig]
-    general_test_configuration: GeneralTestConfiguration
-    test_suites_configuration: TestSuitesConfiguration
-
-    @property
-    def enabled_test_suit_config_list(self) -> Generator[UnionTestSuitConfiguration, None, None]:
-        for _, test_type_config in self.test_suites_configuration:
-            if test_type_config and test_type_config.enabled:
-                yield test_type_config
-
-    def check_port_config(self) -> None:
-        if len(self.ports_configuration) < 2:
-            raise exceptions.PortConfigNotEnough(2)
-
-    def check_tests_enabled(self) -> None:
-        if len(list(self.enabled_test_suit_config_list)) == 0:
-            raise exceptions.TestTypeNotEnough()
-
-    def __init__(self, **data: Any):
-        super().__init__(**data)
-        self.check_port_config()
-        self.check_tests_enabled()
-
-        for port_conf in self.ports_configuration.values():
-            port_conf.profile = self.protocol_segments[port_conf.profile_id].copy(deep=True)
-
-
-class CoreConfiguration(BaseModel):
-    username: str
-    port_identities: Dict[str, PortIdentity]
-    config: TestSuiteConfiguration2889

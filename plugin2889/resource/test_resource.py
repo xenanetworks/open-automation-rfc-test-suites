@@ -188,9 +188,8 @@ class TestResource:
         asyncio.gather(*[stream.packet.limit.set(limit) for stream in self.port.streams])
 
     async def start_traffic_sync(self, module_ports: List[int]) -> None:
-        logger.debug(module_ports)
         local_time = (await self.tester.time.get()).local_time
-        await self.tester.traffic_sync.set(enums.OnOff.ON, local_time + 2, module_ports)  # add 2 second dealy
+        await self.tester.traffic_sync.set(enums.OnOff.ON, local_time + 2, module_ports)  # add 2 second delay
 
     async def set_stream_peer_mac_address(self, new_peer_mac_address: "MacAddress") -> None:
         await asyncio.gather(*[stream.set_peer_mac_address(new_peer_mac_address) for stream in self.streams])

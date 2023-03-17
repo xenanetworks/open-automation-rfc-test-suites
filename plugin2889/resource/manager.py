@@ -13,6 +13,7 @@ from typing import (
     TypeVar,
     List,
 )
+from loguru import logger
 from xoa_core.types import PortIdentity
 from xoa_driver import testers, modules, enums
 
@@ -20,12 +21,11 @@ if TYPE_CHECKING:
     from plugin2889.resource._port_stream import StreamManager
 
 from plugin2889.model import exceptions
-from plugin2889.const import DELAY_CREATE_PORT_PAIR, INTERVAL_CLEAR_STATISTICS, PacketSizeType
+from plugin2889.const import DELAY_CREATE_PORT_PAIR, DELAY_WAIT_RESET_PORT, INTERVAL_CHECK_PORT_SYNC, CHECK_SYNC_MAX_RETRY, PacketSizeType
 from plugin2889.dataset import MacAddress, PortPair
 from plugin2889.dataset import TestSuiteConfiguration2889
 from plugin2889.plugin.utils import sleep_log
 from plugin2889.resource.test_resource import TestResource
-from plugin2889.util.logger import logger
 
 
 T = TypeVar("T", bound="ResourcesManager")
@@ -148,8 +148,6 @@ class ResourcesManager:
 
     async def clear_statistic_counters(self) -> None:
         await asyncio.gather(*[r.statistics.clear() for r in self])
-        while not self.all_ports_is_sync:
-            await sleep_log(INTERVAL_CLEAR_STATISTICS)
 
     async def prepare_streams(self) -> None:
         crooutines = []
@@ -293,8 +291,8 @@ class ResourcesManager:
 
     async def reset_ports(self) -> None:
         coroutines = (
-            self.set_port_reset(),
             self.stop_traffic(),
+            self.set_port_reset(),
             self.set_port_speed_selection(),
             self.set_port_autoneg(),
             self.set_port_anlt(),
@@ -304,6 +302,18 @@ class ResourcesManager:
             self.set_tpld_mode(),
         )
         await asyncio.gather(*coroutines)
+        await sleep_log(DELAY_WAIT_RESET_PORT)
 
     async def set_stream_packet_limit(self, limit: int) -> None:
         await asyncio.gather(*[r.set_packet_limit(limit) for r in self])
+
+    async def check_port_link(self) -> None:
+        check_count = 0
+        while not self.all_ports_is_sync:
+            logger.debug('Detected loss of link - retrying')
+            check_count += 1
+            if check_count > CHECK_SYNC_MAX_RETRY:
+                if self.__test_config.general_test_configuration.should_stop_on_los:
+                    raise exceptions.StopTestByLossSignal()
+                break
+            await sleep_log(INTERVAL_CHECK_PORT_SYNC)

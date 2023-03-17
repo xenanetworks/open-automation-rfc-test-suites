@@ -13,12 +13,15 @@ DELAY_WAIT_TRAFFIC_STOP = 5
 DELAY_LEARNING_MAC = 1
 DELAY_LEARNING_ADDRESS = 1
 DELAY_CREATE_PORT_PAIR = 3
+DELAY_WAIT_RESET_PORT = 5
+DELAY_WAIT_RESET_STATS = 2
 INTERVAL_CHECK_SHOULD_STOP_TRAFFIC = 0.01
 INTERVAL_CHECK_PORT_SYNC = 1
 INTERVAL_CHECK_PORT_RESERVE = 0.5
 INTERVAL_CLEAR_STATISTICS = 0.01
 INTERVAL_INJECT_FCS_ERROR = 0.2
 
+CHECK_SYNC_MAX_RETRY = 30
 
 # https://en.wikipedia.org/wiki/Ethernet_frame
 # 20 = Preamble + Start frame delimiter + Interpacket gap
@@ -44,6 +47,15 @@ DEFAULT_MIXED_PACKET_SIZE = (
     1518,
     9216,
     16360,
+)
+DEFAULT_IETF_PACKET_SIZE = (
+    64,
+    128,
+    256,
+    512,
+    1024,
+    1280,
+    1518,
 )
 MIXED_DEFAULT_WEIGHTS = (0, 0, 0, 0, 57, 3, 5, 1, 2, 5, 1, 4, 4, 18, 0, 0)
 
@@ -208,9 +220,9 @@ class StreamRateType(Enum):
 
 
 class PortRateCapUnitInt(Enum):
-    GBPS = 1e9
-    MBPS = 1e6
-    KBPS = 1e3
+    FIELD_1E9_BPS = 1e9
+    FIELD_1E6_BPS = 1e6
+    FIELD_1E3_BPS = 1e3
     BPS = 1
 
 
@@ -329,9 +341,9 @@ class TidAllocationScope(Enum):
 
 
 class FECModeStr(Enum):
-    ON = "on"
-    OFF = "off"
-    FC_FEC = "fc_fec"
+    ON = "ON"
+    OFF = "OFF"
+    FC_FEC = "FIRECODE"
 
     def to_xmp(self) -> "enums.FECMode":
         return enums.FECMode[self.name]

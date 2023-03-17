@@ -244,7 +244,6 @@ def group_by_port_property(
         if not port_role_config.is_used:
             not_use_port_uuid.append(uuid)
 
-    logger.debug(result.uuid_role)
     for _, port_config in port_configuration.items():
         uuid = port_config.item_id
         if uuid in not_use_port_uuid:
@@ -252,7 +251,7 @@ def group_by_port_property(
         result.uuid_slot[port_config.item_id] = port_config.port_slot
         result.uuid_port_name[port_config.item_id] = port_identities[port_config.port_slot].name
 
-    logger.debug(result)
+    # logger.debug(result)
     return result
 
 
@@ -307,7 +306,7 @@ def create_port_pair(
     else:
         pairs = create_pairs_blocks(group_by_property, traffic_direction, role_source, role_destination)
 
-    logger.debug(pairs)
+    # logger.debug(pairs)
     assert pairs, 'empty port pairs'
     return pairs
 

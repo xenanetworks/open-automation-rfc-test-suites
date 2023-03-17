@@ -132,7 +132,7 @@ class BinarySearchBase(ABC, Generic[T]):
 
 class DecimalBinarySearch(BinarySearchBase[Decimal]):
     def _type_cast(self, value: Any) -> Decimal:
-        return Decimal(value)
+        return Decimal(value).quantize(Decimal('.001'), rounding=ROUND_DOWN)
 
     def _calculate_move_right(self) -> Decimal:
         return ((self.current + self.right) / Decimal(2.0)).quantize(Decimal('.001'), rounding=ROUND_DOWN)
@@ -262,6 +262,7 @@ class TestBase(TestSuitAbstract[TCONFIG]):
 
     async def setup_resources(self) -> None:
         await self.resources.reset_ports()
+        await self.resources.check_port_link()
         await self.resources.configure_ports()
         await self.resources.map_pairs()
 
@@ -283,12 +284,22 @@ class TestBase(TestSuitAbstract[TCONFIG]):
                 raise exceptions.StopTestByLossSignal()
             result = await self.staticstics_collect(is_live=True)
             self.xoa_out.send_progress(duration_progress)
-            self.xoa_out.send_statistics(result)
+            self.xoa_out.send_statistics(self.reprocess_result(result, is_live=True))
             yield TrafficInfo(progress=duration_progress, result=result)
 
     @property
     def iterations_offset_by_1(self) -> Iterable[int]:
         return range(1, self.test_suit_config.iterations + 1)
+
+    def reprocess_result(self, result: "ResultData", is_live: bool = False) -> "ResultData":
+        return result
+
+    async def send_final_staticstics(self) -> "ResultData":
+        await sleep_log(const.DELAY_WAIT_TRAFFIC_STOP)
+        result = self.reprocess_result(await self.staticstics_collect(is_live=False))
+        self.xoa_out.send_statistics(result)
+        logger.debug(result)
+        return result
 
 
 TCFG = TypeVar("TCFG", AddressCachingCapacityConfiguration, AddressLearningRateConfiguration)
@@ -316,7 +327,7 @@ class AddressLearningBase(TestBase[TCFG], BinarySearchMixin[T]):
     def create_port_pairs(self) -> "PortPairs":
         assert self.test_suit_config.port_role_handler, const.INVALID_PORT_ROLE
         group_by_result = group_by_port_property(self.full_test_config.ports_configuration, self.test_suit_config.port_role_handler, self.port_identities)
-        logger.debug(group_by_result)
+        # logger.debug(group_by_result)
 
         test_port_uuid = group_by_result.port_role_uuids[const.PortGroup.TEST_PORT][0]
         learning_port_uuid = group_by_result.port_role_uuids[const.PortGroup.LEARNING_PORT][0]
@@ -389,7 +400,6 @@ class AddressLearningBase(TestBase[TCFG], BinarySearchMixin[T]):
                     modifier1.range.set(min_val=1, step=1, max_val=0xfff),
                 ]
             )
-
         await apply(*tokens)
 
     async def set_learning_limit(self, port_name: str) -> None:
@@ -399,6 +409,11 @@ class AddressLearningBase(TestBase[TCFG], BinarySearchMixin[T]):
                 self.resources[port_name].set_packet_limit(self.learning_adress_count),
             ]
         )
+
+    def reprocess_result(self, result: "ResultData", is_live: bool = True) -> "ResultData":
+        result.extra['port_name'] = self.port_name
+        result.extra['binary_search'] = self.binary_search
+        return result
 
     async def setup_learning_traffic(self, port_name: str) -> None:
         await self.set_learning_modifiers(port_name)
@@ -459,8 +474,7 @@ class AddressLearningBase(TestBase[TCFG], BinarySearchMixin[T]):
         await sleep_log(const.DELAY_WAIT_TRAFFIC_STOP)
         await sleep_log(const.DELAY_LEARNING_ADDRESS)
         result = await self.staticstics_collect(is_live=False)
-        await self.switch_port_roles()
 
+        await self.switch_port_roles()
         assert result
-        logger.debug(result.status)
         return result

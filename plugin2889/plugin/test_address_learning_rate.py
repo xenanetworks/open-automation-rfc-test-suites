@@ -21,13 +21,14 @@ class AddressLearningRateTest(AddressLearningBase[AddressLearningRateConfigurati
             port_pairs=self.create_port_pairs(),
             get_mac_address_function=self.get_mac_address,
         )
+        self.create_statistics()
 
     def do_testing_cycle(self) -> Generator[AddressLearningRateRunProps, None, None]:
         packet_sizes = self.full_test_config.general_test_configuration.frame_sizes.packet_size_list
         max_capacity = self.plugin_params.data_sharing.get_max_caching_capacity()
         logger.debug(max_capacity)
         sweep_options: Iterable[int]
-        if self.test_suit_config.only_use_capacity and max_capacity:
+        if self.test_suit_config.only_use_capacity and max_capacity > 0:
             sweep_options = (max_capacity,)
         else:
             end_value = max_capacity if self.test_suit_config.set_end_address_to_capacity and max_capacity else int(self.test_suit_config.address_sweep_options.end_value)
@@ -67,4 +68,5 @@ class AddressLearningRateTest(AddressLearningBase[AddressLearningRateConfigurati
         while not self.binary_search.determine_should_end(result):
             logger.debug(self.binary_search)
             logger.debug(self.learning_adress_count)
-            result = await self.address_learning_test(run_props.packet_size)
+            await self.address_learning_test(run_props.packet_size)
+            result = await self.send_final_staticstics()
