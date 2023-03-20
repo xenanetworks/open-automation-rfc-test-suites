@@ -227,7 +227,7 @@ class GroupByPortProperty(BaseModel):
     uuid_slot: Dict[str, str] = {}
     port_name_role: Dict[str, str] = {}
     uuid_port_name: Dict[str, str] = {}
-
+    port_peer: Dict[str, str] = {}
 
 def group_by_port_property(
     port_configuration: Dict[str, PortConfiguration],
@@ -243,6 +243,7 @@ def group_by_port_property(
         result.port_role_uuids[port_role_config.role].append(uuid)
         if not port_role_config.is_used:
             not_use_port_uuid.append(uuid)
+        result.port_peer[uuid] = port_role_config.peer_port_id
 
     for _, port_config in port_configuration.items():
         uuid = port_config.item_id
@@ -266,7 +267,7 @@ def create_pairs_mesh(group_by_property: GroupByPortProperty) -> PortPairs:
 def create_pairs_pair(group_by_property: GroupByPortProperty, traffic_direction: TrafficDirection, role_source: PortGroup) -> PortPairs:
     pairs = []
     for port_uuid in group_by_property.port_role_uuids[role_source]:
-        peer_uuid = group_by_property.uuid_role[port_uuid][1]
+        peer_uuid = group_by_property.port_peer[port_uuid]
         pairs.append(PortPair(west=group_by_property.uuid_port_name[port_uuid], east=group_by_property.uuid_port_name[peer_uuid]))
         if traffic_direction == TrafficDirection.BIDIR:
             pairs.append(PortPair(east=group_by_property.uuid_port_name[port_uuid], west=group_by_property.uuid_port_name[peer_uuid]))
@@ -316,8 +317,7 @@ async def sleep_log(duration: float) -> None:
     caller_frame = inspect.stack()[1]
     message = f"\x1b[33;20m{caller_frame.filename.rsplit(os.path.sep, 1)[1]}:{caller_frame.lineno} {caller_frame.function} {duration}\x1B[0m"
     logger.debug(message)
-    if duration > 0:
-        await asyncio.sleep(duration)
+    await asyncio.sleep(duration)
 
 
 def is_ip_segment_exists(header_segments: List["ProtocolSegment"]) -> bool:
