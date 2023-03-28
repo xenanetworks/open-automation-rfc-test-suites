@@ -8,9 +8,7 @@ from ..utils import exceptions
 if TYPE_CHECKING:
     from .structure import PortStruct
     from .test_config import TestConfigData
-    from ..model import (
-        MultiStreamConfig,
-    )
+    from ..model.m_test_config import MultiStreamConfig
 
 
 async def setup_streams(

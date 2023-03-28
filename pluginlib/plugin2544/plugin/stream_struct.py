@@ -2,7 +2,7 @@ import asyncio
 from copy import deepcopy
 from typing import List, Optional, TYPE_CHECKING
 from xoa_driver import utils, enums
-from ..model import (
+from ..model.m_protocol_segment import (
     HWModifier,
     ModifierActionOption,
 )

@@ -13,7 +13,7 @@ from ..utils import constants as const, exceptions
 if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity
     from .test_config import TestConfigData
-    from ..model import PortConfiguration
+    from ..model.m_port_config import PortConfiguration
     from ..utils.interfaces import TestSuitePipe
 
 

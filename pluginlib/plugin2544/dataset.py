@@ -1,12 +1,11 @@
 from typing import Any, List, Tuple, Dict
 from pydantic import BaseModel, validator
 from .utils import exceptions, constants as const
-from .model import (
-    TestConfigModel,
-    TestTypesConfiguration,
-    PortConfiguration,
-    ProtocolSegmentProfileConfig,
-)
+from .model.m_test_config import TestConfigModel
+from .model.m_test_type_config import TestTypesConfiguration
+from .model.m_port_config import PortConfiguration
+from .model.m_protocol_segment import ProtocolSegmentProfileConfig
+
 
 PortConfType = List[PortConfiguration]
 

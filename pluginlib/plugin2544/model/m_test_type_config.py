@@ -50,7 +50,7 @@ class ThroughputTest(BaseModel):
     common_options: CommonOptions
     rate_iteration_options: RateIterationOptions
     use_pass_criteria: bool
-    pass_threshold_throughput_pct: float
+    pass_criteria_throughput_pct: float
     acceptable_loss_pct: float
     collect_latency_jitter: bool
 

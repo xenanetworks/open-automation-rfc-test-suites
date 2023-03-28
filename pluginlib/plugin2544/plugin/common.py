@@ -5,7 +5,7 @@ from ..utils import constants as const, field
 
 if TYPE_CHECKING:
     from .structure import PortStruct
-    from ..model import PortConfiguration
+    from ..model.m_port_config import PortConfiguration
 
 
 def gen_macaddress(first_three_bytes: str, index: int) -> "field.MacAddress":

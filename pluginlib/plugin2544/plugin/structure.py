@@ -19,9 +19,9 @@ if TYPE_CHECKING:
     from xoa_driver.lli import commands
     from ..utils.interfaces import TestSuitePipe
     from .test_config import TestConfigData
-    from ..model import (
-        FrameSize,
-        PortConfiguration,
+    from ..model.m_test_config import FrameSize
+    from ..model.m_port_config import PortConfiguration
+    from ..model.m_test_type_config import (
         ThroughputTest,
         LatencyTest,
         FrameLossRateTest,

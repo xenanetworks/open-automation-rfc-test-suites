@@ -102,8 +102,8 @@ class ThroughputConfig(BaseTestType):
         return self._conf.use_pass_criteria
 
     @property
-    def pass_threshold_throughput_pct(self) -> float:
-        return self._conf.pass_threshold_throughput_pct
+    def pass_criteria_throughput_pct(self) -> float:
+        return self._conf.pass_criteria_throughput_pct
 
     @property
     def acceptable_loss_pct(self) -> float:

@@ -10,10 +10,8 @@ if TYPE_CHECKING:
     from .structure import PortStruct
     from .test_config import TestConfigData
     from .test_type_config import AllTestTypeConfig
-    from ..model import (
-        ProtocolSegmentProfileConfig,
-        PortConfiguration,
-    )
+    from ..model.m_protocol_segment import ProtocolSegmentProfileConfig
+    from ..model.m_port_config import PortConfiguration
 
 
 def check_port_config_profile(
@@ -59,7 +57,7 @@ def check_custom_port_config(
     capabilities: "commands.P_CAPABILITIES.GetDataAttr", port_conf: "PortConfiguration"
 ) -> None:
 
-    if port_conf.port_rate > capabilities.max_speed * 1_000_000:
+    if port_conf.port_rate_cap_profile.is_custom and port_conf.port_rate > capabilities.max_speed * 1_000_000:
         raise exceptions.PortRateError(
             port_conf.port_rate, capabilities.max_speed * 1_000_000
         )

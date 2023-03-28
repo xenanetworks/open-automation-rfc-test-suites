@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
-    from ..model import ProtocolSegment
+    from ..model.m_protocol_segment import ProtocolSegment
     from ..utils.field import IPv4Address, IPv6Address, MacAddress
 
 
