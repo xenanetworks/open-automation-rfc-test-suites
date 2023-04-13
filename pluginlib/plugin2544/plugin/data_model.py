@@ -1,9 +1,12 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pydantic import BaseModel
-from typing import Optional, Union, Tuple
-
+from typing import Optional, Union, Tuple, TYPE_CHECKING
+import time
 from ..utils.constants import PortProtocolVersion
 from ..utils.field import IPv4Address, IPv6Address, MacAddress
+
+if TYPE_CHECKING:
+    from ..utils.interfaces import TestSuitePipe
 
 
 @dataclass(frozen=True)
@@ -44,3 +47,13 @@ class AddressCollection:
         elif protocol.is_ipv6:
             return self.src_addr, self.dst_addr
         return self.smac, self.dmac
+
+@dataclass
+class Progress:
+    total: int
+    current: int = 0
+    start_time: float = field(default_factory=time.time)
+
+    def send(self, xoa: "TestSuitePipe") -> None:
+        xoa.send_progress(self)
+        self.current += 1

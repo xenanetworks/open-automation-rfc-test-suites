@@ -1,8 +1,9 @@
 import math
 from typing import Any, Dict, List, Union, TYPE_CHECKING
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, Field
 from operator import attrgetter
 from ..utils import constants as const
+import time
 
 if TYPE_CHECKING:
     from .structure import PortStruct
@@ -398,6 +399,7 @@ class FinalStatistic(BaseModel):
     rate_result_scope: const.RateResultScopeType = const.RateResultScopeType.COMMON
     port_data: List[Statistic] = []
     total: TotalStatistic = TotalStatistic()
+    timestamp: float = Field(default_factory=time.time)
 
     class Config:
         arbitrary_types_allowed = True

@@ -56,6 +56,10 @@ class SweepTestType(BaseTestType):
         if pct != end_value_pct:
             yield end_value_pct
 
+    @property
+    def rate_length(self) -> int:
+        return sum(1 for _ in self.rate_sweep_list)
+
 
 class ThroughputConfig(BaseTestType):
     def __init__(self, throughput_config: "t_model.ThroughputTest"):
@@ -108,6 +112,10 @@ class ThroughputConfig(BaseTestType):
     @property
     def acceptable_loss_pct(self) -> float:
         return self._conf.acceptable_loss_pct
+    
+    @property
+    def process_count(self) -> int:
+        return self.repetition
 
 
 class FrameLossConfig(SweepTestType):
@@ -138,6 +146,9 @@ class FrameLossConfig(SweepTestType):
     def gap_monitor_stop_frames(self) -> int:
         return self._conf.gap_monitor_stop_frames
 
+    @property
+    def process_count(self) -> int:
+        return self.repetition * self.rate_length
 
 class LatencyConfig(SweepTestType):
     def __init__(self, latency_config: "t_model.LatencyTest") -> None:
@@ -155,6 +166,9 @@ class LatencyConfig(SweepTestType):
     def latency_mode(self) -> "const.LatencyModeStr":
         return self._conf.latency_mode
 
+    @property
+    def process_count(self) -> int:
+        return self.repetition * self.rate_length
 
 class BackToBackConfig(SweepTestType):
     def __init__(self, back_to_back_config: "t_model.BackToBackTest"):
@@ -168,6 +182,9 @@ class BackToBackConfig(SweepTestType):
     def burst_resolution(self) -> float:
         return self._conf.burst_size_iteration_options.burst_resolution
 
+    @property
+    def process_count(self) -> int:
+        return self.repetition * self.rate_length
 
 AllTestTypeConfig = Union[
     ThroughputConfig, LatencyConfig, FrameLossConfig, BackToBackConfig

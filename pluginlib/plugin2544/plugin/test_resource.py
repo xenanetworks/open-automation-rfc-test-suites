@@ -8,6 +8,7 @@ from .config_checkers import check_config
 from .common import get_peers_for_source
 from .setup_streams import setup_streams
 from .structure import PortStruct
+
 from ..utils import constants as const, exceptions
 
 if TYPE_CHECKING:
@@ -72,6 +73,9 @@ class ResourceManager:
                 for port_struct in self.port_structs
             ]
         )
+    
+    async def free(self) -> None:
+        await asyncio.gather(*[port_struct.free() for port_struct in self.port_structs])
 
     def build_map(self) -> None:
         for port_struct in self.tx_ports:

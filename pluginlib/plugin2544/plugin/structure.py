@@ -195,8 +195,8 @@ class PortStruct:
     async def send_packet(self, packet: str) -> None:
         await self.port_ins.tx_single_pkt.send.set(packet)
 
-    def free(self) -> List["misc.Token"]:
-        return [self.port_ins.reservation.set_release()]
+    def free(self) -> "misc.Token":
+        return self.port_ins.reservation.set_release()
 
     async def prepare(self) -> None:
         self.port_ins.on_reservation_change(self.__on_reservation_status)
@@ -211,9 +211,10 @@ class PortStruct:
             self.port_ins.speed.current.get(),
         ]
         if self.port_ins.is_reserved_by_me():
-            tokens.extend(self.free())
+            tokens.append(self.free())
         elif self.port_ins.is_reserved_by_others():
             tokens.append(self.port_ins.reservation.set_relinquish())
+        tokens.append(self.port_ins.reservation.get())
         tokens.append(self.port_ins.reservation.set_reserve())
         tokens.append(self.port_ins.reset.set())
 
