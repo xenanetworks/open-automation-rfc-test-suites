@@ -54,6 +54,7 @@ class TestCaseProcessor:
         self._throughput_map = (
             {}
         )  # save throughput rate for latency relative to throughput use
+        self.lock = asyncio.Lock()
 
     def gen_loop(
         self, type_conf: "AllTestTypeConfig"
@@ -164,9 +165,9 @@ class TestCaseProcessor:
         if test_type_conf.use_relative_to_throughput and self._throughput_map:
             factor = self._throughput_map.get(current_packet_size, 100.0) / 100.0
 
-        for rate_percent in test_type_conf.rate_sweep_list:
+        for rate in test_type_conf.rate_sweep_list:
             # tx_rate_nominal_percent = rate_percent
-            rate_percent = rate_percent * factor
+            rate_percent = rate * factor
             params = StatisticParams(
                 test_case_type=test_type_conf.test_type,
                 rate_percent=rate_percent,
@@ -222,22 +223,24 @@ class TestCaseProcessor:
             duration=test_type_conf.actual_duration,
             rate_result_scope=test_type_conf.result_scope,
         )
-        while True:
-            for boundary in boundaries:
-                boundary.update_boundary(result)
+        while True:            
+            await asyncio.sleep(const.DELAY_STATISTICS)
             should_continue = any(
                 boundary.port_should_continue for boundary in boundaries
             )
-            test_passed = all(boundary.port_test_passed for boundary in boundaries)
+            if not should_continue:
+                break
             for boundary in boundaries:
                 boundary.update_rate()
             params.set_rate_percent(boundaries[0].rate_percent)
             self.resources.set_rate_percent(params.rate_percent)
             await self.start_test(test_type_conf, current_packet_size)
             result = await self.collect(params)
+            for boundary in boundaries:
+                boundary.update_boundary(result)
+            test_passed = all(boundary.port_test_passed for boundary in boundaries)
             await self.resources.set_tx_time_limit(0)
-            if not should_continue:
-                break
+
         if not test_type_conf.is_per_source_port:
             final = boundaries[0].best_final_result
             # record the max throughput rate

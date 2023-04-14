@@ -9,15 +9,9 @@ from .test_type_config import ThroughputConfig
 
 class ThroughputBoutEntry:
     def __init__(self, throughput_conf: "ThroughputConfig", port_struct: "PortStruct"):
-        self.current = (
-            self.rate_percent
-        ) = self.next = throughput_conf.initial_value_pct
-        self.left_bound: float = (
-            throughput_conf.minimum_value_pct
-        )
-        self.right_bound: float = (
-            throughput_conf.maximum_value_pct
-        )
+        self.current = self.rate_percent = self.next = throughput_conf.initial_value_pct
+        self.left_bound: float = throughput_conf.minimum_value_pct
+        self.right_bound: float = throughput_conf.maximum_value_pct
         self._last_move: int = 0
         self._port_struct: PortStruct = port_struct
         self._throughput_conf = throughput_conf
@@ -88,13 +82,13 @@ class ThroughputBoutEntry:
             loss_ratio = result.total.rx_loss_percent
         loss_ratio_pct = loss_ratio * 100.0
         if loss_ratio_pct <= self._throughput_conf.acceptable_loss_pct:
-            if (
-                self._throughput_conf.is_per_source_port
-            ):
+            if self._throughput_conf.is_per_source_port:
                 for stream in self._port_struct.stream_structs:
                     stream.set_best_result()
             else:
                 self.best_final_result = result
+            if self.right_bound == self._throughput_conf.maximum_value_pct:
+                self._port_should_continue = False
             self.update_left_bound()
         else:
             self.update_right_bound(loss_ratio)
