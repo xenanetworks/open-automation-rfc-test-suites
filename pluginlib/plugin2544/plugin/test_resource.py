@@ -217,12 +217,11 @@ class ResourceManager:
                 use_micro_tpld = current_packet_size < min_length
                 if use_micro_tpld:
                     break
-        await asyncio.gather(
-            *(
-                port_struct.set_tpld_mode(use_micro_tpld)
-                for port_struct in self.port_structs
-            )
+        tasks = (
+            port_struct.set_tpld_mode(use_micro_tpld)
+            for port_struct in self.port_structs
         )
+        await asyncio.gather(*tasks)
 
     async def setup_packet_size(self, current_packet_size: Union[float, int]) -> None:
         if self.__test_conf.frame_sizes.packet_size_type.is_fix:
