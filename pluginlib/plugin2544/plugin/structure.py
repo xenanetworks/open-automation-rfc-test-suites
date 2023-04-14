@@ -420,13 +420,11 @@ class PortStruct:
                 self.properties.test_port_index,
             )
             await self.set_mac_address(str(mac))
-
         await self.set_speed_mode(self._port_conf.port_speed_mode)
         await self.set_latency_offset(self._port_conf.latency_offset_ms)
         await self.set_interframe_gap(int(self._port_conf.inter_frame_gap))
         await self.set_pause_mode(self._port_conf.pause_mode_enabled)
         await self.set_latency_mode(latency_mode)
-        await self.set_tpld_mode(test_conf.use_micro_tpld_on_demand)
         await self.set_reply()
         await self.set_ip_address()
         await self.set_broadr_reach_mode(self._port_conf.broadr_reach_mode)

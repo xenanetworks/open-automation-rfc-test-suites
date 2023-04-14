@@ -33,19 +33,31 @@ if TYPE_CHECKING:
 
 
 class TestCaseProcessor:
-    def __init__(self, resources: "ResourceManager",  test_conf: "TestConfigData", test_type_confs: list["AllTestTypeConfig"], xoa_out: "TestSuitePipe"):
+    def __init__(
+        self,
+        resources: "ResourceManager",
+        test_conf: "TestConfigData",
+        test_type_confs: List["AllTestTypeConfig"],
+        xoa_out: "TestSuitePipe",
+    ) -> None:
         self.resources: "ResourceManager" = resources
         self.xoa_out = xoa_out
         self.__test_conf = test_conf
         self.address_refresh_handler: Optional[AddressRefreshHandler] = None
         self.test_results = {}  # save result to calculate average
         self._test_type_conf = test_type_confs
-        self.progress = Progress(total=sum(type_conf.process_count for type_conf in self._test_type_conf) * len(self.__test_conf.packet_size_list))
+        self.progress = Progress(
+            total=sum(type_conf.process_count for type_conf in self._test_type_conf)
+            * len(self.__test_conf.packet_size_list)
+        )
         self.progress.send(self.xoa_out)
         self._throughput_map = (
             {}
         )  # save throughput rate for latency relative to throughput use
-    def gen_loop(self, type_conf: "AllTestTypeConfig") -> Generator[Tuple[int, float], None, None]:
+
+    def gen_loop(
+        self, type_conf: "AllTestTypeConfig"
+    ) -> Generator[Tuple[int, float], None, None]:
         max_iteration = type_conf.common_options.repetition
         if self.__test_conf.is_iteration_outer_loop_mode:
             for iteration in range(1, max_iteration + 1):
@@ -57,12 +69,9 @@ class TestCaseProcessor:
                     yield iteration, current_packet_size
 
     async def prepare(self) -> None:
-        if (not self.resources.has_l3) or (
-            not self.__test_conf.arp_refresh_enabled
-        ):
+        if (not self.resources.has_l3) or (not self.__test_conf.arp_refresh_enabled):
             return None
         self.address_refresh_handler = await setup_address_arp_refresh(self.resources)
-
 
     async def start(self, state_conditions: "PStateConditions") -> None:
         await self.prepare()
@@ -71,13 +80,14 @@ class TestCaseProcessor:
                 for iteration, current_packet_size in self.gen_loop(type_conf):
                     await state_conditions.wait_if_paused()
                     await state_conditions.stop_if_stopped()
+                    await self.resources.setup_tpld_mode(current_packet_size)
                     await self.resources.setup_packet_size(current_packet_size)
                     await self.run(type_conf, current_packet_size, iteration)
                     if (
                         not self.__test_conf.is_iteration_outer_loop_mode
                         and type_conf.repetition > 1
                         and iteration == type_conf.repetition
-                    ):  # calculate average 
+                    ):  # calculate average
                         self.cal_average(type_conf, current_packet_size)
                 if (
                     self.__test_conf.is_iteration_outer_loop_mode
@@ -87,6 +97,7 @@ class TestCaseProcessor:
 
             if not self.__test_conf.repeat_test_until_stopped:
                 break
+
     async def run(
         self,
         test_type_conf: "AllTestTypeConfig",
@@ -96,7 +107,7 @@ class TestCaseProcessor:
         if isinstance(test_type_conf, ThroughputConfig):
             await self._throughput(
                 test_type_conf, current_packet_size, iteration
-            )
+            )  # type:ignore
         elif isinstance(test_type_conf, LatencyConfig):
             await self._latency(
                 test_type_conf, current_packet_size, iteration
@@ -108,7 +119,7 @@ class TestCaseProcessor:
         elif isinstance(test_type_conf, BackToBackConfig):
             await self._back_to_back(
                 test_type_conf, current_packet_size, iteration
-            )
+            )  # type:ignore
 
     async def add_learning_steps(self, current_packet_size: float) -> None:
         await self.resources.stop_traffic()
@@ -164,7 +175,8 @@ class TestCaseProcessor:
                 duration=test_type_conf.actual_duration,
             )
             await self.add_learning_steps(current_packet_size)
-            self.resources.set_rate_percent(rate_percent)   # set rate percent must after learning.
+            self.resources.set_rate_percent(rate_percent)
+            # set rate percent must after learning.
             await self.start_test(test_type_conf, current_packet_size)
             result = await self.collect(params)
             await self.resources.set_tx_time_limit(0)
@@ -192,7 +204,6 @@ class TestCaseProcessor:
             await self.resources.set_tx_time_limit(0)
             is_test_passed = check_if_frame_loss_success(test_type_conf, result)
             self._add_result(is_test_passed, result)
-            
 
     async def _throughput(
         self,

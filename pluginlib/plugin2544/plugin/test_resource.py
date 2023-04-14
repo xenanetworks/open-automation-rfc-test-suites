@@ -73,7 +73,7 @@ class ResourceManager:
                 for port_struct in self.port_structs
             ]
         )
-    
+
     async def free(self) -> None:
         await asyncio.gather(*[port_struct.free() for port_struct in self.port_structs])
 
@@ -200,6 +200,29 @@ class ResourceManager:
             dest_ports = get_peers_for_source(topology, port_config, self.port_structs)
             for peer_struct in dest_ports:
                 port_struct.properties.register_peer(peer_struct)
+
+    async def setup_tpld_mode(self, current_packet_size: float) -> None:
+        """use_micro_tpld_on_demand and can use micro tpld"""
+        use_micro_tpld_on_demand = self.test_conf.use_micro_tpld_on_demand
+        use_micro_tpld = False
+        if use_micro_tpld_on_demand:
+            for port_struct in self.port_structs:
+                if current_packet_size == 0:
+                    break
+                if not port_struct.capabilities.can_micro_tpld:
+                    break
+                packet_header = port_struct.stream_structs[0]._packet_header
+                header_length = len(packet_header)
+                min_length = header_length + const.STANDARD_TPLD_TOTAL_LENGTH
+                use_micro_tpld = current_packet_size < min_length
+                if use_micro_tpld:
+                    break
+        await asyncio.gather(
+            *(
+                port_struct.set_tpld_mode(use_micro_tpld)
+                for port_struct in self.port_structs
+            )
+        )
 
     async def setup_packet_size(self, current_packet_size: Union[float, int]) -> None:
         if self.__test_conf.frame_sizes.packet_size_type.is_fix:

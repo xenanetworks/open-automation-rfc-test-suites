@@ -283,7 +283,8 @@ class StreamStruct:
                     self._addr_coll.dst_addr,
                 )
 
-        await self._stream.packet.header.data.set(f"0x{profile.prepare().hex()}")
+        self._packet_header = profile.prepare()
+        await self._stream.packet.header.data.set(f"0x{self._packet_header.hex()}")
 
     async def setup_modifier(self) -> None:
         tokens = []
