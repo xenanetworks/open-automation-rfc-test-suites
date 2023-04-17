@@ -43,7 +43,6 @@ class PortStruct:
         self._xoa_out = xoa_out
         self._port_identity = port_identity
         self._should_stop_on_los = False
-
         self._port_conf = port_conf
         self.properties = Properties()
         self.lock = asyncio.Lock()

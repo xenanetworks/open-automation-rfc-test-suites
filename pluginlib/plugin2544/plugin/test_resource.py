@@ -1,7 +1,7 @@
 from __future__ import annotations
 import asyncio
 import time
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Tuple
 from xoa_driver import testers as xoa_testers, modules, enums, utils
 from .learning import add_mac_learning_steps
 from .config_checkers import check_config
@@ -280,7 +280,9 @@ class ResourceManager:
         elapsed = time.time() - start_time
         self.xoa_out.send_progress(elapsed / actual_duration * 100)
 
-    def should_quit(self, start_time: float, actual_duration: float) -> bool:
+    def should_quit(
+        self, start_time: float, actual_duration: float
+    ) -> Tuple[bool, bool]:
         test_finished = self.test_finished()
         elapsed = time.time() - start_time
         actual_duration_elapsed = (
@@ -289,8 +291,10 @@ class ResourceManager:
         los = self.los()
         if los:
             self.xoa_out.send_warning(exceptions.StopTestByLossSignal())
-
-        return test_finished or los or actual_duration_elapsed
+        should_quit = test_finished or los or actual_duration_elapsed
+        port_should_stop = [port._should_stop_on_los for port in self.port_structs]
+        should_fail = los and any(port_should_stop)
+        return should_quit, should_fail
 
     def set_rate_percent(self, rate: float) -> None:
         for port_struct in self.tx_ports:

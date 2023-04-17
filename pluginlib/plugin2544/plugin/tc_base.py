@@ -145,15 +145,24 @@ class TestCaseProcessor:
 
     async def collect(self, params: "StatisticParams") -> "FinalStatistic":
         start_time = time.time()
+        each_query_fail = False
+        final_fail = False
         while True:
             data = await aggregate_data(self.resources, params, is_final=False)
+            t = self.resources.should_quit(start_time, params.duration)
+            should_quit, each_query_fail = t
+            if each_query_fail:
+                final_fail = True
+                data.set_result_state(const.ResultState.FAIL)
             self.xoa_out.send_statistics(data)
-            if self.resources.should_quit(start_time, params.duration):
+            if should_quit:
                 break
             await asyncio.sleep(const.INTERVAL_SEND_STATISTICS)
         await asyncio.sleep(const.DELAY_STATISTICS)
-        data = await aggregate_data(self.resources, params, is_final=True)
-        return data
+        final_data = await aggregate_data(self.resources, params, is_final=True)
+        if final_fail:
+            final_data.set_result_state(const.ResultState.FAIL)
+        return final_data
 
     async def _latency(
         self,
@@ -223,7 +232,7 @@ class TestCaseProcessor:
             duration=test_type_conf.actual_duration,
             rate_result_scope=test_type_conf.result_scope,
         )
-        while True:            
+        while True:
             await asyncio.sleep(const.DELAY_STATISTICS)
             should_continue = any(
                 boundary.port_should_continue for boundary in boundaries
