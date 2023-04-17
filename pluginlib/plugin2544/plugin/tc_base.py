@@ -310,6 +310,7 @@ class TestCaseProcessor:
                 rate_percent,
             )
             while True:
+                await asyncio.sleep(const.DELAY_STATISTICS)
                 for boundary in boundaries:
                     boundary.update_boundaries()
                 await self._setup_packet_limit(boundaries)
