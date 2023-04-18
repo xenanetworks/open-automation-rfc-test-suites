@@ -52,8 +52,7 @@ class AddressCollection:
 class Progress:
     total: int
     current: int = 0
-    start_time: float = field(default_factory=time.time)
 
     def send(self, xoa: "TestSuitePipe") -> None:
-        xoa.send_progress(self)
+        xoa.send_progress(self.current, self.total)
         self.current += 1
