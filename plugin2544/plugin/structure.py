@@ -13,7 +13,6 @@ from .statistics import Statistic
 from .stream_struct import StreamStruct
 from ..utils import exceptions, constants as const
 from ..utils.field import MacAddress, NonNegativeDecimal
-
 if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity
     from xoa_driver import ports as xoa_ports, testers as xoa_testers
@@ -108,7 +107,9 @@ class PortStruct:
             await self.port_ins.brr_mode.set(broadr_reach_mode.to_xmp())
 
     async def set_mdi_mdix_mode(self, mdi_mdix_mode: const.MdiMdixMode) -> None:
-        if self.port_ins.info.capabilities.can_mdi_mdix == enums.YesNo.NO:
+        is_port_can_mdi_mdix = self.port_ins.info.capabilities.can_mdi_mdix == enums.YesNo.YES
+        is_port_can_set_speed = self.port_ins.info.port_possible_speed_modes
+        if not is_port_can_mdi_mdix or (is_port_can_mdi_mdix and not is_port_can_set_speed):
             self._xoa_out.send_warning(
                 exceptions.MdiMdixModeNotSupport(self._port_identity.name)
             )
