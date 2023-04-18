@@ -181,6 +181,10 @@ class BackToBackConfig(SweepTestType):
     @property
     def burst_resolution(self) -> float:
         return self._conf.burst_size_iteration_options.burst_resolution
+    
+    @property
+    def maximun_burst(self) -> float:
+        return self._conf.burst_size_iteration_options.maximum_burst
 
     @property
     def process_count(self) -> int:

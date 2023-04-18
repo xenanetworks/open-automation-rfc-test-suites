@@ -16,7 +16,7 @@ class BackToBackBoutEntry:
         self._frame_size = frame_size
         self._left_bound: float = 0.0
         self._right_bound = self.current = self.next = (
-            self._test_type_conf.actual_duration * rate / 100.0
+            self._test_type_conf.maximun_burst * rate / 100.0
         )
         self._last_move: int = 0
         self._port_should_continue: bool = False
