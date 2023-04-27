@@ -88,7 +88,7 @@ async def get_address_learning_packet(
     use_gateway=False,
 ) -> List[str]:  # GetAddressLearningPacket
     """ARP REFRESH STEP 2: generate learning packet according to address_refresh_data_set"""
-    dmac = MacAddress("FF:FF:FF:FF:FF:FF")
+    dmac = MacAddress("FFFFFFFFFFFF")
     if not port_struct.port_conf.ip_address:
         raise exceptions.IPAddressMissing()
     gateway = port_struct.port_conf.ip_address.gateway
