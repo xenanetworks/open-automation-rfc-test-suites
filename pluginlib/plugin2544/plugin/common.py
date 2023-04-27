@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 def gen_macaddress(first_three_bytes: str, index: int) -> "field.MacAddress":
     hex_num = hex(index)[2:].zfill(6)
-    last_three_bytes = ":".join(re.findall(r".{2}", hex_num))
+    last_three_bytes = "".join(re.findall(r".{2}", hex_num))
     return field.MacAddress(f"{first_three_bytes}:{last_three_bytes}")
 
 
