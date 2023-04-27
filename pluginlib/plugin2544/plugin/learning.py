@@ -88,7 +88,7 @@ async def get_address_learning_packet(
     use_gateway=False,
 ) -> List[str]:  # GetAddressLearningPacket
     """ARP REFRESH STEP 2: generate learning packet according to address_refresh_data_set"""
-    dmac = MacAddress("FF:FF:FF:FF:FF:FF")
+    dmac = MacAddress("FFFFFFFFFFFF")
     if not port_struct.port_conf.ip_address:
         raise exceptions.IPAddressMissing()
     gateway = port_struct.port_conf.ip_address.gateway
@@ -306,7 +306,7 @@ def make_mac_token(
     send_struct: "PortStruct", hex_data: str, mac_learning_frame_count: int
 ) -> List["misc.Token"]:
     tasks = []
-    packet = f"0x{hex_data}"
+    packet = hex_data
     max_cap = send_struct.capabilities.max_xmit_one_packet_length
     cur_length = len(hex_data) // 2
     if cur_length > max_cap:

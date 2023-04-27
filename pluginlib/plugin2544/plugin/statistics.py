@@ -390,7 +390,7 @@ class TotalStatistic(BaseModel):
 
 class FinalStatistic(BaseModel):
     test_case_type: const.TestType
-    test_suite_type: str = "xoa2544"
+    test_suite_type: str = "RFC-2544"
     result_state: const.ResultState = const.ResultState.PENDING
     tx_rate_percent: float
     is_final: bool = True
@@ -399,7 +399,6 @@ class FinalStatistic(BaseModel):
     rate_result_scope: const.RateResultScopeType = const.RateResultScopeType.COMMON
     port_data: List[Statistic] = []
     total: TotalStatistic = TotalStatistic()
-    timestamp: float = Field(default_factory=time.time)
 
     class Config:
         arbitrary_types_allowed = True

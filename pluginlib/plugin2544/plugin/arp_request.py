@@ -1,5 +1,5 @@
 import asyncio
-from typing import Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from xoa_driver import utils, enums
 from .common import is_same_ipnetwork
 from ..utils.field import IPv4Address, IPv6Address, MacAddress
@@ -84,7 +84,7 @@ async def send_arp_request(
         ),
         stream.packet.header.data.set(packet_header),
         stream.packet.length.set(enums.LengthType.FIXED, 64, 1518),  # PS_PACKETLENGTH
-        stream.payload.content.set(enums.PayloadType.INCREMENTING, "0x00"),
+        stream.payload.content.set(enums.PayloadType.INCREMENTING, "00"),
         stream.tpld_id.set(-1),
         stream.insert_packets_checksum.set(enums.OnOff.ON),
         stream.gateway.ipv4.set("0.0.0.0"),

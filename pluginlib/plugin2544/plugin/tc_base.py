@@ -38,6 +38,7 @@ class TestCaseProcessor:
         resources: "ResourceManager",
         test_conf: "TestConfigData",
         test_type_confs: List["AllTestTypeConfig"],
+        state_conditions: "PStateConditions",
         xoa_out: "TestSuitePipe",
     ) -> None:
         self.resources: "ResourceManager" = resources
@@ -50,11 +51,9 @@ class TestCaseProcessor:
             total=sum(type_conf.process_count for type_conf in self._test_type_conf)
             * len(self.__test_conf.packet_size_list)
         )
-        self.progress.send(self.xoa_out)
-        self._throughput_map = (
-            {}
-        )  # save throughput rate for latency relative to throughput use
-        self.lock = asyncio.Lock()
+        self._throughput_map = {}
+        self.state_conditions = state_conditions
+        # save throughput rate for latency relative to throughput use
 
     def gen_loop(
         self, type_conf: "AllTestTypeConfig"
@@ -74,13 +73,13 @@ class TestCaseProcessor:
             return None
         self.address_refresh_handler = await setup_address_arp_refresh(self.resources)
 
-    async def start(self, state_conditions: "PStateConditions") -> None:
+    async def start(self) -> None:
         await self.prepare()
+        self.progress.send(self.xoa_out)
         while True:
             for type_conf in self._test_type_conf:
                 for iteration, current_packet_size in self.gen_loop(type_conf):
-                    await state_conditions.wait_if_paused()
-                    await state_conditions.stop_if_stopped()
+
                     await self.resources.setup_tpld_mode(current_packet_size)
                     await self.resources.setup_packet_size(current_packet_size)
                     await self.run(type_conf, current_packet_size, iteration)
@@ -133,6 +132,8 @@ class TestCaseProcessor:
     async def start_test(
         self, test_type_conf: "AllTestTypeConfig", current_packet_size: float
     ) -> None:
+        await self.state_conditions.wait_if_paused()
+        await self.state_conditions.stop_if_stopped()
         await setup_source_port_rates(self.resources, current_packet_size)
         if test_type_conf.is_time_duration:
             await self.resources.set_tx_time_limit(
@@ -162,6 +163,7 @@ class TestCaseProcessor:
         final_data = await aggregate_data(self.resources, params, is_final=True)
         if final_fail:
             final_data.set_result_state(const.ResultState.FAIL)
+        self.xoa_out.send_statistics(final_data)
         return final_data
 
     async def _latency(
@@ -340,7 +342,6 @@ class TestCaseProcessor:
                 final.sum(statistic)
         if final:
             final.repetition = "avg"
-            final.timestamp = time.time()
             final.avg(len(statistic_lists))
         return final
 

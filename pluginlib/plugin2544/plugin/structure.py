@@ -198,11 +198,7 @@ class PortStruct:
         return self.port_ins.reservation.set_release()
 
     async def prepare(self) -> None:
-        self.port_ins.on_reservation_change(self.__on_reservation_status)
-        self.port_ins.on_receive_sync_change(self._change_sync_status)
-        self.port_ins.on_traffic_change(self._change_traffic_status)
-        self.port_ins.on_speed_change(self._change_physical_port_speed)
-        self._tester.on_disconnected(self.__on_disconnect_tester)
+
         tokens = [
             self.port_ins.sync_status.get(),
             self.port_ins.traffic.state.get(),
@@ -218,6 +214,11 @@ class PortStruct:
         tokens.append(self.port_ins.reset.set())
 
         (sync, traffic, mac, port_speed, *_) = await driver_utils.apply(*tokens)
+        self.port_ins.on_reservation_change(self.__on_reservation_status)
+        self.port_ins.on_receive_sync_change(self._change_sync_status)
+        self.port_ins.on_traffic_change(self._change_traffic_status)
+        self.port_ins.on_speed_change(self._change_physical_port_speed)
+        self._tester.on_disconnected(self.__on_disconnect_tester)
         self.properties.sync_status = bool(sync.sync_status)
         self.properties.traffic_status = bool(traffic.on_off)
         self.properties.native_mac_address = MacAddress(mac.mac_address)

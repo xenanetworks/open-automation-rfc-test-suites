@@ -13,8 +13,8 @@ class TestSuitePipe(Interface):
         ...
 
 class PStateConditions(Interface):
-    async def wait_if_paused(self) -> bool:
+    async def wait_if_paused(self) -> None:
         ...
 
-    async def stop_if_stopped(self) -> bool:
+    async def stop_if_stopped(self) -> None:
         ...
