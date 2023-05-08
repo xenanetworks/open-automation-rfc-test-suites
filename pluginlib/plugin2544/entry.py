@@ -29,7 +29,11 @@ class TestSuite2544(PluginAbstract["PluginModel2544"]):
             "AllTestTypeConfig"
         ] = get_available_test_type_config(self.cfg.test_types_configuration)
         self.tc = TestCaseProcessor(
-            self.resources, self.__test_conf, self._test_type_conf, self.xoa_out
+            self.resources,
+            self.__test_conf,
+            self._test_type_conf,
+            self.state_conditions,
+            self.xoa_out,
         )
 
     async def __pre_test(self) -> None:
@@ -39,7 +43,7 @@ class TestSuite2544(PluginAbstract["PluginModel2544"]):
         )
 
     async def __do_test(self) -> None:
-        await self.tc.start(self.state_conditions)
+        await self.tc.start()
 
     async def __post_test(self) -> None:
         # TODO: wait for callback exception catch

@@ -46,10 +46,13 @@ class PluginModel2544(BaseModel):  # Main Model
         self.set_profile()
 
     @validator("ports_configuration", always=True)
-    def check_ip_properties(cls, v: "PortConfType") -> "PortConfType":
-        for port_config in v:
+    def check_ip_properties(cls, v: "PortConfType", values) -> "PortConfType":
+        pro_map = {v.id: v.protocol_version for v in values['protocol_segments']}
+        for i, port_config in enumerate(v):
+            if port_config.protocol_segment_profile_id not in pro_map:
+                raise exceptions.PSPMissing()
             if (
-                port_config.profile.protocol_version.is_l3
+                pro_map[port_config.protocol_segment_profile_id].is_l3
                 and (not port_config.ip_address or port_config.ip_address.address.is_empty)
             ):
                 raise exceptions.IPAddressMissing()

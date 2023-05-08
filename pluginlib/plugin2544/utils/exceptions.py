@@ -154,9 +154,7 @@ class MixWeightsNotEnough(Exception):
 
 class SmallerThanZeroError(Exception):
     def __init__(self, num: Union[int, float]) -> None:
-        self.msg = (
-            f"Num {num} must be non negative."
-        )
+        self.msg = f"Num {num} must be non negative."
         super().__init__(self.msg)
 
 
@@ -371,4 +369,10 @@ class PacketLimitOverflow(Exception):
 class ModifierRangeError(Exception):
     def __init__(self, start: int, stop: int, step: int) -> None:
         self.msg = f"Modifier range configuration must meet these rules: min <= max, and (max - min) % step = 0. Your input was min = {start}, max = {stop}, and step = {step}."
+        super().__init__(self.msg)
+
+
+class PSPMissing(Exception):
+    def __init__(self) -> None:
+        self.msg = f"Protocol Segment Profile selected is missing."
         super().__init__(self.msg)

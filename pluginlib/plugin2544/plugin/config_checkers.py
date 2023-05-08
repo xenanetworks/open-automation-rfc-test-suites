@@ -56,8 +56,10 @@ def check_can_fec(can_fec: int, fec_mode: const.FECModeStr) -> None:
 def check_custom_port_config(
     capabilities: "commands.P_CAPABILITIES.GetDataAttr", port_conf: "PortConfiguration"
 ) -> None:
-
-    if port_conf.port_rate_cap_profile.is_custom and port_conf.port_rate > capabilities.max_speed * 1_000_000:
+    if (
+        port_conf.port_rate_cap_profile.is_custom
+        and port_conf.port_rate > capabilities.max_speed * 1_000_000
+    ):
         raise exceptions.PortRateError(
             port_conf.port_rate, capabilities.max_speed * 1_000_000
         )
@@ -213,7 +215,6 @@ def check_micro_tpld(
 def check_port_test_config(
     port_struct: "PortStruct", test_conf: "TestConfigData"
 ) -> None:
-
     if test_conf.frame_sizes.packet_size_type.is_mix:
         packet_size_list = test_conf.mixed_packet_length
     else:
