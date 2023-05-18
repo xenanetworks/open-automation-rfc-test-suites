@@ -494,19 +494,17 @@ class GeneralTestConfiguration(BaseModel):
 
 class PortIdentity(BaseModel):
     tester_id: str
-    tester_index: int
     chassis_id: str
-    chassis_index: int = 0
     module_index: NonNegativeInt
     port_index: NonNegativeInt
 
     @property
     def name(self) -> str:
-        return f"P-{self.tester_index}-{self.module_index}-{self.port_index}"
+        return f"P-{self.tester_id}-{self.module_index}-{self.port_index}"
 
     @property
     def identity(self) -> str:
-        return f"{self.chassis_index}-{self.module_index}-{self.port_index}"
+        return f"{self.tester_id}-{self.module_index}-{self.port_index}"
 
 
 def hex_string_to_binary_string(hex: str) -> "BinaryString":
