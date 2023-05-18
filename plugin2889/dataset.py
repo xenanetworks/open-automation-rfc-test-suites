@@ -527,7 +527,7 @@ class MacAddress(str):
     @classmethod
     def from_base_address(cls, base_address: str):
         prefix = [hex(int(i)) for i in base_address.split(",")]
-        return cls(":".join([p.replace("0x", "").zfill(2).upper() for p in prefix]))
+        return cls("".join([p.replace("0x", "").zfill(2).upper() for p in prefix]))
 
     @property
     def is_empty(self) -> bool:
