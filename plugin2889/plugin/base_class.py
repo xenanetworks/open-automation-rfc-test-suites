@@ -5,7 +5,21 @@ from math import ceil
 from abc import ABC, abstractmethod
 from decimal import ROUND_DOWN, Decimal
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Callable, Dict, Generic, Iterable, Optional, Protocol, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AsyncGenerator,
+    Callable,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    Protocol,
+    TypeVar,
+    Union,
+)
+
 from loguru import logger
 from xoa_driver.utils import apply
 from xoa_driver.enums import OnOff
@@ -192,7 +206,7 @@ TCONFIG = TypeVar("TCONFIG", bound=UnionTestSuitConfiguration)
 
 
 class TestBase(TestSuitAbstract[TCONFIG]):
-    port_identities: Dict[str, PortIdentity]
+    port_identities: List[PortIdentity]
     resources: ResourcesManager
     test_manager: L23TestManager
     full_test_config: TestSuiteConfiguration2889
@@ -373,7 +387,7 @@ class AddressLearningBase(TestBase[TCFG], BinarySearchMixin[T]):
                 modifier = modifiers.obtain(0)
                 tokens.extend(
                     [
-                        modifier.specification.set(position=modifier_position + 1, mask="0xffff0000", action=ModifierActionOption.INC.to_xmp(), repetition=1),
+                        modifier.specification.set(position=modifier_position + 1, mask="ffff0000", action=ModifierActionOption.INC.to_xmp(), repetition=1),
                         modifier.range.set(min_val=1, step=1, max_val=0xffff)
                     ]
                 )
@@ -382,9 +396,9 @@ class AddressLearningBase(TestBase[TCFG], BinarySearchMixin[T]):
                 modifier1 = modifiers.obtain(1)
                 tokens.extend(
                     [
-                        modifier0.specification.set(position=modifier_position, mask="0xfff00000", action=ModifierActionOption.INC.to_xmp(), repetition=0x1000),
+                        modifier0.specification.set(position=modifier_position, mask="fff00000", action=ModifierActionOption.INC.to_xmp(), repetition=0x1000),
                         modifier0.range.set(min_val=1, step=1, max_val=0xfff),
-                        modifier1.specification.set(position=modifier_position + 1, mask="0x0fff0000", action=ModifierActionOption.INC.to_xmp(), repetition=1),
+                        modifier1.specification.set(position=modifier_position + 1, mask="0fff0000", action=ModifierActionOption.INC.to_xmp(), repetition=1),
                         modifier1.range.set(min_val=1, step=1, max_val=0xfff),
                     ]
                 )
@@ -394,9 +408,9 @@ class AddressLearningBase(TestBase[TCFG], BinarySearchMixin[T]):
             modifier1 = modifiers.obtain(1)
             tokens.extend(
                 [
-                    modifier0.specification.set(position=modifier_position - 1, mask="0xffff0000", action=ModifierActionOption.RANDOM.to_xmp(), repetition=1),
+                    modifier0.specification.set(position=modifier_position - 1, mask="ffff0000", action=ModifierActionOption.RANDOM.to_xmp(), repetition=1),
                     modifier0.range.set(min_val=0, step=1, max_val=0xfff),
-                    modifier1.specification.set(position=modifier_position + 1, mask="0x0fff0000", action=ModifierActionOption.RANDOM.to_xmp(), repetition=1),
+                    modifier1.specification.set(position=modifier_position + 1, mask="0fff0000", action=ModifierActionOption.RANDOM.to_xmp(), repetition=1),
                     modifier1.range.set(min_val=1, step=1, max_val=0xfff),
                 ]
             )
