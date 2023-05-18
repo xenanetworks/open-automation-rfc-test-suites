@@ -273,11 +273,11 @@ class TestResource:
         if bool(self.port.info.capabilities.can_set_link_train):
             coroutines.append(
                 self.port.pcs_pma.link_training.settings.set(
-                    enums.LinkTrainingMode.FORCE_ENABLE,
-                    enums.PAM4FrameSize.N16K_FRAME,
+                    enums.LinkTrainingMode.STANDALONE,
+                    enums.PAM4FrameSize.P16K_FRAME,
                     enums.LinkTrainingInitCondition.NO_INIT,
                     enums.NRZPreset.NRZ_NO_PRESET,
-                    enums.TimeoutMode.DEFAULT_TIMEOUT,
+                    enums.TimeoutMode.DEFAULT,
                 )
             )
         else:
