@@ -428,12 +428,9 @@ class TestCaseProcessor:
 def check_if_frame_loss_success(
     frame_loss_conf: "FrameLossConfig", result: "FinalStatistic"
 ) -> bool:
-    is_test_passed = True
-    if frame_loss_conf.pass_criteria_loss:
-        if frame_loss_conf.is_percentage_pass_criteria:
-            if result.total.rx_loss_percent > frame_loss_conf.pass_criteria_loss:
-                is_test_passed = False
-        else:
-            if result.total.rx_loss_frames > frame_loss_conf.pass_criteria_loss:
-                is_test_passed = False
-    return is_test_passed
+    if not frame_loss_conf.pass_criteria_loss:
+        return True
+    if (frame_loss_conf.is_percentage_pass_criteria and result.total.rx_loss_percent * 100 > frame_loss_conf.pass_criteria_loss) or \
+        (not frame_loss_conf.is_percentage_pass_criteria and result.total.rx_loss_frames > frame_loss_conf.pass_criteria_loss):
+        return False
+    return True
