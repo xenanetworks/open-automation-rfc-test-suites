@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Generator, Optional
 
 from plugin2889 import const
-from plugin2889.model.test_suite import RateSubTestConfiguration
+from plugin2889.dataset import RateSubTestConfiguration
 from plugin2889.plugin.base_class import BinarySearchMixin, DecimalBinarySearch, TestBase, TrafficInfo
 from plugin2889.plugin.utils import sleep_log
 from plugin2889.util.logger import logger
@@ -43,9 +43,7 @@ class ThroughputTest(BinarySearchMixin[Decimal], TestBase[RateSubTestConfigurati
             traffic_info: Optional[TrafficInfo] = None
             async for traffic_info in self.generate_traffic():
                 result = traffic_info.result
+            result = await self.send_final_staticstics()
 
-            await sleep_log(const.DELAY_WAIT_TRAFFIC_STOP)
-            result = await self.staticstics_collect(is_live=False)
-            self.plugin_params.xoa_out.send_statistics(result)
         if result and result.status.is_success and self.test_suit_config.topology.is_mesh_topology:
             self.plugin_params.data_sharing.set_throughput_of_frame_size(run_props.packet_size, self.binary_search.passed)

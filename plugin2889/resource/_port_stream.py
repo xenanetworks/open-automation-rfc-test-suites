@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from xoa_driver.misc import GenuineStream
     from .test_resource import TestResource
 
-from plugin2889.model.test_suite import RateDefinition
+from plugin2889.dataset import RateDefinition
 from plugin2889.plugin import rate_helper
 from plugin2889.plugin import utils
 from plugin2889.dataset import AddressCollection, IPv4Address, IPv6Address, MacAddress
@@ -53,7 +53,7 @@ class StreamManager:
             if segment.segment_type.is_ipv6:
                 utils.setup_segment_ipv6(segment, addresses.src_ipv6_addr, addresses.dst_ipv6_addr)
 
-        return f"0x{profile.prepare().hex()}"
+        return f"{profile.prepare().hex()}"
 
     @property
     def total_stream_count(self) -> int:
@@ -68,7 +68,7 @@ class StreamManager:
             stream.tpld_id.set(self.tpld_id),
             stream.packet.header.protocol.set(self.__resource.port_config.profile.segment_id_list),
             stream.packet.header.data.set(self.header),
-            stream.payload.content.set_incrementing(f"0x{'0'*36}"),
+            stream.payload.content.set_inc_word(f"{'0'*36}"),
             stream.insert_packets_checksum.set_on(),
             stream.enable.set_on(),
             stream.comment.set(f"Stream {self.stream_id} / {self.tpld_id}")

@@ -1,5 +1,5 @@
 from typing import Generator, Union
-from plugin2889.model.test_suite import (
+from plugin2889.dataset import (
     RateTestConfiguration,
 )
 from plugin2889.plugin.base_class import TestBase

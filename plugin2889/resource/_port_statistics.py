@@ -2,6 +2,7 @@ import asyncio
 import functools
 from typing import (
     Callable,
+    Dict,
     Generator,
     List,
     Set,
@@ -95,7 +96,7 @@ class PortStatistics:
 
         port_latency = PortLatency()
         port_jitter = PortJitter()
-        per_rx_tpld_id = {}
+        per_rx_tpld_id: Dict[int, RxTPLDId]  = {}
         coroutines = []
         for rx_stream in self.__streams_sending_in:
             rx_tpld_statistics = self.__port.statistics.rx.access_tpld(rx_stream.tpld_id)
@@ -122,7 +123,7 @@ class PortStatistics:
 
         self.max.update_rx_bps_l2(rx_bit_count_last_sec)
         self.max.update_rx_pps(rx_packet_count_last_sec)
-        statistics.rx_packet = rx_packet
+        statistics.rx_packet = sum(rx_tpld.packet for rx_tpld in per_rx_tpld_id.values())
         statistics.rx_bps_l1 = self.max.rx_bps_l1
         statistics.loss = non_incre_seq_event_count
         statistics.rx_bps_l2 = self.max.rx_bps_l2

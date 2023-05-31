@@ -18,7 +18,7 @@ from plugin2889.resource._port_statistics import PortStatistics
 from plugin2889.resource._traffic import Traffic
 from plugin2889.util.logger import logger
 from plugin2889.plugin.utils import sleep_log
-from plugin2889.model.test_suite import PortConfiguration
+from plugin2889.dataset import PortConfiguration
 
 
 class TestResource:
@@ -150,10 +150,9 @@ class TestResource:
         paddings = "00" * 118
         own_mac = self.mac_address.to_hexstring()
         hex_data = f"{dest_mac}{own_mac}{four_f}{paddings}"
-        packet = f"0x{hex_data}"
         if len(hex_data) // 2 > self.port.info.capabilities.max_xmit_one_packet_length:
             raise exceptions.PacketLengthExceed(len(hex_data) // 2, self.port.info.capabilities.max_xmit_one_packet_length)
-        await apply(self.port.tx_single_pkt.send.set(packet))  # P_XMITONE
+        await apply(self.port.tx_single_pkt.send.set(hex_data))  # P_XMITONE
         await sleep_log(DELAY_LEARNING_MAC)
 
     async def set_tx_config_enable(self, on_off: enums.OnOff) -> None:
@@ -188,9 +187,8 @@ class TestResource:
         asyncio.gather(*[stream.packet.limit.set(limit) for stream in self.port.streams])
 
     async def start_traffic_sync(self, module_ports: List[int]) -> None:
-        logger.debug(module_ports)
         local_time = (await self.tester.time.get()).local_time
-        await self.tester.traffic_sync.set(enums.OnOff.ON, local_time + 2, module_ports)  # add 2 second dealy
+        await self.tester.traffic_sync.set(enums.OnOff.ON, local_time + 2, module_ports)  # add 2 second delay
 
     async def set_stream_peer_mac_address(self, new_peer_mac_address: "MacAddress") -> None:
         await asyncio.gather(*[stream.set_peer_mac_address(new_peer_mac_address) for stream in self.streams])
@@ -275,11 +273,11 @@ class TestResource:
         if bool(self.port.info.capabilities.can_set_link_train):
             coroutines.append(
                 self.port.pcs_pma.link_training.settings.set(
-                    enums.LinkTrainingMode.FORCE_ENABLE,
-                    enums.PAM4FrameSize.N16K_FRAME,
+                    enums.LinkTrainingMode.STANDALONE,
+                    enums.PAM4FrameSize.P16K_FRAME,
                     enums.LinkTrainingInitCondition.NO_INIT,
                     enums.NRZPreset.NRZ_NO_PRESET,
-                    enums.TimeoutMode.DEFAULT_TIMEOUT,
+                    enums.TimeoutMode.DEFAULT,
                 )
             )
         else:

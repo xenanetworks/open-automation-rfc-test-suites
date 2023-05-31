@@ -59,7 +59,7 @@ def get_bytes_from_macaddress(dmac: "MacAddress") -> Iterator[str]:
 
 def get_link_local_uci_ipv6address(dmac: "MacAddress") -> str:
     b = get_bytes_from_macaddress(dmac)
-    return f"FE80000000000000{int(next(b)) | 2 }{next(b)}{next(b)}FFFE{next(b)}{next(b)}{next(b)}"
+    return f"FE80000000000000{int(next(b), 16) | 2 }{next(b)}{next(b)}FFFE{next(b)}{next(b)}{next(b)}"[:-1]
 
 
 def get_address_list(
@@ -125,7 +125,7 @@ async def get_address_learning_packet(
             packet = NDPPacket(
                 smac=smac,
                 source_ip=IPv6Address(source_ip),
-                destination_ip=IPv6Address(destination_ip),
+                destination_ip=IPv6Address(int(destination_ip, 16)),
                 dmac=dmac,
             ).make_ndp_packet()
         packet_list.append(packet)

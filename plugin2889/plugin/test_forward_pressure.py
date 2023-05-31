@@ -2,11 +2,11 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from enum import Enum
 from functools import partial
-from typing import Dict, Generator, List, Optional
+from typing import Generator, List
 from loguru import logger
 
 from plugin2889 import const
-from plugin2889.model.test_suite import ForwardPressureConfiguration
+from plugin2889.dataset import ForwardPressureConfiguration
 from plugin2889.plugin import rate_helper
 from plugin2889.plugin.base_class import TestBase
 from plugin2889.plugin.utils import PortPairs, sleep_log, group_by_port_property
@@ -75,11 +75,18 @@ class ForwardPressureTest(TestBase[ForwardPressureConfiguration]):
             destination=group_by_result.uuid_port_name[destination_port_uuid],
         )
         pairs = (PortPair(west=self.port_name.source, east=self.port_name.destination),)
-        logger.debug(pairs)
+        # logger.debug(pairs)
         return pairs
 
     async def __set_port_interframe_gap(self) -> None:
         await self.resources[self.port_name.source].set_port_interframe_gap(self.interframe_gap.reduced)
+
+    async def setup_resources(self) -> None:
+        await self.resources.reset_ports()
+        await self.resources.check_port_link()
+        await self.resources.configure_ports()
+        await self.__set_port_interframe_gap()
+        await self.resources.map_pairs()
 
     def do_testing_cycle(self) -> Generator[CurrentIterProps, None, None]:
         packet_sizes = self.full_test_config.general_test_configuration.frame_sizes.packet_size_list
@@ -106,24 +113,28 @@ class ForwardPressureTest(TestBase[ForwardPressureConfiguration]):
                 status = const.StatisticsStatus.FAIL
         return status
 
-    def process_result_again(self, result: "ResultData", is_live: bool = True) -> Dict[str, "StatisticsData"]:
+    def reprocess_result(self, result: "ResultData", is_live: bool = True) -> "ResultData":
         tx_result = result.ports[self.port_name.source]
         rx_result = result.ports[self.port_name.destination]
 
         tx_util = self.__calc_max_port_util_from_result(result.ports[self.port_name.source].tx_pps, result.packet_size)
         logger.debug(tx_util)
 
-        if is_live:
-            self.port_rate_average.add(Direction.TX, tx_result.per_tx_stream[0].pps)
-            self.port_rate_average.add(Direction.RX, rx_result.per_rx_tpld_id[0].pps)
+        if is_live and tx_result.per_tx_stream and rx_result.per_rx_tpld_id:
+            tx_pps = list(tx_result.per_tx_stream.values())[0].pps
+            rx_pps = list(rx_result.per_rx_tpld_id.values())[0].pps
+            self.port_rate_average.add(Direction.TX, tx_pps)
+            self.port_rate_average.add(Direction.RX, rx_pps)
 
         tx_result.tx_pps = self.port_rate_average.read(Direction.TX)
         rx_result.rx_pps = self.port_rate_average.read(Direction.RX)
 
-        return {
+        result.extra.update({
             Direction.TX.value: tx_result,
             Direction.RX.value: rx_result,
-        }
+            'tx_util': tx_util,
+        })
+        return result
 
     async def run_test(self, run_props: CurrentIterProps) -> None:
         logger.debug(f'iter props: {run_props}')
@@ -142,19 +153,7 @@ class ForwardPressureTest(TestBase[ForwardPressureConfiguration]):
         await self.resources.set_stream_rate_and_packet_limit(run_props.packet_size, const.DECIMAL_100, self.test_suit_config.duration)
 
         self.statistics.reset_max()
-        result: Optional[ResultData] = None
         async for traffic_info in self.generate_traffic(sample_rate=0.5):
-            result = traffic_info.result
-            processed_result = self.process_result_again(result)
-            logger.debug(processed_result)
+            logger.debug(traffic_info)
 
-        await sleep_log(const.DELAY_WAIT_TRAFFIC_STOP)
-        result = await self.staticstics_collect(is_live=True)
-        self.xoa_out.send_statistics(result)
-        logger.debug(self.process_result_again(result))
-
-    async def setup_resources(self) -> None:
-        await self.resources.reset_ports()
-        await self.resources.configure_ports()
-        await self.__set_port_interframe_gap()
-        await self.resources.map_pairs()
+        await self.send_final_staticstics()

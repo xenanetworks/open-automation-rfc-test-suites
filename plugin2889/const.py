@@ -13,12 +13,15 @@ DELAY_WAIT_TRAFFIC_STOP = 5
 DELAY_LEARNING_MAC = 1
 DELAY_LEARNING_ADDRESS = 1
 DELAY_CREATE_PORT_PAIR = 3
+DELAY_WAIT_RESET_PORT = 5
+DELAY_WAIT_RESET_STATS = 2
 INTERVAL_CHECK_SHOULD_STOP_TRAFFIC = 0.01
 INTERVAL_CHECK_PORT_SYNC = 1
 INTERVAL_CHECK_PORT_RESERVE = 0.5
 INTERVAL_CLEAR_STATISTICS = 0.01
 INTERVAL_INJECT_FCS_ERROR = 0.2
 
+CHECK_SYNC_MAX_RETRY = 30
 
 # https://en.wikipedia.org/wiki/Ethernet_frame
 # 20 = Preamble + Start frame delimiter + Interpacket gap
@@ -27,6 +30,34 @@ DEFAULT_INTERFRAME_GAP = 20
 DECIMAL_100 = Decimal(100)
 WAIT_SYNC_STATE_TIMEOUT = 30
 INVALID_PORT_ROLE = 'invalid port role'
+DEFAULT_MIXED_PACKET_SIZE = (
+    56,
+    60,
+    64,
+    70,
+    78,
+    92,
+    256,
+    496,
+    512,
+    570,
+    576,
+    594,
+    1438,
+    1518,
+    9216,
+    16360,
+)
+DEFAULT_IETF_PACKET_SIZE = (
+    64,
+    128,
+    256,
+    512,
+    1024,
+    1280,
+    1518,
+)
+MIXED_DEFAULT_WEIGHTS = (0, 0, 0, 0, 57, 3, 5, 1, 2, 5, 1, 4, 4, 18, 0, 0)
 
 
 class Enum(CaseSensitiveEnum):
@@ -34,7 +65,7 @@ class Enum(CaseSensitiveEnum):
     def _missing_(cls, value):
         if isinstance(value, str):
             for member in cls:
-                if member.value == value.lower():
+                if member.name == value:
                     return member
 
 
@@ -156,8 +187,8 @@ class PortGroup(Enum):
 
 
 class PortRateCapProfile(Enum):
-    PHYSICAL = "physical_port_rate"
-    CUSTOM = "custom_rate_cap"
+    PHYSICAL_PORT_RATE = "physical_port_rate"
+    CUSTOM = "custom"
 
     @property
     def is_custom(self) -> bool:
@@ -189,9 +220,9 @@ class StreamRateType(Enum):
 
 
 class PortRateCapUnitInt(Enum):
-    GBPS = 1e9
-    MBPS = 1e6
-    KBPS = 1e3
+    FIELD_1E9_BPS = 1e9
+    FIELD_1E6_BPS = 1e6
+    FIELD_1E3_BPS = 1e3
     BPS = 1
 
 
@@ -280,7 +311,7 @@ class TestTopology(Enum):
         return self == type(self).PAIRS
 
 
-class LatencyModeStr(Enum):
+class LatencyMode(Enum):
     FIRST2LAST = "first_to_last"
     LAST2LAST = "last_to_last"
     FIRST2FIRST = "first_to_first"
@@ -310,9 +341,9 @@ class TidAllocationScope(Enum):
 
 
 class FECModeStr(Enum):
-    ON = "on"
-    OFF = "off"
-    FC_FEC = "fc_fec"
+    ON = "ON"
+    OFF = "OFF"
+    FC_FEC = "FIRECODE"
 
     def to_xmp(self) -> "enums.FECMode":
         return enums.FECMode[self.name]
@@ -320,7 +351,7 @@ class FECModeStr(Enum):
 
 class PacketSizeType(Enum):
     IETF_DEFAULT = "ietf_default"
-    CUSTOM = "custom_sizes"
+    CUSTOM_SIZES = "custom_sizes"
     RANGE = "specified"
     INCREMENTING = "incrementing"
     BUTTERFLY = "butterfly"
@@ -329,7 +360,7 @@ class PacketSizeType(Enum):
 
     @property
     def is_custom(self) -> bool:
-        return self == type(self).CUSTOM
+        return self == type(self).CUSTOM_SIZES
 
     @property
     def is_mix(self) -> bool:
@@ -337,7 +368,7 @@ class PacketSizeType(Enum):
 
     @property
     def is_fix(self) -> bool:
-        return self in [type(self).IETF_DEFAULT, type(self).CUSTOM, type(self).RANGE]
+        return self in [type(self).IETF_DEFAULT, type(self).CUSTOM_SIZES, type(self).RANGE]
 
     def to_xmp(self):
         if self.is_fix:

@@ -21,7 +21,7 @@ from xoa_core.types import PortIdentity
 
 from plugin2889.model import exceptions
 from plugin2889.dataset import IPv4Address, IPv6Address, MacAddress, PortPair
-from plugin2889.model.test_suite import PortConfiguration, PortRoleHandler
+from plugin2889.dataset import PortConfiguration, PortRoleHandler
 from plugin2889.model.protocol_segment import SegmentType, PortProtocolVersion
 from plugin2889.const import (
     PortGroup,
@@ -227,12 +227,12 @@ class GroupByPortProperty(BaseModel):
     uuid_slot: Dict[str, str] = {}
     port_name_role: Dict[str, str] = {}
     uuid_port_name: Dict[str, str] = {}
-
+    port_peer: Dict[str, str] = {}
 
 def group_by_port_property(
     port_configuration: Dict[str, PortConfiguration],
     port_role: PortRoleHandler,
-    port_identities: Dict[str, PortIdentity],
+    port_identities: List[PortIdentity],
 ) -> "GroupByPortProperty":
     result = GroupByPortProperty()
 
@@ -243,16 +243,16 @@ def group_by_port_property(
         result.port_role_uuids[port_role_config.role].append(uuid)
         if not port_role_config.is_used:
             not_use_port_uuid.append(uuid)
+        result.port_peer[uuid] = port_role_config.peer_port_id
 
-    logger.debug(result.uuid_role)
-    for _, port_config in port_configuration.items():
+    for port_name, port_config in port_configuration.items():
         uuid = port_config.item_id
         if uuid in not_use_port_uuid:
             continue
         result.uuid_slot[port_config.item_id] = port_config.port_slot
-        result.uuid_port_name[port_config.item_id] = port_identities[port_config.port_slot].name
+        result.uuid_port_name[port_config.item_id] = port_name
 
-    logger.debug(result)
+    # logger.debug(result)
     return result
 
 
@@ -267,7 +267,7 @@ def create_pairs_mesh(group_by_property: GroupByPortProperty) -> PortPairs:
 def create_pairs_pair(group_by_property: GroupByPortProperty, traffic_direction: TrafficDirection, role_source: PortGroup) -> PortPairs:
     pairs = []
     for port_uuid in group_by_property.port_role_uuids[role_source]:
-        peer_uuid = group_by_property.uuid_role[port_uuid][1]
+        peer_uuid = group_by_property.port_peer[port_uuid]
         pairs.append(PortPair(west=group_by_property.uuid_port_name[port_uuid], east=group_by_property.uuid_port_name[peer_uuid]))
         if traffic_direction == TrafficDirection.BIDIR:
             pairs.append(PortPair(east=group_by_property.uuid_port_name[port_uuid], west=group_by_property.uuid_port_name[peer_uuid]))
@@ -290,7 +290,7 @@ def create_port_pair(
     topology: TestTopology,
     port_configuration: Dict[str, PortConfiguration],
     port_role: Optional[PortRoleHandler],
-    port_identities: Dict[str, PortIdentity],
+    port_identities: List[PortIdentity],
 ) -> PortPairs:
 
     role_source = PortGroup.WEST
@@ -307,7 +307,7 @@ def create_port_pair(
     else:
         pairs = create_pairs_blocks(group_by_property, traffic_direction, role_source, role_destination)
 
-    logger.debug(pairs)
+    # logger.debug(pairs)
     assert pairs, 'empty port pairs'
     return pairs
 
@@ -317,8 +317,7 @@ async def sleep_log(duration: float) -> None:
     caller_frame = inspect.stack()[1]
     message = f"\x1b[33;20m{caller_frame.filename.rsplit(os.path.sep, 1)[1]}:{caller_frame.lineno} {caller_frame.function} {duration}\x1B[0m"
     logger.debug(message)
-    if duration > 0:
-        await asyncio.sleep(duration)
+    await asyncio.sleep(duration)
 
 
 def is_ip_segment_exists(header_segments: List["ProtocolSegment"]) -> bool:

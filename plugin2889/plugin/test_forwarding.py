@@ -4,7 +4,7 @@ from typing import Generator, TypeVar
 from loguru import logger
 
 from plugin2889 import const
-from plugin2889.model.test_suite import MaxForwardingRateConfiguration, RateSubTestConfiguration
+from plugin2889.dataset import MaxForwardingRateConfiguration, RateSubTestConfiguration
 from plugin2889.plugin.base_class import TestBase
 from plugin2889.plugin.dataset import ForwadingTestRunProps
 from plugin2889.plugin.utils import sleep_log
@@ -55,7 +55,4 @@ class ForwardingBase(TestBase[TFCFG]):
         async for _ in self.generate_traffic():
             continue
 
-        await sleep_log(const.DELAY_WAIT_TRAFFIC_STOP)
-        result = await self.staticstics_collect(is_live=False)
-        self.xoa_out.send_statistics(result)
-        logger.debug(result)
+        await self.send_final_staticstics()
