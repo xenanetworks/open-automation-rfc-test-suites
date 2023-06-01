@@ -1,102 +1,57 @@
 from __future__ import annotations
-from rich.console import Console
-from rich.table import Table
-from rich.live import Live
 import asyncio
 import json
 import platform
 import pydantic
-from pathlib import Path
-from typing import Any, cast
-from loguru import logger
-from math import ceil
+from xoa_core import types, controller
 from xoa_converter.entry import converter
 from xoa_converter.types import TestSuiteType
-from xoa_core import types, controller
+from rich.live import Live
+from rich.table import Table
+from rich.console import Console
+from typing import Dict, List, Any, cast
+from pathlib import Path
+from loguru import logger
+
 
 DEBUG = True
 BASE_PATH = Path.cwd()
-PLUGINS_PATH = BASE_PATH / "pluginlib"
-INPUT_DATA_PATH = BASE_PATH / "test" / "1.v2544"
+PLUGINS_PATH = BASE_PATH 
+INPUT_DATA_PATH = BASE_PATH / "test" / "1.v3918"
 JSON_PATH = BASE_PATH / "test" / "hello.json"
-T_SUITE_NAME = "RFC-2544"
+T_SUITE_NAME = "RFC-3918"
 
 
-class T2544Displayer:
+class T3918Displayer:
     console = Console()
-    separate = 5
 
     @classmethod
-    def assign_table(
-        cls, results: dict[str, str], exclude_keys: list[str], common_column_name: str
-    ):
-        rephrase = {k: v for k, v in results.items() if k not in exclude_keys}
-        length = len(rephrase)
-        table_num = ceil(length / cls.separate)
-        tables = []
-        for _ in range(table_num):
-            t = Table()
-            t.add_column(common_column_name)
-            tables.append(t)
-        table_rows = [[""] for _ in range(table_num)]
-        count = 0
-        ti = 0
-        for i, (k, v) in enumerate(rephrase.items()):
-
-            this_table = tables[ti]
-            this_table.add_column(k)
-            table_rows[ti].append(str(v))
-            count += 1
-            if count == cls.separate:
-                count = 0
-                ti += 1
-
-        for i, r in enumerate(table_rows):
-            tables[i].add_row(*r)
-        return tables
-
-    @classmethod
-    def generate_table(cls, results: dict) -> list[Table]:
+    def generate_table(cls, results: Dict) -> List[Table]:
         """Make a new table."""
+        all_tables = []
+        total_table = Table()
+        total_table_row = []
+        for k, v in results.items():
+            if k not in {"Source Ports", "Destination Ports"}:
+                total_table.add_column(k, no_wrap=True)
+                total_table_row.append(str(v))
+            else:
+                for p in v:
+                    port_table = Table()
+                    port_table_row = []
+                    for t, m in p.items():
+                        port_table.add_column(t, no_wrap=True)
+                        port_table_row.append(str(m))
+                    port_table.add_row(*port_table_row)
+                    all_tables.append(port_table)
 
-        all_tables = cls.assign_table(results, ["total", "port_data"], f"general")
-        all_tables += cls.assign_table(
-            results["total"],
-            ["tx_counter", "rx_counter"],
-            f"total_other",
-        )
-        all_tables += cls.assign_table(results["total"]["tx_counter"], [], f"total_tx")
-        all_tables += cls.assign_table(results["total"]["rx_counter"], [], f"total_rx")
+        total_table.add_row(*total_table_row)
+        all_tables.append(total_table)
 
-        for port in results["port_data"]:
-            all_tables += cls.assign_table(
-                port,
-                [
-                    "tx_counter",
-                    "rx_counter",
-                    "stream_statistic",
-                    "jitter",
-                    "latency",
-                    "port_id",
-                ],
-                f"port {port['port_id']}",
-            )
-            all_tables += cls.assign_table(
-                port["tx_counter"], [], f"port {port['port_id']} tx"
-            )
-            all_tables += cls.assign_table(
-                port["rx_counter"], [], f"port {port['port_id']} rx"
-            )
-            all_tables += cls.assign_table(
-                port["jitter"], [], f"port {port['port_id']} jitter"
-            )
-            all_tables += cls.assign_table(
-                port["latency"], [], f"port {port['port_id']} latency"
-            )
         return all_tables
 
     @classmethod
-    def display(cls, result: dict) -> None:
+    def display(cls, result: Dict) -> None:
         cls.console.clear()
         tables = cls.generate_table(result)
         for table in tables:
@@ -113,11 +68,8 @@ def set_windows_loop_policy():
 async def subscribe(ctrl: controller.MainController, source: str) -> None:
     async for msg in ctrl.listen_changes(source, _filter={types.EMsgType.STATISTICS}):
         # T2544Displayer.display(json.loads(msg.payload.json()))
-        if msg.payload.is_final:
-            with open('1.txt', 'a') as f:
-                f.write(msg.payload.json(indent=2))
-                f.write('\n')
-            pass
+        print(msg.payload)
+        pass
 
 
 async def start_test(
@@ -131,7 +83,7 @@ async def main() -> None:
     new = [
         types.Credentials(
             product=types.EProductType.VALKYRIE,
-            host="192.168.1.198",
+            host="demo.xenanetworks.com",
             password=cast(pydantic.SecretStr, "xena"),
         ),
     ]
@@ -148,10 +100,10 @@ async def main() -> None:
             logger.error("Test suite is not recognised.")
             return None
         new_data = converter(TestSuiteType(T_SUITE_NAME), app_data)
-        with open("2544.json", "w") as f:
+        with open(JSON_PATH, "w") as f:
             f.write(new_data)
-        conf = json.loads(new_data)
-        await start_test(c, conf, T_SUITE_NAME)
+        config = json.loads(new_data)
+        await start_test(c, config, T_SUITE_NAME)
 
 
 if __name__ == "__main__":

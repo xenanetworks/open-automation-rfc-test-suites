@@ -18,7 +18,11 @@ def hex_string_to_binary_string(hex: str) -> "BinaryString":
 
 class HexString(str):
     def to_list(self) -> List[str]:
+<<<<<<< HEAD:pluginlib/plugin2544/utils/field.py
         return [i for i in re.findall(r".{2}", self)]
+=======
+        return [str(i) for i in re.findall(r".{2}", self)]
+>>>>>>> 3918-v2:plugin2544/utils/field.py
 
 
 class MacAddress(str):
