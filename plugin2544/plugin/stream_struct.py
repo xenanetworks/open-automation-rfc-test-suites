@@ -1,9 +1,8 @@
 import asyncio
 from copy import deepcopy
 from typing import List, Optional, TYPE_CHECKING
-from xoa_driver import utils, misc, enums
-from ..model import (
-    TestConfiguration,
+from xoa_driver import utils, enums
+from ..model.m_protocol_segment import (
     HWModifier,
     ModifierActionOption,
 )
@@ -22,9 +21,12 @@ from .statistics import (
 )
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
 from ..utils import constants as const, protocol_segments as ps, exceptions
+from collections import defaultdict
+
 
 if TYPE_CHECKING:
     from .structure import PortStruct
+    from .test_config import TestConfigData
 
 
 class PTStream:
@@ -99,7 +101,7 @@ class StreamStruct:
         self._stream_id: int = stream_id
         self._tpldid: int = tpldid
         self._arp_mac: MacAddress = arp_mac
-        self._flow_creation_type: const.FlowCreationType = const.FlowCreationType.STREAM
+        self.__is_stream_based: bool = True
         self._addr_coll: AddressCollection = AddressCollection()
         self._packet_header: bytearray = bytearray()
         self._stream_offset = stream_offset
@@ -116,17 +118,17 @@ class StreamStruct:
 
     @property
     def rx_port(self) -> "PortStruct":
-        if self._flow_creation_type.is_stream_based:
+        if self.__is_stream_based:
             return self._rx_ports[0]
         else:
             return self._tx_port
 
     @property
     def hw_modifiers(self) -> List["HWModifier"]:
-        if self._flow_creation_type.is_stream_based:
+        if self.__is_stream_based:
             return [
                 modifier
-                for header_segment in self._tx_port.port_conf.profile.header_segments
+                for header_segment in self._tx_port.port_conf.profile.segments
                 for modifier in header_segment.hw_modifiers
             ]
         else:
@@ -135,7 +137,7 @@ class StreamStruct:
             )
             return [
                 HWModifier(
-                    mask="0x00FF0000",
+                    mask="00FF0000",
                     start_value=modifier_range[0],
                     stop_value=modifier_range[1],
                     step_value=1,
@@ -156,15 +158,15 @@ class StreamStruct:
         if self._best_result:
             self._best_result.calculate(self._tx_port, self.rx_port)
 
-    async def configure(self, test_conf: "TestConfiguration") -> None:
+    async def configure(self, test_conf: "TestConfigData") -> None:
         stream = await self._tx_port.create_stream()
         self._stream = stream
         base_mac = (
-            test_conf.multi_stream_config.multi_stream_mac_base_address
-            if test_conf.flow_creation_type.is_stream_based
+            test_conf.multi_stream_mac_base_address
+            if test_conf.is_stream_based
             else test_conf.mac_base_address
         )
-        self._flow_creation_type = test_conf.flow_creation_type
+        self.__is_stream_based = test_conf.is_stream_based
         self._addr_coll = get_address_collection(
             self._tx_port,
             self.rx_port,
@@ -179,7 +181,8 @@ class StreamStruct:
                 self._tx_port.port_conf.profile.segment_id_list
             ),
             self._stream.payload.content.set(
-                test_conf.payload_type.to_xmp(), f"0x{test_conf.payload_pattern}"
+                test_conf.payload_type.to_xmp(),
+                test_conf.payload_pattern,
             ),
             self._stream.tpld_id.set(test_payload_identifier=self._tpldid),
             self._stream.insert_packets_checksum.set(enums.OnOff.ON),
@@ -187,7 +190,8 @@ class StreamStruct:
         await self.set_packet_header()
         await self.setup_modifier()
         self.init_rx_tables(
-            test_conf.arp_refresh_enabled, test_conf.use_gateway_mac_as_dmac
+            test_conf.arp_refresh_enabled,
+            test_conf.use_gateway_mac_as_dmac,
         )
 
     def init_rx_tables(
@@ -195,20 +199,18 @@ class StreamStruct:
     ) -> None:
         if not arp_refresh_enabled or not self._tx_port.protocol_version.is_l3:
             return
-        if self._stream_offset:
+        if self._stream_offset and self._addr_coll.dst_addr:
             if self._tx_port.protocol_version.is_ipv4:
-                dst_addr = self._addr_coll.dst_ipv4_addr
                 self.rx_port.properties.arp_trunks.add(
-                    RXTableData(dst_addr, self._addr_coll.dmac)
+                    RXTableData(self._addr_coll.dst_addr, self._addr_coll.dmac)
                 )
-            else:
-                dst_addr = self._addr_coll.dst_ipv6_addr
+            elif self._tx_port.protocol_version.is_ipv6:
                 self.rx_port.properties.ndp_trunks.add(
-                    RXTableData(dst_addr, self._addr_coll.dmac)
+                    RXTableData(self._addr_coll.dst_addr, self._addr_coll.dmac)
                 )
             add_address_refresh_entry(
                 self.rx_port,
-                dst_addr,
+                self._addr_coll.dst_addr,
                 self._addr_coll.dmac,
             )
         else:
@@ -252,28 +254,37 @@ class StreamStruct:
     async def set_packet_header(self) -> None:
         # Insert all configured header segments in order
         profile = self._tx_port.port_conf.profile.copy(deep=True)
-        for index, segment in enumerate(profile.header_segments):
-            if segment.segment_type.is_ethernet and index == 0:
+        for index, segment in enumerate(profile.segments):
+            if segment.type.is_ethernet and index == 0:
                 ps.setup_segment_ethernet(
                     segment,
                     self._addr_coll.smac,
                     self._addr_coll.dmac,
                     self._addr_coll.arp_mac,
                 )
-            if segment.segment_type.is_ipv4:
+            if (
+                segment.type.is_ipv4
+                and isinstance(self._addr_coll.src_addr, IPv4Address)
+                and isinstance(self._addr_coll.dst_addr, IPv4Address)
+            ):
                 ps.setup_segment_ipv4(
                     segment,
-                    self._addr_coll.src_ipv4_addr,
-                    self._addr_coll.dst_ipv4_addr,
+                    self._addr_coll.src_addr,
+                    self._addr_coll.dst_addr,
                 )
-            if segment.segment_type.is_ipv6:
+            if (
+                segment.type.is_ipv6
+                and isinstance(self._addr_coll.src_addr, IPv6Address)
+                and isinstance(self._addr_coll.dst_addr, IPv6Address)
+            ):
                 ps.setup_segment_ipv6(
                     segment,
-                    self._addr_coll.src_ipv6_addr,
-                    self._addr_coll.dst_ipv6_addr,
+                    self._addr_coll.src_addr,
+                    self._addr_coll.dst_addr,
                 )
 
-        await self._stream.packet.header.data.set(f"0x{profile.prepare().hex()}")
+        self._packet_header = profile.prepare()
+        await self._stream.packet.header.data.set(self._packet_header.hex())
 
     async def setup_modifier(self) -> None:
         tokens = []
@@ -284,7 +295,7 @@ class StreamStruct:
             tokens.append(
                 modifier.specification.set(
                     position=hw_modifier.byte_segment_position,
-                    mask=f"0x{hw_modifier.mask}",
+                    mask=hw_modifier.mask,
                     action=hw_modifier.action.to_xmp(),
                     repetition=hw_modifier.repeat,
                 )
@@ -320,31 +331,35 @@ def get_address_collection(
     arp_mac: MacAddress,
     stream_offset: Optional[StreamOffset] = None,
 ) -> "AddressCollection":
+    default_none = defaultdict(None)
+    if (
+        port_struct.port_conf.ip_address is None
+        or peer_struct.port_conf.ip_address is None
+    ):
+        src_network = dst_network = default_none
+        src_addr = dst_addr = None
+        cls_src = cls_dst = None
+    else:
+        src_network = port_struct.port_conf.ip_address.network
+        dst_network = peer_struct.port_conf.ip_address.network
+        cls_src = port_struct.port_conf.ip_address.address.__class__
+        cls_dst = peer_struct.port_conf.ip_address.address.__class__
+        # TODO: Need to compare src and dst class?
+        src_addr = port_struct.port_conf.ip_address.address
+        dst_addr = peer_struct.port_conf.ip_address.dst_addr
     if stream_offset:
         return AddressCollection(
             arp_mac=arp_mac,
             smac=gen_macaddress(mac_base_address, stream_offset.tx_offset),
             dmac=gen_macaddress(mac_base_address, stream_offset.rx_offset),
-            src_ipv4_addr=IPv4Address(
-                port_struct.port_conf.ipv4_properties.network[stream_offset.tx_offset]
-            ),
-            dst_ipv4_addr=IPv4Address(
-                peer_struct.port_conf.ipv4_properties.network[stream_offset.rx_offset]
-            ),
-            src_ipv6_addr=IPv6Address(
-                port_struct.port_conf.ipv6_properties.network[stream_offset.tx_offset]
-            ),
-            dst_ipv6_addr=IPv6Address(
-                peer_struct.port_conf.ipv6_properties.network[stream_offset.rx_offset]
-            ),
+            src_addr=cls_src(src_network[stream_offset.tx_offset]) if cls_src else None,
+            dst_addr=cls_dst(dst_network[stream_offset.rx_offset]) if cls_dst else None,
         )
     else:
         return AddressCollection(
             arp_mac=arp_mac,
             smac=port_struct.properties.native_mac_address,
             dmac=peer_struct.properties.native_mac_address,
-            src_ipv4_addr=port_struct.port_conf.ipv4_properties.address,
-            dst_ipv4_addr=peer_struct.port_conf.ipv4_properties.dst_addr,
-            src_ipv6_addr=port_struct.port_conf.ipv6_properties.address,
-            dst_ipv6_addr=peer_struct.port_conf.ipv6_properties.dst_addr,
+            src_addr=src_addr,
+            dst_addr=dst_addr,
         )

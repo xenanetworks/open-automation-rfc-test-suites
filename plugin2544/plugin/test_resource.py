@@ -1,39 +1,45 @@
+from __future__ import annotations
 import asyncio
 import time
-from decimal import Decimal
-from typing import Dict, List, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Tuple
 from xoa_driver import testers as xoa_testers, modules, enums, utils
 from .learning import add_mac_learning_steps
 from .config_checkers import check_config
 from .common import get_peers_for_source
 from .setup_streams import setup_streams
 from .structure import PortStruct
+
 from ..utils import constants as const, exceptions
 
 if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity
-    from ..model import PortConfiguration, TestConfiguration
+    from .test_config import TestConfigData
+    from ..model.m_port_config import PortConfiguration
     from ..utils.interfaces import TestSuitePipe
 
 
 class ResourceManager:
     def __init__(
         self,
-        testers: Dict[str, "xoa_testers.GenericAnyTester"],
-        all_confs: List["PortConfiguration"],
-        port_identities: Dict[str, "PortIdentity"],
-        test_conf: "TestConfiguration",
+        testers: dict[str, "xoa_testers.GenericAnyTester"],
+        all_confs: list["PortConfiguration"],
+        port_identities: list["PortIdentity"],
+        test_conf: "TestConfigData",
         xoa_out: "TestSuitePipe",
     ):
         self.all_confs = all_confs
         self.__port_identities = port_identities
         self._validate_tester_type(testers.values(), xoa_testers.L23Tester)
         # type: ignore
-        self.__testers: Dict[str, "xoa_testers.L23Tester"] = testers
-        self.port_structs: List["PortStruct"] = []
+        self.__testers: dict[str, "xoa_testers.L23Tester"] = testers
+        self.port_structs: list["PortStruct"] = []
         self.xoa_out: "TestSuitePipe" = xoa_out
-        self.test_conf: "TestConfiguration" = test_conf
-        self.mapping: Dict[str, List[int]] = {}
+        self.__test_conf: "TestConfigData" = test_conf
+        self.mapping: dict[str, list[int]] = {}
+
+    @property
+    def test_conf(self):
+        return self.__test_conf
 
     @property
     def has_l3(self) -> bool:
@@ -45,7 +51,7 @@ class ResourceManager:
             raise ValueError("")
 
     @property
-    def tx_ports(self) -> List["PortStruct"]:
+    def tx_ports(self) -> list["PortStruct"]:
         return [
             port_struct
             for port_struct in self.port_structs
@@ -53,7 +59,7 @@ class ResourceManager:
         ]
 
     @property
-    def rx_ports(self) -> List["PortStruct"]:
+    def rx_ports(self) -> list["PortStruct"]:
         return [
             port_struct
             for port_struct in self.port_structs
@@ -63,10 +69,13 @@ class ResourceManager:
     async def setup_ports(self, latency_mode: "const.LatencyModeStr") -> None:
         await asyncio.gather(
             *[
-                port_struct.setup_port(self.test_conf, latency_mode)
+                port_struct.setup_port(self.__test_conf, latency_mode)
                 for port_struct in self.port_structs
             ]
         )
+
+    async def free(self) -> None:
+        await asyncio.gather(*[port_struct.free() for port_struct in self.port_structs])
 
     def build_map(self) -> None:
         for port_struct in self.tx_ports:
@@ -81,14 +90,14 @@ class ResourceManager:
     async def init_resource(self, latency_mode: "const.LatencyModeStr") -> None:
         await self.collect_control_ports()
         self.resolve_port_relations()
-        check_config(list(self.__testers.values()), self.port_structs, self.test_conf)
+        check_config(list(self.__testers.values()), self.port_structs, self.__test_conf)
         self.build_map()
         await self.stop_traffic()
-        await asyncio.sleep(self.test_conf.delay_after_port_reset_second)
+        await asyncio.sleep(self.__test_conf.delay_after_port_reset_second)
         await self.setup_ports(latency_mode)
         await self.setup_sweep_reduction()
         await self.add_toggle_port_sync_state_steps()
-        await setup_streams(self.port_structs, self.test_conf)
+        await setup_streams(self.port_structs, self.__test_conf)
         await add_mac_learning_steps(self, const.MACLearningMode.ONCE)
 
     async def stop_traffic(self) -> None:
@@ -102,8 +111,8 @@ class ResourceManager:
 
     async def setup_sweep_reduction(self) -> None:
         if (
-            not self.test_conf.enable_speed_reduction_sweep
-            or self.test_conf.topology.is_pair_topology
+            not self.__test_conf.enable_speed_reduction_sweep
+            or self.__test_conf.is_pair_topology
         ):
             return
         await asyncio.gather(
@@ -115,9 +124,8 @@ class ResourceManager:
 
     async def collect_control_ports(self) -> None:
         await asyncio.gather(*self.__testers.values())
-        for port_conf in self.all_confs:
-            slot = port_conf.port_slot
-            port_identity = self.__port_identities[slot]
+        for index, port_conf in enumerate(self.all_confs):
+            port_identity = self.__port_identities[index]
             tester = self.__testers[port_identity.tester_id]
             if not isinstance(tester, xoa_testers.L23Tester):
                 raise exceptions.WrongModuleTypeError(tester)
@@ -135,8 +143,8 @@ class ResourceManager:
 
     async def add_toggle_port_sync_state_steps(self) -> None:
         # AddTogglePortSyncStateSteps
-        toggle_conf = self.test_conf.toggle_port_sync_config
-        if not toggle_conf.toggle_port_sync:
+
+        if not self.__test_conf.toggle_port_sync:
             return
         await asyncio.gather(
             *[
@@ -144,7 +152,7 @@ class ResourceManager:
                 for port_struct in self.port_structs
             ]
         )
-        await asyncio.sleep(toggle_conf.sync_off_duration_second)
+        await asyncio.sleep(self.__test_conf.sync_off_duration_second)
         await asyncio.gather(
             *[
                 port_struct.set_toggle_port_sync(enums.OnOff.ON)
@@ -160,10 +168,10 @@ class ResourceManager:
                     raise TimeoutError(
                         f"Waiting for {port_struct.port_identity.name} sync timeout!"
                     )
-        await asyncio.sleep(toggle_conf.delay_after_sync_on_second)
+        await asyncio.sleep(self.__test_conf.delay_after_sync_on_second)
 
     def resolve_port_relations(self) -> None:
-        topology = self.test_conf.topology
+        topology = self.__test_conf.topology
         test_port_index = 0
         if topology.is_mesh_topology:
             for port_struct in self.port_structs:
@@ -193,15 +201,40 @@ class ResourceManager:
             for peer_struct in dest_ports:
                 port_struct.properties.register_peer(peer_struct)
 
-    async def setup_packet_size(self, current_packet_size: Union[Decimal, int]) -> None:
-        if self.test_conf.frame_sizes.packet_size_type.is_fix:
+    async def setup_tpld_mode(self, current_packet_size: float) -> None:
+        """use_micro_tpld_on_demand and can use micro tpld"""
+        use_micro_tpld_on_demand = self.test_conf.use_micro_tpld_on_demand
+        use_micro_tpld = False
+        if use_micro_tpld_on_demand:
+            for port_struct in self.port_structs:
+                if current_packet_size == 0:
+                    break
+                if not port_struct.capabilities.can_micro_tpld:
+                    break
+                packet_header = port_struct.stream_structs[0]._packet_header
+                header_length = len(packet_header)
+                min_length = header_length + const.STANDARD_TPLD_TOTAL_LENGTH
+                use_micro_tpld = current_packet_size < min_length
+                if use_micro_tpld:
+                    break
+        tasks = (
+            port_struct.set_tpld_mode(use_micro_tpld)
+            for port_struct in self.port_structs
+        )
+        await asyncio.gather(*tasks)
+
+    async def setup_packet_size(self, current_packet_size: Union[float, int]) -> None:
+        if self.__test_conf.frame_sizes.packet_size_type.is_fix:
             min_size = max_size = int(current_packet_size)
         else:
-            min_size, max_size = self.test_conf.frame_sizes.size_range
+            (
+                min_size,
+                max_size,
+            ) = self.__test_conf.size_range
         await asyncio.gather(
             *[
                 port_struct.set_streams_packet_size(
-                    self.test_conf.frame_sizes.packet_size_type.to_xmp(),
+                    self.__test_conf.frame_sizes.packet_size_type.to_xmp(),
                     min_size,
                     max_size,
                 )
@@ -237,33 +270,37 @@ class ResourceManager:
         )
 
     def los(self) -> bool:
-        if self.test_conf.should_stop_on_los:
+        if self.__test_conf.should_stop_on_los:
             return not all(
                 port_struct.properties.sync_status for port_struct in self.port_structs
             )
         return False
 
-    def tell_progress(self, start_time: float, actual_duration: Decimal) -> None:
+    def tell_progress(self, start_time: float, actual_duration: float) -> None:
         elapsed = time.time() - start_time
-        self.xoa_out.send_progress(elapsed / float(actual_duration) * 100)
+        self.xoa_out.send_progress(elapsed / actual_duration * 100)
 
-    def should_quit(self, start_time: float, actual_duration: Decimal) -> bool:
+    def should_quit(
+        self, start_time: float, actual_duration: float
+    ) -> Tuple[bool, bool]:
         test_finished = self.test_finished()
         elapsed = time.time() - start_time
         actual_duration_elapsed = (
-            elapsed >= float(actual_duration) + const.DELAY_TEST_MUST_FINISH
+            elapsed >= actual_duration + const.DELAY_TEST_MUST_FINISH
         )
         los = self.los()
         if los:
             self.xoa_out.send_warning(exceptions.StopTestByLossSignal())
+        should_quit = test_finished or los or actual_duration_elapsed
+        port_should_stop = [port._should_stop_on_los for port in self.port_structs]
+        should_fail = los and any(port_should_stop)
+        return should_quit, should_fail
 
-        return test_finished or los or actual_duration_elapsed
-
-    def set_rate_percent(self, rate: Decimal) -> None:
+    def set_rate_percent(self, rate: float) -> None:
         for port_struct in self.tx_ports:
             port_struct.set_rate_percent(rate)
 
-    async def set_tx_time_limit(self, tx_timelimit: Union[Decimal, int]) -> None:
+    async def set_tx_time_limit(self, tx_timelimit: Union[float, int]) -> None:
         """throughput & latency & frame loss support txtimelimit"""
         await asyncio.gather(
             *[
@@ -294,7 +331,7 @@ class ResourceManager:
         )
 
     async def start_traffic_sync(
-        self, tester: "xoa_testers.L23Tester", module_port_list: List[int]
+        self, tester: "xoa_testers.L23Tester", module_port_list: list[int]
     ) -> None:
         local_time = (await tester.time.get()).local_time
         delay_seconds = 2
@@ -329,7 +366,7 @@ class ResourceManager:
             )
 
     async def collect(
-        self, packet_size: Decimal, duration: Decimal, is_final: bool = False
+        self, packet_size: float, duration: float, is_final: bool = False
     ) -> None:
         for port_struct in self.port_structs:
             port_struct.init_counter(packet_size, duration, is_final)

@@ -1,5 +1,4 @@
 import re
-from decimal import Decimal
 from typing import Any, Dict, List, Union, TYPE_CHECKING
 from ipaddress import (
     IPv4Address as OldIPv4Address,
@@ -19,14 +18,14 @@ def hex_string_to_binary_string(hex: str) -> "BinaryString":
 
 class HexString(str):
     def to_list(self) -> List[str]:
-        return [f"0x{i}" for i in re.findall(r".{2}", self)]
+        return [i for i in re.findall(r".{2}", self)]
 
 
 class MacAddress(str):
     def __new__(cls, *args: Any, **kwargs: Dict[str, Any]) -> "MacAddress":
         value = str.__new__(cls, *args, **kwargs)
         if not value:
-            value = "00:00:00:00:00:00"
+            value = "000000000000"
         validate_value = (
             value.upper()
             .replace("0x", "")
@@ -40,7 +39,7 @@ class MacAddress(str):
             if i not in "0123456789ABCDEF":
                 raise exceptions.MacAddressNotValid(value)
 
-        return str.__new__(cls, ":".join(re.findall(".{2}", validate_value)))
+        return str.__new__(cls, "".join(re.findall(".{2}", validate_value)))
 
     def to_hexstring(self) -> str:
         return (
@@ -67,7 +66,7 @@ class MacAddress(str):
 
     @property
     def is_empty(self) -> bool:
-        return not self or self == MacAddress("00:00:00:00:00:00")
+        return not self or self == MacAddress("000000000000")
 
     def to_binary_string(self) -> "BinaryString":
         return hex_string_to_binary_string(self.replace(":", ""))
@@ -118,13 +117,6 @@ class IPv6Address(OldIPv6Address):
 class Prefix(int):
     def to_ipv4(self) -> IPv4Address:
         return IPv4Address(int(self * "1" + (32 - self) * "0", 2))
-
-
-class NonNegativeDecimal(Decimal):
-    def __init__(self, v: Any) -> None:
-        Decimal.__init__(v)
-        if self < 0:
-            raise ValueError("Please pass in positive Value.")
 
 
 IPAddress = Union[IPv4Address, IPv6Address]

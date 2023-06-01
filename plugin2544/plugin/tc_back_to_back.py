@@ -1,23 +1,22 @@
-from decimal import Decimal
-from ..model.m_test_type_config import BackToBackTest
 from .structure import PortStruct
 from typing import List
+from .test_type_config import BackToBackConfig
 
 
 class BackToBackBoutEntry:
     def __init__(
         self,
-        test_type_conf: BackToBackTest,
+        test_type_conf: BackToBackConfig,
         port_struct: PortStruct,
-        frame_size: Decimal,
-        rate: Decimal,
+        frame_size: float,
+        rate: float,
     ):
         self._test_type_conf = test_type_conf
         self._port_struct = port_struct
         self._frame_size = frame_size
-        self._left_bound: Decimal = Decimal("0")
+        self._left_bound: float = 0.0
         self._right_bound = self.current = self.next = (
-            self._test_type_conf.common_options.actual_duration * rate / Decimal("100")
+            self._test_type_conf.maximun_burst * rate / 100.0
         )
         self._last_move: int = 0
         self._port_should_continue: bool = False
@@ -43,7 +42,7 @@ class BackToBackBoutEntry:
 
             if (
                 self._port_struct.statistic
-                and self._port_struct.statistic.loss_ratio == Decimal("0")
+                and self._port_struct.statistic.loss_ratio == 0.0
             ):
                 self.update_left_bound()
             else:
@@ -65,7 +64,7 @@ class BackToBackBoutEntry:
         self._last_move = 1
 
     def compare_search_pointer(self) -> bool:
-        res = self._test_type_conf.rate_sweep_options.burst_resolution
+        res = self._test_type_conf.burst_resolution
         if abs(self.next - self.current) <= res:
             if self.next >= self.current:
                 # make sure we report the right boundary if we are so close to it.
@@ -79,10 +78,10 @@ class BackToBackBoutEntry:
 
 
 def get_initial_back_to_back_boundaries(
-    back_to_back_conf: "BackToBackTest",
+    back_to_back_conf: "BackToBackConfig",
     port_structs: List[PortStruct],
-    current_packet_size: Decimal,
-    rate_percent: Decimal,
+    current_packet_size: float,
+    rate_percent: float,
 ) -> List["BackToBackBoutEntry"]:
     return [
         BackToBackBoutEntry(
