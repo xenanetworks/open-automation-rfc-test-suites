@@ -1,5 +1,5 @@
 import asyncio
-from typing import Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from xoa_driver import utils, enums
 from .common import is_same_ipnetwork
 from ..utils.field import IPv4Address, IPv6Address, MacAddress
@@ -18,29 +18,33 @@ async def set_arp_request(
     peer_struct: "PortStruct",
     use_gateway_mac_as_dmac: bool,
 ) -> "MacAddress":
+    ip_properties = port_struct.port_conf.ip_address
+    peer_ip_properties = peer_struct.port_conf.ip_address
     if any(
         (
             not use_gateway_mac_as_dmac,
-            port_struct.port_conf.ip_properties.gateway.is_empty,
+            ip_properties
+            and ip_properties.gateway.is_empty,
             not port_struct.port_conf.profile.protocol_version.is_l3,
             is_same_ipnetwork(port_struct, peer_struct),
         )
     ):
         # return an empty Macaddress if no arp mac
         return MacAddress()
-    ip_properties = port_struct.port_conf.ip_properties
-    peer_ip_properties = peer_struct.port_conf.ip_properties
-    is_gateway_scenario = not ip_properties.gateway == peer_ip_properties.gateway
-    if is_gateway_scenario:
-        destination_ip = ip_properties.gateway
-    elif ip_properties.gateway.is_empty and ip_properties.remote_loop_address:
-        destination_ip = ip_properties.remote_loop_address
+    if ip_properties and peer_ip_properties:
+        is_gateway_scenario = not ip_properties.gateway == peer_ip_properties.gateway   # ignore
+        if is_gateway_scenario:
+            destination_ip = ip_properties.gateway
+        elif ip_properties.gateway.is_empty and ip_properties.remote_loop_address:
+            destination_ip = ip_properties.remote_loop_address
+        else:
+            destination_ip = peer_ip_properties.public_address
+        arp_mac = await send_arp_request(port_struct, ip_properties.address, destination_ip)
+        if is_gateway_scenario:
+            port_struct.port_conf.ip_gateway_mac_address = arp_mac
+        return arp_mac
     else:
-        destination_ip = peer_ip_properties.public_address
-    arp_mac = await send_arp_request(port_struct, ip_properties.address, destination_ip)
-    if is_gateway_scenario:
-        port_struct.port_conf.ip_gateway_mac_address = arp_mac
-    return arp_mac
+        return MacAddress()
 
 
 def get_packet_header(
@@ -80,7 +84,7 @@ async def send_arp_request(
         ),
         stream.packet.header.data.set(packet_header),
         stream.packet.length.set(enums.LengthType.FIXED, 64, 1518),  # PS_PACKETLENGTH
-        stream.payload.content.set(enums.PayloadType.INCREMENTING, "0x00"),
+        stream.payload.content.set(enums.PayloadType.INCREMENTING, "00"),
         stream.tpld_id.set(-1),
         stream.insert_packets_checksum.set(enums.OnOff.ON),
         stream.gateway.ipv4.set("0.0.0.0"),

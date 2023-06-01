@@ -33,12 +33,12 @@ class ProtocolChange:
     @property
     def header(self) -> "HeaderSegment":
         return HeaderSegment(
-            segment_type=self.segment_def.segment_type, segment_value=self.hexstring
+            type=self.segment_def.segment_type, segment_value=self.hexstring
         )
 
     @classmethod
     def read_segment(cls, segment: "HeaderSegment") -> "ProtocolChange":
-        instance = ProtocolChange(segment.segment_type)
+        instance = ProtocolChange(segment.type)
         instance.value_bin = [
             int(p)
             for i in bytes.fromhex(segment.segment_value)
@@ -55,14 +55,14 @@ class ProtocolChange:
         can_tcp_checksum: bool,
     ) -> str:
         segment = header_segments[segment_index]
-        if segment.segment_type == ProtocolOption.TCP and can_tcp_checksum:
-            header_segments[segment_index].segment_type = ProtocolOption.TCPCHECK
+        if segment.type == ProtocolOption.TCP and can_tcp_checksum:
+            header_segments[segment_index].type = ProtocolOption.TCPCHECK
 
         patched_value = ""
-        if (segment.segment_type) == ProtocolOption.ETHERNET:
+        if (segment.type) == ProtocolOption.ETHERNET:
             # patch first Ethernet segment with the port S/D MAC addresses
             if segment_index == 0:
-                seg_types = [s.segment_type for s in header_segments]
+                seg_types = [s.type for s in header_segments]
                 e_type = (
                     ETHER_TYPE_IPV4
                     if ProtocolOption.IPV4 in seg_types
@@ -83,19 +83,19 @@ class ProtocolChange:
                     .change_segment("EtherType", e_type, ParseMode.BYTE)
                 ).hexstring
 
-        elif (segment.segment_type) == ProtocolOption.IPV4:
+        elif (segment.type) == ProtocolOption.IPV4:
             change = ProtocolChange(ProtocolOption.IPV4)
             if segment_index + 1 <= len(header_segments) - 1:
                 next_prot = header_segments[segment_index + 1]
-                if next_prot.segment_type == ProtocolOption.UDP:
+                if next_prot.type == ProtocolOption.UDP:
                     change = change.change_segment("Protocol", 17, ParseMode.BIT)
-                elif next_prot.segment_type == ProtocolOption.TCP:
+                elif next_prot.type == ProtocolOption.TCP:
                     change = change.change_segment("Protocol", 6, ParseMode.BIT)
-                elif next_prot.segment_type == ProtocolOption.ICMP:
+                elif next_prot.type == ProtocolOption.ICMP:
                     change = change.change_segment("Protocol", 1, ParseMode.BIT)
-                elif next_prot.segment_type == ProtocolOption.SCTP:
+                elif next_prot.type == ProtocolOption.SCTP:
                     change = change.change_segment("Protocol", 132, ParseMode.BIT)
-                elif next_prot.segment_type in (
+                elif next_prot.type in (
                     ProtocolOption.IGMPV1,
                     ProtocolOption.IGMPV2,
                     ProtocolOption.IGMPV3L0,
@@ -113,20 +113,20 @@ class ProtocolChange:
                     ParseMode.BYTE,
                 )
             ).hexstring
-        elif (segment.segment_type) == ProtocolOption.IPV6:
+        elif (segment.type) == ProtocolOption.IPV6:
             # patched_value = setup_ipv6_segment(segment_value_bytearray, address_collection)
             change = ProtocolChange(ProtocolOption.IPV6)
             if segment_index + 1 <= len(header_segments) - 1:
                 next_prot = header_segments[segment_index + 1]
-                if next_prot.segment_type == ProtocolOption.UDP:
+                if next_prot.type == ProtocolOption.UDP:
                     change = change.change_segment("Next Header", 17, ParseMode.BIT)
-                elif next_prot.segment_type == ProtocolOption.TCP:
+                elif next_prot.type == ProtocolOption.TCP:
                     change = change.change_segment("Next Header", 6, ParseMode.BIT)
-                elif next_prot.segment_type == ProtocolOption.ICMP:
+                elif next_prot.type == ProtocolOption.ICMP:
                     change = change.change_segment("Next Header", 1, ParseMode.BIT)
-                elif next_prot.segment_type == ProtocolOption.SCTP:
+                elif next_prot.type == ProtocolOption.SCTP:
                     change = change.change_segment("Next Header", 132, ParseMode.BIT)
-                elif next_prot.segment_type in (
+                elif next_prot.type in (
                     ProtocolOption.IGMPV1,
                     ProtocolOption.IGMPV2,
                     ProtocolOption.IGMPV3L0,
@@ -184,13 +184,13 @@ class ProtocolChange:
         value: str,
     ) -> bytearray:
         segment = header_segments[index]
-        if segment.segment_type != ProtocolOption.ICMPV6:
+        if segment.type != ProtocolOption.ICMPV6:
             patched_value = bytearray.fromhex(value)
             offset_num = (
                 ProtocolChange.get_segment_definition_by_protocol(
-                    segment.segment_type
+                    segment.type
                 ).checksum_offset
-                if segment.segment_type.value in DEFAULT_SEGMENT_DIC
+                if segment.type.value in DEFAULT_SEGMENT_DIC
                 else -1
             )
             if offset_num != -1:

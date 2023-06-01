@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Generator, Generic, Protocol, Type, TypeVar, runtime_checkable
+from typing import Any, Dict, Generator, Generic, List, Protocol, Type, TypeVar, runtime_checkable
 from pydantic import BaseModel
 from loguru import logger
 from xoa_core.types import PortIdentity
@@ -38,7 +38,7 @@ class PStateConditions(Protocol):
 
 class PluginParameter(BaseModel):
     testers: Dict[str, Any]
-    port_identities: Dict[str, PortIdentity]
+    port_identities: List[PortIdentity]
     xoa_out: PXOAOut
     full_test_config: TestSuiteConfiguration2889
     data_sharing: TestSuiteDataSharing

@@ -1,5 +1,4 @@
 import asyncio
-from decimal import Decimal
 from typing import List, TYPE_CHECKING, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
 from xoa_driver import enums, misc, utils as driver_utils
@@ -12,22 +11,21 @@ from .data_model import (
 from .statistics import Statistic
 from .stream_struct import StreamStruct
 from ..utils import exceptions, constants as const
-from ..utils.field import MacAddress, NonNegativeDecimal
+from ..utils.field import MacAddress, IPv4Address, IPv6Address
+
 if TYPE_CHECKING:
     from xoa_core.core.test_suites.datasets import PortIdentity
     from xoa_driver import ports as xoa_ports, testers as xoa_testers
     from xoa_driver.lli import commands
     from ..utils.interfaces import TestSuitePipe
-    from ..model import (
-        FrameSizeConfiguration,
-        TestConfiguration,
-        PortConfiguration,
+    from .test_config import TestConfigData
+    from ..model.m_test_config import FrameSize
+    from ..model.m_port_config import PortConfiguration
+    from ..model.m_test_type_config import (
         ThroughputTest,
         LatencyTest,
         FrameLossRateTest,
         BackToBackTest,
-        IPV4AddressProperties,
-        IPV6AddressProperties,
     )
 
 
@@ -45,7 +43,6 @@ class PortStruct:
         self._xoa_out = xoa_out
         self._port_identity = port_identity
         self._should_stop_on_los = False
-
         self._port_conf = port_conf
         self.properties = Properties()
         self.lock = asyncio.Lock()
@@ -107,9 +104,7 @@ class PortStruct:
             await self.port_ins.brr_mode.set(broadr_reach_mode.to_xmp())
 
     async def set_mdi_mdix_mode(self, mdi_mdix_mode: const.MdiMdixMode) -> None:
-        is_port_can_mdi_mdix = self.port_ins.info.capabilities.can_mdi_mdix == enums.YesNo.YES
-        is_port_can_set_speed = self.port_ins.info.port_possible_speed_modes
-        if not is_port_can_mdi_mdix or (is_port_can_mdi_mdix and not is_port_can_set_speed):
+        if self.port_ins.info.capabilities.can_mdi_mdix == enums.YesNo.NO:
             self._xoa_out.send_warning(
                 exceptions.MdiMdixModeNotSupport(self._port_identity.name)
             )
@@ -186,9 +181,7 @@ class PortStruct:
                 break
         await self.port_ins.max_header_length.set(header_length)
 
-    async def set_packet_size_if_mix(
-        self, frame_sizes: "FrameSizeConfiguration"
-    ) -> None:
+    async def set_packet_size_if_mix(self, frame_sizes: "FrameSize") -> None:
         if not frame_sizes.packet_size_type.is_mix:
             return
         await self.port_ins.mix.weights.set(*frame_sizes.mixed_sizes_weights)
@@ -201,15 +194,11 @@ class PortStruct:
     async def send_packet(self, packet: str) -> None:
         await self.port_ins.tx_single_pkt.send.set(packet)
 
-    def free(self) -> List["misc.Token"]:
-        return [self.port_ins.reservation.set_release()]
+    def free(self) -> "misc.Token":
+        return self.port_ins.reservation.set_release()
 
     async def prepare(self) -> None:
-        self.port_ins.on_reservation_change(self.__on_reservation_status)
-        self.port_ins.on_receive_sync_change(self._change_sync_status)
-        self.port_ins.on_traffic_change(self._change_traffic_status)
-        self.port_ins.on_speed_change(self._change_physical_port_speed)
-        self._tester.on_disconnected(self.__on_disconnect_tester)
+
         tokens = [
             self.port_ins.sync_status.get(),
             self.port_ins.traffic.state.get(),
@@ -217,13 +206,19 @@ class PortStruct:
             self.port_ins.speed.current.get(),
         ]
         if self.port_ins.is_reserved_by_me():
-            tokens.extend(self.free())
+            tokens.append(self.free())
         elif self.port_ins.is_reserved_by_others():
             tokens.append(self.port_ins.reservation.set_relinquish())
+        tokens.append(self.port_ins.reservation.get())
         tokens.append(self.port_ins.reservation.set_reserve())
         tokens.append(self.port_ins.reset.set())
 
         (sync, traffic, mac, port_speed, *_) = await driver_utils.apply(*tokens)
+        self.port_ins.on_reservation_change(self.__on_reservation_status)
+        self.port_ins.on_receive_sync_change(self._change_sync_status)
+        self.port_ins.on_traffic_change(self._change_traffic_status)
+        self.port_ins.on_speed_change(self._change_physical_port_speed)
+        self._tester.on_disconnected(self.__on_disconnect_tester)
         self.properties.sync_status = bool(sync.sync_status)
         self.properties.traffic_status = bool(traffic.on_off)
         self.properties.native_mac_address = MacAddress(mac.mac_address)
@@ -297,22 +292,29 @@ class PortStruct:
     async def set_latency_mode(self, latency_mode: "const.LatencyModeStr"):
         await self.port_ins.latency_config.mode.set(latency_mode.to_xmp())
 
-    async def set_ipv4_address(self, ipv4_properties: "IPV4AddressProperties") -> None:
-        subnet_mask = ipv4_properties.routing_prefix.to_ipv4()
-        await self.port_ins.net_config.ipv4.address.set(
-            ipv4_address=ipv4_properties.address,
-            subnet_mask=subnet_mask,
-            gateway=ipv4_properties.gateway,
-            wild="0.0.0.0",
-        )
-
-    async def set_ipv6_address(self, ipv6_properties: "IPV6AddressProperties") -> None:
-        await self.port_ins.net_config.ipv6.address.set(
-            ipv6_address=ipv6_properties.address,
-            gateway=ipv6_properties.gateway,
-            subnet_prefix=ipv6_properties.routing_prefix,
-            wildcard_prefix=128,
-        )
+    async def set_ip_address(self) -> None:
+        ip_properties = self._port_conf.ip_address
+        if not ip_properties:
+            return
+        if isinstance(ip_properties.address, IPv4Address) and isinstance(
+            ip_properties.gateway, IPv4Address
+        ):
+            subnet_mask = ip_properties.routing_prefix.to_ipv4()
+            await self.port_ins.net_config.ipv4.address.set(
+                ipv4_address=ip_properties.address,
+                subnet_mask=subnet_mask,
+                gateway=ip_properties.gateway,
+                wild="0.0.0.0",
+            )
+        elif isinstance(ip_properties.address, IPv6Address) and isinstance(
+            ip_properties.gateway, IPv6Address
+        ):
+            await self.port_ins.net_config.ipv6.address.set(
+                ipv6_address=ip_properties.address,
+                gateway=ip_properties.gateway,
+                subnet_prefix=ip_properties.routing_prefix,
+                wildcard_prefix=128,
+            )
 
     async def set_mac_address(self, mac_addr: str) -> None:
         await self.port_ins.net_config.mac_address.set(mac_addr)
@@ -333,15 +335,15 @@ class PortStruct:
         return bool((await self.port_ins.traffic.state.get()).on_off)
 
     @property
-    def send_port_speed(self) -> Decimal:
+    def send_port_speed(self) -> float:
         return self.properties.send_port_speed
 
-    def set_send_port_speed(self, speed: Decimal) -> None:
+    def set_send_port_speed(self, speed: float) -> None:
         self.properties.send_port_speed = speed
 
     @property
-    def rate(self) -> Decimal:
-        return self.properties.rate
+    def rate_percent(self) -> float:
+        return self.properties.rate_percent
 
     @property
     def stream_structs(self) -> List["StreamStruct"]:
@@ -355,16 +357,16 @@ class PortStruct:
     def port_conf(self) -> "PortConfiguration":
         return self._port_conf
 
-    def set_rate(self, rate: Decimal) -> None:
-        self.properties.rate = rate
+    def set_rate_percent(self, rate_percent: float) -> None:
+        self.properties.rate_percent = rate_percent
 
     def init_counter(
-        self, packet_size: Decimal, duration: Decimal, is_final: bool = False
+        self, packet_size: float, duration: float, is_final: bool = False
     ) -> None:
         self._statistic = Statistic(
             port_id=self._port_identity.name,
             frame_size=packet_size,
-            rate=self.rate,
+            rate_percent=self.rate_percent,
             duration=duration,
             is_final=is_final,
             port_speed=self.send_port_speed,
@@ -391,20 +393,13 @@ class PortStruct:
         )
         self._stream_structs.append(stream_struct)
 
-    async def configure_streams(self, test_conf: "TestConfiguration") -> None:
-        for header_segment in self._port_conf.profile.header_segments:
+    async def configure_streams(self, test_conf: "TestConfigData") -> None:
+        for header_segment in self._port_conf.profile.segments:
             for field_value_range in header_segment.value_ranges:
                 if field_value_range.restart_for_each_port:
                     field_value_range.reset()
         for stream_struct in self._stream_structs:
             await stream_struct.configure(test_conf)
-
-    async def set_ip_address(self) -> None:
-        if self._port_conf.profile.protocol_version.is_ipv4:
-            # ip address, net mask, gateway
-            await self.set_ipv4_address(self._port_conf.ipv4_properties)
-        elif self._port_conf.profile.protocol_version.is_ipv6:
-            await self.set_ipv6_address(self._port_conf.ipv6_properties)
 
     async def set_streams_packet_size(
         self, packet_size_type: "enums.LengthType", min_size: int, max_size: int
@@ -417,21 +412,19 @@ class PortStruct:
         )
 
     async def setup_port(
-        self, test_conf: "TestConfiguration", latency_mode: "const.LatencyModeStr"
+        self, test_conf: "TestConfigData", latency_mode: "const.LatencyModeStr"
     ) -> None:
-        if not test_conf.flow_creation_type.is_stream_based:
+        if not test_conf.is_stream_based:
             mac = gen_macaddress(
-                test_conf.multi_stream_config.multi_stream_mac_base_address,
+                test_conf.multi_stream_mac_base_address,
                 self.properties.test_port_index,
             )
             await self.set_mac_address(str(mac))
-
         await self.set_speed_mode(self._port_conf.port_speed_mode)
         await self.set_latency_offset(self._port_conf.latency_offset_ms)
         await self.set_interframe_gap(int(self._port_conf.inter_frame_gap))
         await self.set_pause_mode(self._port_conf.pause_mode_enabled)
         await self.set_latency_mode(latency_mode)
-        await self.set_tpld_mode(test_conf.use_micro_tpld_on_demand)
         await self.set_reply()
         await self.set_ip_address()
         await self.set_broadr_reach_mode(self._port_conf.broadr_reach_mode)
@@ -449,25 +442,23 @@ class PortStruct:
         await self.set_arp_trucks(self.properties.arp_trunks)
         await self.set_ndp_trucks(self.properties.ndp_trunks)
 
-    def get_capped_port_speed(self) -> Decimal:
+    def get_capped_port_speed(self) -> float:
         port_speed = self.properties.physical_port_speed
         if self._port_conf.port_rate_cap_profile.is_custom:
             port_speed = min(self._port_conf.port_rate, port_speed)
-        return Decimal(str(port_speed))
+        return port_speed
 
-    def _get_use_port_speed(self) -> NonNegativeDecimal:
+    def _get_use_port_speed(self) -> float:
         tx_speed = self.get_capped_port_speed()
-        if self._port_conf.peer_config_slot and len(self.properties.peers) == 1:
+        if self._port_conf.peer_slot is not None and len(self.properties.peers) == 1:
             # Only Pair Topology Need to query peer speed
             peer_struct = self.properties.peers[0]
             rx_speed = peer_struct.get_capped_port_speed()
             tx_speed = min(tx_speed, rx_speed)
         self.set_send_port_speed(
-            tx_speed
-            * Decimal(str(1e6 - self._port_conf.speed_reduction_ppm))
-            / Decimal(str(1e6))
+            tx_speed * (1e6 - self._port_conf.speed_reduction_ppm) / 1e6
         )
-        return NonNegativeDecimal(str(self.send_port_speed))
+        return self.send_port_speed
 
     async def query(self) -> None:
         extra = self.port_ins.statistics.rx.extra.get()
@@ -496,8 +487,8 @@ class Properties:
     arp_trunks: Set[RXTableData] = field(default_factory=set)
     ndp_trunks: Set[RXTableData] = field(default_factory=set)
 
-    rate: Decimal = Decimal("0")
-    send_port_speed: Decimal = Decimal("0")
+    rate_percent: float = 0.0
+    send_port_speed: float = 0.0
     native_mac_address: MacAddress = MacAddress()
     arp_mac_address: MacAddress = MacAddress()
     traffic_status: bool = False

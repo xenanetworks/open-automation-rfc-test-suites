@@ -1,7 +1,4 @@
-from decimal import Decimal
-from typing import Any
-from loguru import logger
-from pydantic import NonNegativeInt
+from typing import Any, Union
 from xoa_driver import ports as xoa_ports, testers as xoa_testers
 from . import constants as const
 
@@ -155,6 +152,12 @@ class MixWeightsNotEnough(Exception):
         super().__init__(self.msg)
 
 
+class SmallerThanZeroError(Exception):
+    def __init__(self, num: Union[int, float]) -> None:
+        self.msg = f"Num {num} must be non negative."
+        super().__init__(self.msg)
+
+
 class MixWeightsSumError(Exception):
     def __init__(self, current_sum: int) -> None:
         self.msg = (
@@ -224,7 +227,7 @@ class InterFrameGapError(Exception):
 
 
 class PortRateError(Exception):
-    def __init__(self, curr: Decimal, max: int) -> None:
+    def __init__(self, curr: float, max: int) -> None:
         self.msg = (
             f"Custom port rate ({curr}) must not exceed physical port rate ({max})."
         )
@@ -232,7 +235,7 @@ class PortRateError(Exception):
 
 
 class SpeedReductionError(Exception):
-    def __init__(self, curr: NonNegativeInt, max: int) -> None:
+    def __init__(self, curr: int, max: int) -> None:
         self.msg = f"Custom speed reduction ({curr} ppm) must not exceed ({max} ppm)."
         super().__init__(self.msg)
 
@@ -366,4 +369,10 @@ class PacketLimitOverflow(Exception):
 class ModifierRangeError(Exception):
     def __init__(self, start: int, stop: int, step: int) -> None:
         self.msg = f"Modifier range configuration must meet these rules: min <= max, and (max - min) % step = 0. Your input was min = {start}, max = {stop}, and step = {step}."
+        super().__init__(self.msg)
+
+
+class PSPMissing(Exception):
+    def __init__(self) -> None:
+        self.msg = f"Protocol Segment Profile selected is missing."
         super().__init__(self.msg)

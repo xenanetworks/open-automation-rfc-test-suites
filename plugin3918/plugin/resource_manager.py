@@ -191,10 +191,8 @@ class PortInstance:
         return self.__prepare().__await__()
 
     async def __prepare(self):
-        # if self.__reservation_status == enums.ReservedStatus.RESERVED_BY_OTHER:
         if self.reservation_status == enums.ReservedStatus.RESERVED_BY_OTHER:
             await self.port.reservation.set_relinquish()
-            # while self.__reservation_status != enums.ReservedStatus.RELEASED:
             while self.reservation_status != enums.ReservedStatus.RELEASED:
                 await sleep(0.01)
         tokens = [
@@ -432,7 +430,9 @@ class ResourceManager:
         return self.__connect().__await__()
 
     def __get_instance_by_config(self, port_config: PortConfiguration) -> PortInstance:
-        port_identity = self._port_identities[port_config.port_slot]
+        port_identity = [
+            i for i in self._port_identities if i.name == port_config.port_config_slot
+        ][0]
         if port_identity.name in self._port_instances:
             return self._port_instances[port_identity.name]
 

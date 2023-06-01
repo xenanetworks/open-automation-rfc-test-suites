@@ -32,8 +32,8 @@ class Packet:
 
 @dataclass
 class Ether(Packet):
-    dmac: MacAddress = MacAddress("FF:FF:FF:FF:FF:FF")
-    smac: MacAddress = MacAddress("FF:FF:FF:FF:FF:FF")
+    dmac: MacAddress = MacAddress("FFFFFFFFFFFF")
+    smac: MacAddress = MacAddress("FFFFFFFFFFFF")
     type: EtherType = EtherType.IPV6
 
 
@@ -73,7 +73,7 @@ class ICMPV6Packet(Packet):
     icmpv6_flags: str = "20000000"
     source_ip: IPv6Address = IPv6Address("::")
     icmpv6_option: str = "0201"
-    smac: MacAddress = MacAddress("FF:FF:FF:FF:FF:FF")
+    smac: MacAddress = MacAddress("FFFFFFFFFFFF")
     padding: str = "00000000"
 
     def calculate_checksum(self, destination_ip: IPv6Address):
@@ -163,9 +163,9 @@ class ARPPacket(Packet):
     hardware_size: str = "06"
     protocol_size: str = "04"
     opcode: str = "0001"
-    smac: MacAddress = MacAddress("FF:FF:FF:FF:FF:FF")
+    smac: MacAddress = MacAddress("FFFFFFFFFFFF")
     source_ip: IPv4Address = IPv4Address("0.0.0.0")
-    dmac: MacAddress = MacAddress("FF:FF:FF:FF:FF:FF")
+    dmac: MacAddress = MacAddress("FFFFFFFFFFFF")
     destination_ip: IPv4Address = IPv4Address("0.0.0.0")
 
     def make_arp_packet(self) -> str:  # FormatArpPacket

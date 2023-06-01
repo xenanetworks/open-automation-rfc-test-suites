@@ -74,6 +74,7 @@ DELAY_LEARNING_MAC = 1
 DELAY_STATISTICS = 5
 DELAY_STOPPED_TRAFFIC = 1
 DELAY_CHECK_SYNC = 1
+DELAY_TEST_MUST_FINISH = 10
 DELAY_CLEAR_STATISTICS = 1
 INTERVAL_CHECK_LEARNING_TRAFFIC = 0.1
 INTERVAL_SEND_STATISTICS = 1
@@ -123,7 +124,7 @@ class PacketSizeType(CaseInsensitiveEnum):
     INCREMENTING = "incrementing"
     BUTTERFLY = "butterfly"
     RANDOM = "random"
-    MIX = "mixe_sizes"
+    MIX = "mixed_sizes"
 
     @property
     def is_custom(self) -> bool:
@@ -262,6 +263,9 @@ class AcceptableLossType(CaseInsensitiveEnum):
     PERCENT = "percent"
     FRAME = "frames"
 
+    @property
+    def is_percentage(self) -> bool:
+        return self == AcceptableLossType.PERCENT
 
 class PortRateCapProfile(CaseInsensitiveEnum):
     PHYSICAL = "physical_port_rate"
@@ -513,6 +517,10 @@ class IPVersion(CaseInsensitiveEnum):
     IPV4 = 4
     IPV6 = 6
 
+    @property
+    def is_ipv4(self) -> bool:
+        return self == type(self).IPV4
+
 
 class ARPSenarioType(CaseInsensitiveEnum):
     DEFAULT = 0
@@ -529,3 +537,4 @@ class IPPrefixLength(CaseInsensitiveEnum):
 class TestState(CaseInsensitiveEnum):
     L3_LEARNING = 3
     RUNNING_TEST = 5
+

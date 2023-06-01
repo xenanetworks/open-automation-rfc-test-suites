@@ -1,4 +1,3 @@
-from typing import List
 from .statistics import (
     FinalStatistic,
     StatisticParams,
@@ -18,5 +17,6 @@ async def aggregate_data(
         frame_size=params.frame_size,
         repetition=params.repetition,
         tx_rate_percent=params.rate_percent,
+        rate_result_scope=params.rate_result_scope,
         port_data=[port_struct.statistic for port_struct in resource.port_structs],
     )

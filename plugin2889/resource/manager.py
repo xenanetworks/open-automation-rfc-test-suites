@@ -38,7 +38,7 @@ class ResourcesManager:
         self,
         testers: Dict[str, testers.L23Tester],
         test_config: TestSuiteConfiguration2889,
-        port_identities: Dict[str, "PortIdentity"],
+        port_identities: List["PortIdentity"],
         port_pairs: Iterable["PortPair"],
         get_mac_address_function: Optional[Callable[["TestResource", "MacAddress"], "MacAddress"]] = None,
     ) -> None:
@@ -55,7 +55,7 @@ class ResourcesManager:
         # need_ports = [pair.names for pair in self.__port_pairs]
         # need_ports = list(itertools.chain.from_iterable(need_ports))
         coroutines = []
-        for port_identity in self.__port_identities.values():
+        for port_identity in self.__port_identities:
             # if port_identity.name not in need_ports:
             #     continue
 

@@ -232,7 +232,7 @@ class GroupByPortProperty(BaseModel):
 def group_by_port_property(
     port_configuration: Dict[str, PortConfiguration],
     port_role: PortRoleHandler,
-    port_identities: Dict[str, PortIdentity],
+    port_identities: List[PortIdentity],
 ) -> "GroupByPortProperty":
     result = GroupByPortProperty()
 
@@ -245,12 +245,12 @@ def group_by_port_property(
             not_use_port_uuid.append(uuid)
         result.port_peer[uuid] = port_role_config.peer_port_id
 
-    for _, port_config in port_configuration.items():
+    for port_name, port_config in port_configuration.items():
         uuid = port_config.item_id
         if uuid in not_use_port_uuid:
             continue
         result.uuid_slot[port_config.item_id] = port_config.port_slot
-        result.uuid_port_name[port_config.item_id] = port_identities[port_config.port_slot].name
+        result.uuid_port_name[port_config.item_id] = port_name
 
     # logger.debug(result)
     return result
@@ -290,7 +290,7 @@ def create_port_pair(
     topology: TestTopology,
     port_configuration: Dict[str, PortConfiguration],
     port_role: Optional[PortRoleHandler],
-    port_identities: Dict[str, PortIdentity],
+    port_identities: List[PortIdentity],
 ) -> PortPairs:
 
     role_source = PortGroup.WEST

@@ -1,4 +1,3 @@
-from decimal import Decimal
 import math
 import asyncio
 from xoa_driver import utils
@@ -20,11 +19,9 @@ if TYPE_CHECKING:
 def get_dest_ip_modifier_addr_range(
     port_struct: "PortStruct",
 ) -> Optional[range]:
-    header_segments = port_struct.port_conf.profile.header_segments
+    header_segments = port_struct.port_conf.profile.segments
     for header_segment in header_segments:
-        if (not header_segment.segment_type.is_ipv4) or (
-            not header_segment.segment_type.is_ipv6
-        ):
+        if (not header_segment.type.is_ipv4) or (not header_segment.type.is_ipv6):
             continue
 
         for field in header_segment.fields:
@@ -59,7 +56,7 @@ def get_bytes_from_macaddress(dmac: "MacAddress") -> Iterator[str]:
 
 def get_link_local_uci_ipv6address(dmac: "MacAddress") -> str:
     b = get_bytes_from_macaddress(dmac)
-    return f"FE80000000000000{int(next(b), 16) | 2 }{next(b)}{next(b)}FFFE{next(b)}{next(b)}{next(b)}"[:-1]
+    return f"FE80000000000000{int(next(b)) | 2 }{next(b)}{next(b)}FFFE{next(b)}{next(b)}{next(b)}"
 
 
 def get_address_list(
@@ -91,9 +88,11 @@ async def get_address_learning_packet(
     use_gateway=False,
 ) -> List[str]:  # GetAddressLearningPacket
     """ARP REFRESH STEP 2: generate learning packet according to address_refresh_data_set"""
-    dmac = MacAddress("FF:FF:FF:FF:FF:FF")
-    gateway = port_struct.port_conf.ip_properties.gateway
-    sender_ip = port_struct.port_conf.ip_properties.address
+    dmac = MacAddress("FFFFFFFFFFFF")
+    if not port_struct.port_conf.ip_address:
+        raise exceptions.IPAddressMissing()
+    gateway = port_struct.port_conf.ip_address.gateway
+    sender_ip = port_struct.port_conf.ip_address.address
     if use_gateway and not gateway.is_empty:
         gwmac = port_struct.port_conf.ip_gateway_mac_address
         if not gwmac.is_empty:
@@ -125,7 +124,7 @@ async def get_address_learning_packet(
             packet = NDPPacket(
                 smac=smac,
                 source_ip=IPv6Address(source_ip),
-                destination_ip=IPv6Address(int(destination_ip, 16)),
+                destination_ip=IPv6Address(destination_ip),
                 dmac=dmac,
             ).make_ndp_packet()
         packet_list.append(packet)
@@ -160,7 +159,8 @@ async def setup_address_arp_refresh(
 ) -> "AddressRefreshHandler":  # SetupAddressArpRefresh
     address_refresh_tokens = await setup_address_refresh(resources)
     return AddressRefreshHandler(
-        address_refresh_tokens, resources.test_conf.arp_refresh_period_second
+        address_refresh_tokens,
+        resources.test_conf.arp_refresh_period_second,
     )
 
 
@@ -170,7 +170,7 @@ class AddressRefreshHandler:
     def __init__(
         self,
         address_refresh_tokens: List[Tuple["misc.Token", bool]],
-        refresh_period: Decimal,
+        refresh_period: float,
     ) -> None:
         self.index = 0
         self.refresh_burst_size = 1
@@ -258,13 +258,13 @@ async def schedule_arp_refresh(
 
 async def add_L3_learning_preamble_steps(
     resources: "ResourceManager",
-    current_packet_size: Decimal,
+    current_packet_size: float,
     address_refresh_handler: Optional["AddressRefreshHandler"] = None,
 ) -> None:  # AddL3LearningPreambleSteps
     if not address_refresh_handler:
         return
     address_refresh_handler.set_current_state(const.TestState.L3_LEARNING)
-    resources.set_rate(resources.test_conf.learning_rate_pct)
+    resources.set_rate_percent(resources.test_conf.learning_rate_pct)
     await setup_source_port_rates(resources, current_packet_size)
     await resources.set_tx_time_limit(
         resources.test_conf.learning_duration_second * 1000
@@ -283,13 +283,17 @@ async def add_L3_learning_preamble_steps(
 
 async def add_flow_based_learning_preamble_steps(
     resources: "ResourceManager",
-    current_packet_size: Decimal,
+    current_packet_size: float,
 ) -> None:  # AddFlowBasedLearningPreambleSteps
-    if not resources.test_conf.use_flow_based_learning_preamble:
+    if (
+        not resources.test_conf.use_flow_based_learning_preamble
+    ):
         return
-    resources.set_rate(resources.test_conf.learning_rate_pct)
+    resources.set_rate_percent(resources.test_conf.learning_rate_pct)
     await setup_source_port_rates(resources, current_packet_size)
-    await resources.set_frame_limit(resources.test_conf.flow_based_learning_frame_count)
+    await resources.set_frame_limit(
+        resources.test_conf.flow_based_learning_frame_count
+    )
     await resources.start_traffic()
     while resources.test_running():
         await resources.query_traffic_status()
@@ -302,7 +306,7 @@ def make_mac_token(
     send_struct: "PortStruct", hex_data: str, mac_learning_frame_count: int
 ) -> List["misc.Token"]:
     tasks = []
-    packet = f"0x{hex_data}"
+    packet = hex_data
     max_cap = send_struct.capabilities.max_xmit_one_packet_length
     cur_length = len(hex_data) // 2
     if cur_length > max_cap:
@@ -316,10 +320,15 @@ async def add_mac_learning_steps(
     resources: "ResourceManager",
     require_mode: "const.MACLearningMode",
 ) -> None:
-    if require_mode != resources.test_conf.mac_learning_mode:
+    if (
+        require_mode
+        != resources.test_conf.mac_learning_mode
+    ):
         return
 
-    mac_learning_frame_count = resources.test_conf.mac_learning_frame_count
+    mac_learning_frame_count = (
+        resources.test_conf.mac_learning_frame_count
+    )
     none_mac = "FFFFFFFFFFFF"
     four_f = "FFFF"
     paddings = "00" * 118

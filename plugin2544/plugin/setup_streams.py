@@ -7,16 +7,14 @@ from ..utils import exceptions
 
 if TYPE_CHECKING:
     from .structure import PortStruct
-    from ..model import (
-        MultiStreamConfig,
-        TestConfiguration,
-    )
+    from .test_config import TestConfigData
+    from ..model.m_test_config import MultiStreamConfig
 
 
 async def setup_streams(
-    port_structs: List["PortStruct"], test_conf: "TestConfiguration"
+    port_structs: List["PortStruct"], test_conf: "TestConfigData"
 ) -> None:
-    if not test_conf.flow_creation_type.is_stream_based:
+    if not test_conf.is_stream_based:
         test_port_index_map = {
             port_struct.properties.test_port_index: port_struct
             for port_struct in port_structs
@@ -29,9 +27,11 @@ async def setup_streams(
         for port_struct in port_structs:
             for peer_struct in port_struct.properties.peers:
                 peer_struct.properties.arp_mac_address = await set_arp_request(
-                    port_struct, peer_struct, test_conf.use_gateway_mac_as_dmac
+                    port_struct,
+                    peer_struct,
+                    test_conf.use_gateway_mac_as_dmac,
                 )
-        if test_conf.multi_stream_config.enable_multi_stream:
+        if test_conf.enable_multi_stream:
             add_multi_streams(port_structs, test_conf)
         else:
             add_standard_streams(port_structs, test_conf)
@@ -100,14 +100,14 @@ def add_modifier_based_stream(
 
 
 def add_multi_streams(
-    port_structs: List["PortStruct"], test_conf: "TestConfiguration"
+    port_structs: List["PortStruct"], test_conf: "TestConfigData"
 ) -> None:
     offset_table = setup_offset_table(port_structs, test_conf.multi_stream_config)
     tpld_controller = TPLDControl(test_conf.tid_allocation_scope)
     for port_struct in port_structs:
         stream_id_counter = 0
         for peer_struct in port_struct.properties.peers:
-            if test_conf.multi_stream_config.enable_multi_stream:
+            if test_conf.enable_multi_stream:
                 peer_index = peer_struct.port_identity.name
                 offsets_list = get_stream_offsets(
                     offset_table, port_struct.port_identity.name, peer_index
@@ -134,7 +134,7 @@ def add_multi_streams(
 
 
 def add_standard_streams(
-    port_structs: List["PortStruct"], test_conf: "TestConfiguration"
+    port_structs: List["PortStruct"], test_conf: "TestConfigData"
 ) -> None:
     tpld_controller = TPLDControl(test_conf.tid_allocation_scope)
     for port_struct in port_structs:
