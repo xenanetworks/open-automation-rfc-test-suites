@@ -189,7 +189,7 @@ class IgmpMld:
             vlan_header = vlan_headers[0]
             header_list.insert(1, vlan_header)
         packet_header = ProtocolChange.cal_packet_header(header_list)
-        return "0x" + packet_header.hex()
+        return packet_header.hex()
 
     @classmethod
     def get_mld_packet(
@@ -264,7 +264,7 @@ class IgmpMld:
         ).header
         header_list = [ether_header, ip_header, icmp_header]
         packet_header = ProtocolChange.cal_packet_header(header_list)
-        return "0x" + packet_header.hex()
+        return packet_header.hex()
 
     @classmethod
     def build_mld_v1_header(

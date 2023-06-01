@@ -88,7 +88,7 @@ class GroupJoinLeaveDelayTest(BaseTestType):
         for mc_dest_port in self.resource_manager.mc_dest_ports():
             mc_dest_port.port.loop_back.set_txon2rx()
             native_mac = mc_dest_port.native_mac_address.hexstring
-            trigger_packet = f"0x{native_mac}{native_mac}1234{(TRIGGER_PACKET_SIZE - len(native_mac) - 2 )*'00'}"
+            trigger_packet = f"{native_mac}{native_mac}1234{(TRIGGER_PACKET_SIZE - len(native_mac) - 2 )*'00'}"
             tokens.append(mc_dest_port.port.tx_single_pkt.send.set(trigger_packet))
         await apply(*tokens)
 
@@ -119,12 +119,12 @@ class GroupJoinLeaveDelayTest(BaseTestType):
                 ethernet_smac_match.protocol.set([ProtocolOption.ETHERNET]),
                 ethernet_smac_match.position.set(6),
                 ethernet_smac_match.match.set(
-                    "0xFFFFFFFFFFFF0000",
-                    f"0x{mc_dest_port.native_mac_address.hexstring}0000",
+                    "FFFFFFFFFFFF0000",
+                    f"{mc_dest_port.native_mac_address.hexstring}0000",
                 ),
                 ether_type_match.protocol.set([ProtocolOption.ETHERNET]),
                 ether_type_match.position.set(12),
-                ether_type_match.match.set("0xFFFF000000000000", "0x1234000000000000"),
+                ether_type_match.match.set("FFFF000000000000", "1234000000000000"),
             )
             first = await mc_dest_port.port.length_terms.create()
             second = await mc_dest_port.port.length_terms.create()

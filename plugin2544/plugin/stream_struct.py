@@ -137,7 +137,7 @@ class StreamStruct:
             )
             return [
                 HWModifier(
-                    mask="0x00FF0000",
+                    mask="00FF0000",
                     start_value=modifier_range[0],
                     stop_value=modifier_range[1],
                     step_value=1,
@@ -182,7 +182,7 @@ class StreamStruct:
             ),
             self._stream.payload.content.set(
                 test_conf.payload_type.to_xmp(),
-                f"0x{test_conf.payload_pattern}",
+                test_conf.payload_pattern,
             ),
             self._stream.tpld_id.set(test_payload_identifier=self._tpldid),
             self._stream.insert_packets_checksum.set(enums.OnOff.ON),
@@ -283,7 +283,7 @@ class StreamStruct:
                     self._addr_coll.dst_addr,
                 )
 
-        await self._stream.packet.header.data.set(f"0x{profile.prepare().hex()}")
+        await self._stream.packet.header.data.set(f"{profile.prepare().hex()}")
 
     async def setup_modifier(self) -> None:
         tokens = []
@@ -294,7 +294,7 @@ class StreamStruct:
             tokens.append(
                 modifier.specification.set(
                     position=hw_modifier.byte_segment_position,
-                    mask=f"0x{hw_modifier.mask}",
+                    mask=hw_modifier.mask,
                     action=hw_modifier.action.to_xmp(),
                     repetition=hw_modifier.repeat,
                 )

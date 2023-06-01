@@ -17,7 +17,7 @@ from loguru import logger
 DEBUG = True
 BASE_PATH = Path.cwd()
 PLUGINS_PATH = BASE_PATH 
-INPUT_DATA_PATH = BASE_PATH / "test" / "2.v3918"
+INPUT_DATA_PATH = BASE_PATH / "test" / "1.v3918"
 JSON_PATH = BASE_PATH / "test" / "hello.json"
 T_SUITE_NAME = "RFC-3918"
 
@@ -83,7 +83,7 @@ async def main() -> None:
     new = [
         types.Credentials(
             product=types.EProductType.VALKYRIE,
-            host="192.168.1.198",
+            host="demo.xenanetworks.com",
             password=cast(pydantic.SecretStr, "xena"),
         ),
     ]

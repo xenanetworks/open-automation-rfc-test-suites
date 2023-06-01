@@ -163,10 +163,12 @@ class BaseTestType:
                     )
                 )
             tokens.append(
-                net_config.ipv4.arp_reply.set(OnOff(port_config.reply_arp_requests))
+                net_config.ipv4.arp_reply.set(
+                    OnOff(port_config.reply_arp_requests))
             )
             tokens.append(
-                net_config.ipv4.ping_reply.set(OnOff(port_config.reply_ping_requests))
+                net_config.ipv4.ping_reply.set(
+                    OnOff(port_config.reply_ping_requests))
             )
 
             # ConfigurePortIPv6Properties
@@ -180,10 +182,12 @@ class BaseTestType:
                     )
                 )
             tokens.append(
-                net_config.ipv6.arp_reply.set(OnOff(port_config.reply_arp_requests))
+                net_config.ipv6.arp_reply.set(
+                    OnOff(port_config.reply_arp_requests))
             )
             tokens.append(
-                net_config.ipv6.ping_reply.set(OnOff(port_config.reply_ping_requests))
+                net_config.ipv6.ping_reply.set(
+                    OnOff(port_config.reply_ping_requests))
             )
 
             pause_token = port.pause.set(OnOff(port_config.pause_mode_enabled))
@@ -193,12 +197,14 @@ class BaseTestType:
                 port.interframe_gap.set(port_config.inter_frame_gap),
                 port.speed.reduction.set(port_config.speed_reduction_ppm),
                 port.latency_config.offset.set(port_config.latency_offset_ms),
-                ## SubControllerBase.cs base.ConfigurePort() 之后
-                port.latency_config.mode.set(self.model_data.get_latency_mode_xoa()),
+                # SubControllerBase.cs base.ConfigurePort() 之后
+                port.latency_config.mode.set(
+                    self.model_data.get_latency_mode_xoa()),
             ]
             if self.model_data.is_packet_size_type_mixed_sizes():
                 tokens.append(
-                    port.mix.weights.set(*self.model_data.get_mixed_sizes_weights())
+                    port.mix.weights.set(
+                        *self.model_data.get_mixed_sizes_weights())
                 )
                 for k, v in self.model_data.get_mixed_length_config().items():
                     position = int(k.split("_")[-1])
@@ -296,7 +302,8 @@ class BaseTestType:
         else:
             selected_speed = physical_port_speed
         if port_instance.config.port_rate_cap_profile == PortRateCapProfile.CUSTOM:
-            capped_speed = min(port_instance.config.cap_port_rate, selected_speed)
+            capped_speed = min(
+                port_instance.config.cap_port_rate, selected_speed)
         else:
             capped_speed = selected_speed
         return float(capped_speed)
@@ -349,8 +356,10 @@ class BaseTestType:
                 total_frames_for_stream = self.find_stream_packet_limit(
                     r.src_instance, port_fraction
                 )
-                rate_token = stream.rate.fraction.set(int(10000 * port_fraction))
-                limit_token = stream.packet.limit.set(int(total_frames_for_stream))
+                rate_token = stream.rate.fraction.set(
+                    int(10000 * port_fraction))
+                limit_token = stream.packet.limit.set(
+                    int(total_frames_for_stream))
 
             else:  # rate_type == RRateType.PPS:
                 pps_value = (
@@ -364,7 +373,8 @@ class BaseTestType:
                     r.src_instance, uc_pps_value
                 )
                 rate_token = stream.rate.pps.set(int(uc_pps_value))
-                limit_token = stream.packet.limit.set(int(total_frames_for_stream))
+                limit_token = stream.packet.limit.set(
+                    int(total_frames_for_stream))
             tokens.append(stream.enable.set_on())
             tokens.append(rate_token)
             if set_stream_packet_limit:
@@ -420,7 +430,8 @@ class BaseTestType:
                 src_instance, dest_instance, ip_version
             )
         else:
-            dmac = self.get_dmac_address_for_port_l2(src_instance, dest_instance)
+            dmac = self.get_dmac_address_for_port_l2(
+                src_instance, dest_instance)
         return dmac
 
     async def setup_mc_stream_rates(self) -> None:
@@ -428,7 +439,8 @@ class BaseTestType:
         tokens = []
         for send_mc in self.resource_manager.send_resources_mc():
             if send_mc.src_instance.name not in done:
-                stream = send_mc.src_instance.port.streams.obtain(send_mc.stream_index)
+                stream = send_mc.src_instance.port.streams.obtain(
+                    send_mc.stream_index)
                 mc_def = self.model_data.mc_definition
                 rate_type = mc_def.stream_definition.rate_type
                 if rate_type == RateType.FRACTION:
@@ -438,7 +450,8 @@ class BaseTestType:
                         / 100.0
                     )
                     fraction = min(fraction, 100)
-                    rate_token = stream.rate.fraction.set(int(10000 * fraction))
+                    rate_token = stream.rate.fraction.set(
+                        int(10000 * fraction))
                 else:  # rate_type == RRateType.PPS:
                     pps_value = (
                         self.bout_info.rate * mc_def.stream_definition.rate_pps / 100.0
@@ -468,7 +481,8 @@ class BaseTestType:
             mc_start_address = mc_def.mc_ip_start_address
 
             dmac = get_multicast_mac_for_ip(mc_start_address)
-            addr_coll = make_address_collection(mc_start_address, src_instance, dmac)
+            addr_coll = make_address_collection(
+                mc_start_address, src_instance, dmac)
             packet_header = ProtocolChange.get_packet_header_inner(
                 addr_coll,
                 stream_config.header_segments,
@@ -477,19 +491,22 @@ class BaseTestType:
             lsb_bytes = mc_start_address.bytearrays[-4:]
             start_value = int.from_bytes(bytes(lsb_bytes), "big") & 0xFFFF
             step_value = mc_def.mc_address_step_value
-            end_value = start_value + step_value * (self.bout_info.mc_group_count - 1)
+            end_value = start_value + step_value * \
+                (self.bout_info.mc_group_count - 1)
             ip_segment_offset = stream_config.segment_offset_for_ip
-            ip_byte_offset = ProtocolChange.get_ip_field_byte_offset(ip_version)
+            ip_byte_offset = ProtocolChange.get_ip_field_byte_offset(
+                ip_version)
             min_val, max_val = self.find_packet_sizes()
 
             tokens += [
                 stream.tpld_id.set(tpld_id),
                 stream.comment.set(f"MC Src {stream.idx} / {tpld_id}"),
-                stream.packet.header.protocol.set(stream_config.header_segment_id_list),
-                stream.packet.header.data.set(f"0x{bytes(packet_header).hex()}"),
+                stream.packet.header.protocol.set(
+                    stream_config.header_segment_id_list),
+                stream.packet.header.data.set(bytes(packet_header).hex()),
                 # # Setup DMAC modifier.
                 stream.packet.header.modifiers.obtain(0).specification.set(
-                    4, "0xFFFF0000", ModifierAction.INC, 1
+                    4, "FFFF0000", ModifierAction.INC, 1
                 ),
                 stream.packet.header.modifiers.obtain(0).range.set(
                     start_value, step_value, end_value
@@ -497,7 +514,7 @@ class BaseTestType:
                 # # setup IP modifier
                 stream.packet.header.modifiers.obtain(1).specification.set(
                     ip_segment_offset + ip_byte_offset + 2,
-                    "0xFFFF0000",
+                    "FFFF0000",
                     ModifierAction.INC,
                     1,
                 ),
@@ -541,7 +558,8 @@ class BaseTestType:
             dest_ip = get_ip_property(
                 dest_instance.config, ip_version
             ).usable_dest_ip_address
-            dmac = self.get_dmac_address(src_instance, dest_instance, ip_version)
+            dmac = self.get_dmac_address(
+                src_instance, dest_instance, ip_version)
             min_val, max_val = self.find_packet_sizes()
             addr_coll = make_address_collection(dest_ip, src_instance, dmac)
             packet_header = ProtocolChange.get_packet_header_inner(
@@ -551,8 +569,9 @@ class BaseTestType:
             tokens = [
                 stream.tpld_id.set(tpld_id),
                 stream.comment.set(f"UC {stream.idx} / {tpld_id}"),
-                stream.packet.header.protocol.set(stream_config.header_segment_id_list),
-                stream.packet.header.data.set(f"0x{bytes(packet_header).hex()}"),
+                stream.packet.header.protocol.set(
+                    stream_config.header_segment_id_list),
+                stream.packet.header.data.set(bytes(packet_header).hex()),
                 stream.packet.length.set(
                     self.model_data.get_packet_size_type_xoa(), min_val, max_val
                 ),
@@ -587,7 +606,8 @@ class BaseTestType:
             )
             join_leave_each = self.model_data.get_igmp_join_leave_rate() * interval
             for _ in range(join_leave_each):
-                request, dest_instance, is_time_request = next(self.igmp_request_queue)
+                request, dest_instance, is_time_request = next(
+                    self.igmp_request_queue)
                 result = await request
                 if is_time_request and self.want_igmp_request_tx_time:
                     if request_type == IgmpRequestType.JOIN:
@@ -638,7 +658,8 @@ class BaseTestType:
                         )
                     if igmp_packet:
                         yield (
-                            mc_dest_port.port.tx_single_pkt.send.set(igmp_packet),
+                            mc_dest_port.port.tx_single_pkt.send.set(
+                                igmp_packet),
                             mc_dest_port,
                             False,
                         )
@@ -666,7 +687,8 @@ class BaseTestType:
         if not port_sync:
             for r in port_instances:
                 if set_time_limit:
-                    tokens.append(r.port.tx_config.time_limit.set(duration_min_sec))
+                    tokens.append(
+                        r.port.tx_config.time_limit.set(duration_min_sec))
                 tokens.append(r.port.traffic.state.set_start())
             await apply(*tokens)
         elif len(self.resource_manager.testers()) == 1:
@@ -675,7 +697,8 @@ class BaseTestType:
                 module_port_list.append(r.port.kind.module_id)
                 module_port_list.append(r.port.kind.port_id)
                 if set_time_limit:
-                    tokens.append(r.port.tx_config.time_limit.set(duration_min_sec))
+                    tokens.append(
+                        r.port.tx_config.time_limit.set(duration_min_sec))
             for t in self.resource_manager.testers():
                 tokens.append(t.traffic.set_on(module_port_list))
             await apply(*tokens)
@@ -710,7 +733,8 @@ class BaseTestType:
             ether_type = "FFFF"
             payload = 118 * "00"
             learning_packet = f"{dmac.hexstring}{smac.hexstring}{ether_type}{payload}"
-            tokens.append(port_ins.port.tx_single_pkt.send.set(learning_packet))
+            tokens.append(
+                port_ins.port.tx_single_pkt.send.set(learning_packet))
         await apply(*tokens)
         # in case of the router cannot handle so many mac learning packets
         await sleep(len(p_instance))
@@ -762,7 +786,8 @@ class BaseTestType:
             port = dest_instance.port
             tokens.append(port.capturer.state.set_stop())
             tokens.append(
-                port.capturer.trigger.set(StartTrigger.ON, 0, StopTrigger.FULL, 0)
+                port.capturer.trigger.set(
+                    StartTrigger.ON, 0, StopTrigger.FULL, 0)
             )
             tokens.append(port.capturer.keep.set(PacketType.TPLD, 0, 16))
             tokens.append(port.capturer.state.set_start())

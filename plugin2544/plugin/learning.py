@@ -306,7 +306,7 @@ def make_mac_token(
     send_struct: "PortStruct", hex_data: str, mac_learning_frame_count: int
 ) -> List["misc.Token"]:
     tasks = []
-    packet = f"0x{hex_data}"
+    packet = hex_data
     max_cap = send_struct.capabilities.max_xmit_one_packet_length
     cur_length = len(hex_data) // 2
     if cur_length > max_cap:
