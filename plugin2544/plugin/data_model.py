@@ -1,9 +1,12 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pydantic import BaseModel
-from typing import Optional, Union, Tuple
-
+from typing import Optional, Union, Tuple, TYPE_CHECKING
+import time
 from ..utils.constants import PortProtocolVersion
 from ..utils.field import IPv4Address, IPv6Address, MacAddress
+
+if TYPE_CHECKING:
+    from ..utils.interfaces import TestSuitePipe
 
 
 @dataclass(frozen=True)
@@ -33,16 +36,23 @@ class AddressCollection:
     smac: MacAddress = MacAddress()
     dmac: MacAddress = MacAddress()
     arp_mac: MacAddress = MacAddress()
-    src_ipv4_addr: IPv4Address = IPv4Address("0.0.0.0")
-    dst_ipv4_addr: IPv4Address = IPv4Address("0.0.0.0")
-    src_ipv6_addr: IPv6Address = IPv6Address("::")
-    dst_ipv6_addr: IPv6Address = IPv6Address("::")
+    src_addr: Union[IPv4Address, IPv6Address, None] = None
+    dst_addr: Union[IPv4Address, IPv6Address, None] = None
 
     def get_addr_pair_by_protocol(
         self, protocol: PortProtocolVersion
-    ) -> Tuple[Union[IPv4Address, IPv6Address, MacAddress], ...]:
+    ) -> Tuple[Union[IPv4Address, IPv6Address, MacAddress, None], ...]:
         if protocol.is_ipv4:
-            return self.src_ipv4_addr, self.dst_ipv4_addr
+            return self.src_addr, self.dst_addr
         elif protocol.is_ipv6:
-            return self.src_ipv6_addr, self.dst_ipv6_addr        
+            return self.src_addr, self.dst_addr
         return self.smac, self.dmac
+
+@dataclass
+class Progress:
+    total: int
+    current: int = 0
+
+    def send(self, xoa: "TestSuitePipe") -> None:
+        xoa.send_progress(self.current, self.total)
+        self.current += 1

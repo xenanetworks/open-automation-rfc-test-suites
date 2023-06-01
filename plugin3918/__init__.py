@@ -23,15 +23,14 @@ from .model.test_type_config import (
 from .model.test_suit import TestConfiguration3918
 from .model.mc_uc_definition import McDefinition
 from .model.port_config import PortConfiguration
-from .model.protocol_segments import ProtocolSegmentProfileConfigure
+from .model.protocol_segments import ProtocolSegmentProfileConfig
 from .utils.errors import (
-    IPAddressMissing,
     LeastTwoUcBurden,
     NoMcDestination,
     NotOneMcSource,
     PacketSizeSmallerThanPacketLength,
 )
-from typing import Counter, Dict, List
+from typing import Counter, Dict
 from pydantic import BaseModel, root_validator, validator
 
 PortConfType = Dict[str, "PortConfiguration"]
@@ -54,7 +53,7 @@ def _check_header_length(
 
 class Model3918(BaseModel):
     mc_definition: McDefinition
-    protocol_segments: Dict[str, ProtocolSegmentProfileConfigure]
+    protocol_segments: Dict[str, ProtocolSegmentProfileConfig]
     ports_configuration: Dict[str, PortConfiguration]
     test_configuration: TestConfiguration3918
     test_types_configuration: TestTypeConfiguration3918
@@ -112,7 +111,7 @@ class TestSuite3918(PluginAbstract["Model3918"]):
             BurdenedGroupJoinDelayTest,
             BurdenedMulticastLatencyTest,
         ):
-            test = test_case_class(self.xoa_out, self.cfg, resource_manager )
+            test = test_case_class(self.xoa_out, self.cfg, resource_manager)
             if test.enabled():
                 await test.run()
 

@@ -110,7 +110,7 @@ class IgmpMld:
             igmp_segment_raw[: -len(group_segment_with_ip)] + group_segment_with_ip
         )
         return HeaderSegment(
-            segment_type=ProtocolOption.IGMPV3_MR, segment_value=igmp_segment.hex()
+            type=ProtocolOption.IGMPV3_MR, segment_value=igmp_segment.hex()
         )
 
     @classmethod
@@ -146,7 +146,7 @@ class IgmpMld:
         vlan_headers = [
             hs
             for hs in mc_definition.stream_definition.header_segments
-            if hs.segment_type == ProtocolOption.VLAN
+            if hs.type == ProtocolOption.VLAN
         ]
         ether_type = bytearray(
             ETHER_TYPE_VLAN_TAGGED if vlan_headers else ETHER_TYPE_IPV4

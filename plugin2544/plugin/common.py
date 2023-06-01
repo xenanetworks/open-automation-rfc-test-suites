@@ -5,20 +5,20 @@ from ..utils import constants as const, field
 
 if TYPE_CHECKING:
     from .structure import PortStruct
-    from ..model import PortConfiguration
+    from ..model.m_port_config import PortConfiguration
 
 
 def gen_macaddress(first_three_bytes: str, index: int) -> "field.MacAddress":
     hex_num = hex(index)[2:].zfill(6)
-    last_three_bytes = ":".join(re.findall(r".{2}", hex_num))
+    last_three_bytes = "".join(re.findall(r".{2}", hex_num))
     return field.MacAddress(f"{first_three_bytes}:{last_three_bytes}")
 
 
 def is_same_ipnetwork(port_struct: "PortStruct", peer_struct: "PortStruct") -> bool:
-    port_properties = port_struct.port_conf.ip_properties
-    peer_properties = peer_struct.port_conf.ip_properties
+    port_properties = port_struct.port_conf.ip_address
+    peer_properties = peer_struct.port_conf.ip_address
     if not port_properties or not peer_properties:
-        raise ValueError("Please check IP properties values")
+        return False
     return port_properties.network == peer_properties.network
 
 

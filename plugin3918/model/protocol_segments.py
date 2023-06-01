@@ -1,6 +1,5 @@
 from typing import List, Optional
 from pydantic import validator, BaseModel, NonNegativeInt
-from pydantic import BaseModel, validator
 from xoa_driver.enums import ProtocolOption as XProtocolOption
 from ..utils.errors import NoIpSegment
 from ..utils.constants import (
@@ -12,12 +11,12 @@ from ..utils.constants import (
 
 
 class FieldDefinition(BaseModel):
-    name: str  # = Field(alias="Name")
-    bit_length: int  # = Field(alias="BitLength")
-    display_type: Optional[str]  # = Field(alias="DisplayType")
-    default_value: Optional[str]  # = Field(alias="DefaultValue")
-    value_map_name: Optional[str]  # = Field(alias="ValueMapName")
-    is_reserved: Optional[bool]  # = Field(alias="IsReserved")
+    name: str
+    bit_length: int
+    display_type: Optional[str]
+    default_value: Optional[str]
+    value_map_name: Optional[str]
+    is_reserved: Optional[bool]
     bit_offset: int = 0
     byte_offset: int = 0
     bit_padding: int = 0
@@ -30,12 +29,12 @@ class FieldDefinition(BaseModel):
 
 
 class SegmentDefinition(BaseModel):
-    name: str  # = Field(alias="Name")
-    description: str  # = Field(alias="Description")
-    segment_type: ProtocolOption  # = Field(alias="SegmentType")
-    enclosed_type_index: int  # = Field(alias="EnclosedTypeIndex")
-    checksum_offset: int  # = Field(alias="ChecksumOffset")
-    field_definitions: List[FieldDefinition]  # = Field(alias="ProtocolFields")
+    name: str
+    description: str
+    segment_type: ProtocolOption
+    enclosed_type_index: int
+    checksum_offset: int
+    field_definitions: List[FieldDefinition]
 
     class Config:
         arbitrary_types_allowed = True
@@ -916,7 +915,7 @@ class FieldValueRange(BaseModel):
 
 
 class HeaderSegment(BaseModel):
-    segment_type: ProtocolOption
+    type: ProtocolOption
     segment_value: str
 
     @property
@@ -924,7 +923,7 @@ class HeaderSegment(BaseModel):
         return len(self.segment_value) // 2
 
 
-class ProtocolSegmentProfileConfigure(BaseModel):
+class ProtocolSegmentProfileConfig(BaseModel):
     description: str = ""
     header_segments: List[HeaderSegment] = []
     payload_type: PayloadType
@@ -947,14 +946,14 @@ class ProtocolSegmentProfileConfigure(BaseModel):
 
     @property
     def header_segment_id_list(self) -> List[XProtocolOption]:
-        return [h.segment_type.xoa for h in self.header_segments]
+        return [h.type.xoa for h in self.header_segments]
 
     @property
     def ip_version(self) -> IPVersion:
         for header_segment in self.header_segments:
-            if ProtocolOption.IPV4 == header_segment.segment_type:
+            if ProtocolOption.IPV4 == header_segment.type:
                 return IPVersion.IPV4
-            elif ProtocolOption.IPV6 == header_segment.segment_type:
+            elif ProtocolOption.IPV6 == header_segment.type:
                 return IPVersion.IPV6
         raise NoIpSegment("No IP segment found")
 
@@ -962,9 +961,9 @@ class ProtocolSegmentProfileConfigure(BaseModel):
     def segment_offset_for_ip(self) -> int:
         offset = 0
         for header_segment in self.header_segments:
-            if ProtocolOption.IPV4 == header_segment.segment_type:
+            if ProtocolOption.IPV4 == header_segment.type:
                 return offset
-            elif ProtocolOption.IPV6 == header_segment.segment_type:
+            elif ProtocolOption.IPV6 == header_segment.type:
                 return offset
             offset += len(header_segment.segment_value) // 2
         return -1

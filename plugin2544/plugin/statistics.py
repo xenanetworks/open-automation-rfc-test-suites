@@ -1,9 +1,9 @@
 import math
-from decimal import Decimal
 from typing import Any, Dict, List, Union, TYPE_CHECKING
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, Field
 from operator import attrgetter
 from ..utils import constants as const
+import time
 
 if TYPE_CHECKING:
     from .structure import PortStruct
@@ -43,7 +43,7 @@ class DelayCounter(AvgMinMax):
 
     def avg(self, count: int) -> None:
         for name, value in self:
-            setattr(self, name, math.floor(Decimal(str(value)) / Decimal(str(count))))
+            setattr(self, name, math.floor(value / count))
 
     def update(self, data: DelayData) -> None:
         if not data.is_valid:
@@ -56,9 +56,7 @@ class DelayCounter(AvgMinMax):
             self.minimum = min(data.minimum, self.minimum)
             self.maximum = max(data.maximum, self.maximum)
         self._count += 1
-        self.average = math.floor(
-            Decimal(self._total) / Decimal(self._count) if self._count else 0
-        )
+        self.average = math.floor(self._total / self._count if self._count else 0)
 
 
 class StreamCounter(BaseModel):
@@ -66,10 +64,10 @@ class StreamCounter(BaseModel):
     bps: int = 0  # bit_count_last_sec
     pps: int = 0  # packet_count_last_sec
     bytes_count: int = 0  # byte_count_since_cleared
-    frame_rate: Decimal = Decimal("0.0")
-    l2_bit_rate: Decimal = Decimal("0.0")
-    l1_bit_rate: Decimal = Decimal("0.0")
-    tx_l1_bps: Decimal = Decimal("0.0")
+    frame_rate: float = 0.0
+    l2_bit_rate: float = 0.0
+    l1_bit_rate: float = 0.0
+    tx_l1_bps: float = 0.0
 
     def add_stream_counter(self, counter: "StreamCounter") -> None:
         """update stream counter by pr stream"""
@@ -81,15 +79,13 @@ class StreamCounter(BaseModel):
     def calculate_stream_rate(
         self,
         is_final: bool,
-        duration: Decimal,
-        frame_size: Decimal,
-        interframe_gap: Decimal,
+        duration: float,
+        frame_size: float,
+        interframe_gap: float,
     ) -> None:
-        self.frame_rate = Decimal(str(self.frames)) / duration
-        self.l2_bit_rate = self.frame_rate * Decimal("8") * frame_size
-        self.l1_bit_rate = (
-            self.frame_rate * Decimal("8") * (frame_size + interframe_gap)
-        )
+        self.frame_rate = self.frames / duration
+        self.l2_bit_rate = self.frame_rate * 8.0 * frame_size
+        self.l1_bit_rate = self.frame_rate * 8.0 * (frame_size + interframe_gap)
         if is_final:
             self.tx_l1_bps = self.l1_bit_rate
         else:
@@ -124,7 +120,7 @@ class StreamStatisticData(BaseModel):
         self.rx_counter.add_stream_counter(pr_stream_statistic.rx_stream_counter)
         self.latency.update(pr_stream_statistic.latency)
         self.jitter.update(pr_stream_statistic.jitter)
-        self.live_loss_frames += pr_stream_statistic.live_loss_frames
+        self.live_loss_frames += max(0, pr_stream_statistic.live_loss_frames)
 
     def calculate(
         self, tx_port_struct: "PortStruct", rx_port_struct: "PortStruct"
@@ -138,7 +134,7 @@ class StreamStatisticData(BaseModel):
 
 class PortCounter(StreamCounter):
     counter_type: const.PortCounterType = const.PortCounterType.TX
-    _tx_l1_bps: Decimal = Decimal("0")
+    _tx_l1_bps: float = 0.0
     l2_bps: int = 0
     l1_bps: int = 0
     fps: int = 0
@@ -156,7 +152,7 @@ class PortCounter(StreamCounter):
         for name, value in self:
             if name == "counter_type":
                 continue
-            setattr(self, name, math.floor(Decimal(str(value)) / Decimal(str(count))))
+            setattr(self, name, math.floor(value / count))
 
     def add_stream_counter(self, counter: "StreamCounter") -> None:
         """aggregate stream statistic"""
@@ -169,9 +165,9 @@ class PortCounter(StreamCounter):
     def calculate_port_rate(
         self,
         is_final: bool,
-        duration: Decimal,
-        frame_size: Decimal,
-        interframe_gap: Decimal,
+        duration: float,
+        frame_size: float,
+        interframe_gap: float,
     ) -> None:
         super().calculate_stream_rate(is_final, duration, frame_size, interframe_gap)
         self.l2_bps = math.floor(self.l2_bit_rate) if is_final else self.bps
@@ -186,11 +182,11 @@ class PortCounter(StreamCounter):
 class Statistic(BaseModel):
     port_id: str = ""
     is_final: bool = False  # for calculation use
-    frame_size: Decimal = Decimal("1")  # for calculation use
-    duration: Decimal = Decimal("0")  # for calculation use
-    rate_percent: Decimal = Decimal("0")  # # for calculation use
-    interframe_gap: Decimal = Decimal("0")  # for calculation use
-    port_speed: Decimal = Decimal("0")  # for calculation use
+    frame_size: float = 1.0  # for calculation use
+    duration: float = 0.0  # for calculation use
+    rate_percent: float = 0.0  # # for calculation use
+    interframe_gap: float = 0.0  # for calculation use
+    port_speed: float = 0.0  # for calculation use
     tx_counter: PortCounter = PortCounter(counter_type=const.PortCounterType.TX)
     rx_counter: PortCounter = PortCounter(counter_type=const.PortCounterType.RX)
     latency: DelayCounter = DelayCounter()
@@ -200,8 +196,8 @@ class Statistic(BaseModel):
     burst_frames: int = 0
     burst_bytes_count: int = 0
     loss_frames: int = 0
-    loss_ratio: Decimal = Decimal("0.0")
-    actual_rate_percent: Decimal = Decimal("0.0")
+    loss_ratio: float = 0.0
+    actual_rate_percent: float = 0.0
     tx_rate_l1_bps_theor: int = 0
     tx_rate_fps_theor: int = 0
 
@@ -213,7 +209,7 @@ class Statistic(BaseModel):
     def set_theor_fps_rate(cls, _v: int, values: Dict[str, Any]) -> int:
         return math.floor(
             values["port_speed"]
-            / Decimal("8")
+            / 8.0
             / (values["interframe_gap"] + values["frame_size"])
         )
 
@@ -247,7 +243,7 @@ class Statistic(BaseModel):
             "loss_ratio",
         ]:
             value = getattr(self, f)
-            setattr(self, f, math.floor(Decimal(str(value)) / Decimal(str(count))))
+            setattr(self, f, math.floor(value / count))
 
     def aggregate_tx_statistic(self, stream_statistic: "StreamStatisticData") -> None:
         """aggregate tx port statistic based on stream statistic"""
@@ -294,15 +290,15 @@ class Statistic(BaseModel):
 
     def add_loss(self, tx_frames: int, rx_frames: int, live_loss_frames: int) -> None:
         if self.is_final:
-            self.loss_frames += tx_frames - rx_frames
+            self.loss_frames += max(tx_frames - rx_frames, 0)
         else:
-            self.loss_frames += live_loss_frames
+            self.loss_frames += max(live_loss_frames, 0)
 
     def calculate_rate(self) -> None:
         self.loss_ratio = (
-            Decimal(str(self.loss_frames)) / Decimal(str(self.tx_counter.frames))
-            if self.tx_counter.frames
-            else Decimal("0")
+            self.loss_frames / self.tx_counter.frames
+            if self.tx_counter.frames and self.loss_frames >= 0.0
+            else 0.0
         )
         self.tx_counter.calculate_port_rate(
             self.is_final, self.duration, self.frame_size, self.interframe_gap
@@ -310,9 +306,7 @@ class Statistic(BaseModel):
         self.rx_counter.calculate_port_rate(
             self.is_final, self.duration, self.frame_size, self.interframe_gap
         )
-        self.actual_rate_percent = (
-            Decimal("100") * self.tx_counter.l1_bit_rate / self.port_speed
-        )
+        self.actual_rate_percent = 100.0 * self.tx_counter.l1_bit_rate / self.port_speed
 
 
 class TotalCounter(BaseModel):
@@ -335,20 +329,20 @@ class TotalCounter(BaseModel):
 
     def avg(self, count: int) -> None:
         for name, value in self:
-            setattr(self, name, math.floor(Decimal(str(value)) / Decimal(str(count))))
+            setattr(self, name, math.floor(value / count))
 
 
 class TotalStatistic(BaseModel):
     tx_counter: TotalCounter = TotalCounter()
     rx_counter: TotalCounter = TotalCounter()
     fcs_error_frames: int = 0
-    rx_loss_percent: Decimal = Decimal("0.0")
+    rx_loss_percent: float = 0.0
     rx_loss_frames: int = 0
     tx_rate_l1_bps_theor: int = 0
     tx_rate_fps_theor: int = 0
     tx_burst_frames: int = 0
     tx_burst_bytes: int = 0
-    ber_percent: Decimal = Decimal("0.0")
+    ber_percent: float = 0.0
 
     def sum(self, other: "TotalStatistic") -> None:
         for name, value in self:
@@ -362,9 +356,7 @@ class TotalStatistic(BaseModel):
             if name in ["tx_counter", "rx_counter"]:
                 getattr(self, name).avg(count)
             else:
-                setattr(
-                    self, name, math.floor(Decimal(str(value)) / Decimal(str(count)))
-                )
+                setattr(self, name, math.floor(value / count))
 
     def add(self, port_data: "Statistic") -> None:
         self.tx_counter.add(port_data.tx_counter)
@@ -372,13 +364,13 @@ class TotalStatistic(BaseModel):
         self.fcs_error_frames += port_data.fcs_error_frames
         self.tx_rate_l1_bps_theor += port_data.tx_rate_l1_bps_theor
         self.tx_rate_fps_theor += port_data.tx_rate_fps_theor
-        self.rx_loss_frames += port_data.loss_frames
+        self.rx_loss_frames += max(port_data.loss_frames, 0)
         self.tx_burst_bytes += port_data.burst_bytes_count
         self.tx_burst_frames += port_data.burst_frames
         self.rx_loss_percent = (
-            Decimal(str(self.rx_loss_frames)) / Decimal(str(self.tx_counter.frames))
-            if self.tx_counter.frames
-            else Decimal("0.0")
+            self.rx_loss_frames / self.tx_counter.frames
+            if self.tx_counter.frames and self.rx_loss_frames >= 0.0
+            else 0.0
         )
 
         if (
@@ -386,39 +378,31 @@ class TotalStatistic(BaseModel):
             or self.rx_counter.frames == 0
             or self.rx_loss_frames <= 0
         ):
-            self.ber_percent = Decimal("0.0")
+            self.ber_percent = 0.0
         else:
             divisor = (
-                Decimal("8.0")
-                * Decimal(str(self.rx_counter.bytes_count))
-                * (
-                    Decimal(str(self.rx_counter.frames))
-                    + Decimal(str(self.rx_loss_frames))
-                )
+                8.0
+                * self.rx_counter.bytes_count
+                * (self.rx_counter.frames + self.rx_loss_frames)
             )
-            self.ber_percent = (
-                Decimal(str(self.rx_loss_frames))
-                * Decimal(str(self.rx_counter.frames))
-                / Decimal(str(divisor))
-            )
+            self.ber_percent = self.rx_loss_frames * self.rx_counter.frames / divisor
 
 
 class FinalStatistic(BaseModel):
     test_case_type: const.TestType
-    test_suite_type: str = "xoa2544"
+    test_suite_type: str = "RFC-2544"
     result_state: const.ResultState = const.ResultState.PENDING
-    tx_rate_percent: Decimal
+    tx_rate_percent: float
     is_final: bool = True
-    frame_size: Decimal
+    frame_size: float
     repetition: Union[int, str] = "avg"
     rate_result_scope: const.RateResultScopeType = const.RateResultScopeType.COMMON
     port_data: List[Statistic] = []
-    # tx_rate_nominal_percent: Decimal = Decimal("0.0")
     total: TotalStatistic = TotalStatistic()
 
     class Config:
         arbitrary_types_allowed = True
-        json_encoders = {Decimal: lambda x: float("{:.3f}".format(x).rstrip("0"))}
+        json_encoders = {float: lambda x: float("{:.3f}".format(x).rstrip("0"))}
 
     @validator("total", always=True)
     def calculate_total(
@@ -446,8 +430,11 @@ class FinalStatistic(BaseModel):
 class StatisticParams(BaseModel):
     test_case_type: const.TestType
     result_state: const.ResultState = const.ResultState.PENDING
-    frame_size: Decimal
-    duration: Decimal
+    frame_size: float
+    duration: float
     repetition: Union[int, str]
-    rate_percent: Decimal = Decimal("0")
+    rate_percent: float = 0.0
     rate_result_scope: const.RateResultScopeType = const.RateResultScopeType.COMMON
+
+    def set_rate_percent(self, rate: float) -> None:
+        self.rate_percent = rate
