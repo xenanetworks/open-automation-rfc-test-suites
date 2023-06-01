@@ -23,7 +23,6 @@ from .test_type_config import (
     ThroughputConfig,
     BackToBackConfig,
     FrameLossConfig,
-    AllTestTypeConfig,
 )
 
 if TYPE_CHECKING:
@@ -122,63 +121,6 @@ class TestCaseProcessor:
             )  # type:ignore
 
     async def add_learning_steps(self, current_packet_size: float) -> None:
-        await self.resources.stop_traffic()
-        await add_L3_learning_preamble_steps(self.resources, current_packet_size)
-        await add_mac_learning_steps(self.resources, const.MACLearningMode.EVERYTRIAL)
-        await add_flow_based_learning_preamble_steps(
-            self.resources, current_packet_size
-        )
-
-    async def start_test(
-        self, test_type_conf: "AllTestTypeConfig", current_packet_size: float
-    ) -> None:
-        await self.state_conditions.wait_if_paused()
-        await self.state_conditions.stop_if_stopped()
-        await setup_source_port_rates(self.resources, current_packet_size)
-        if test_type_conf.is_time_duration:
-            await self.resources.set_tx_time_limit(
-                test_type_conf.actual_duration * 1_000_000
-            )
-
-        await self.resources.clear_statistic()
-        await self.resources.start_traffic(self.__test_conf.use_port_sync_start)
-        await schedule_arp_refresh(self.resources, self.address_refresh_handler)
-
-    async def collect(self, params: "StatisticParams") -> "FinalStatistic":
-        start_time = time.time()
-        each_query_fail = False
-        final_fail = False
-        while True:
-            data = await aggregate_data(self.resources, params, is_final=False)
-            t = self.resources.should_quit(start_time, params.duration)
-            should_quit, each_query_fail = t
-            if each_query_fail:
-                final_fail = True
-                data.set_result_state(const.ResultState.FAIL)
-            self.xoa_out.send_statistics(data)
-            if should_quit:
-                break
-            await asyncio.sleep(const.INTERVAL_SEND_STATISTICS)
-        await asyncio.sleep(const.DELAY_STATISTICS)
-        final_data = await aggregate_data(self.resources, params, is_final=True)
-        if final_fail:
-            final_data.set_result_state(const.ResultState.FAIL)
-        self.xoa_out.send_statistics(final_data)
-        return final_data
-
-    async def _latency(
-        self,
-        test_type_conf: "LatencyConfig",
-        current_packet_size: float,
-        repetition: int,
-    ):
-        factor = 1.0
-        if test_type_conf.use_relative_to_throughput and self._throughput_map:
-            factor = self._throughput_map.get(current_packet_size, 100.0) / 100.0
-
-        for rate in test_type_conf.rate_sweep_list:
-            # tx_rate_nominal_percent = rate_percent
-            rate_percent = rate * factor
             params = StatisticParams(
                 test_case_type=test_type_conf.test_type,
                 rate_percent=rate_percent,

@@ -1,0 +1,15 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🐛 Bug Report
+    url: https://xenanetworks.com/support/bug-report/
+    about: Create a report to help us improve XOA Core - Test Suite Plugins.
+  - name: ✨ Feature Request
+    url: https://xenanetworks.com/support/feature-request/
+    about: Suggest an idea for XOA Core - Test Suite Plugins.
+  - name: 🧐 Question
+    url: https://xenanetworks.com/support/question/
+    about: Ask us a question about XOA Core - Test Suite Plugins.
+  - name: 📝 Check XOA Core Documentation
+    url: https://docs.xenanetworks.com/projects/xoa-core
+    about: The answer you are looking for may be in here.
+    

@@ -537,4 +537,3 @@ class IPPrefixLength(CaseInsensitiveEnum):
 class TestState(CaseInsensitiveEnum):
     L3_LEARNING = 3
     RUNNING_TEST = 5
-
