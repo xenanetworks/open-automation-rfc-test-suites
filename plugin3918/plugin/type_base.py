@@ -145,7 +145,7 @@ class BaseTestType:
             ]
         )
 
-        async def configure_ports(self) -> None:
+    async def configure_ports(self) -> None:
         tokens = []
         for src_instance in self.resource_manager.port_instances():
             port = src_instance.port

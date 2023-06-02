@@ -18,8 +18,10 @@ DEBUG = True
 BASE_PATH = Path.cwd()
 PLUGINS_PATH = BASE_PATH 
 INPUT_DATA_PATH = BASE_PATH / "test" / "1.v3918"
+INPUT_DATA_PATH = BASE_PATH / "test" / "1.v2544"
 JSON_PATH = BASE_PATH / "test" / "hello.json"
 T_SUITE_NAME = "RFC-3918"
+T_SUITE_NAME = "RFC-2544"
 
 
 class T3918Displayer:
