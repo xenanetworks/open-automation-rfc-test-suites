@@ -88,7 +88,7 @@ async def send_arp_learning_request(
     )
     *_, arp = await utils.apply(
         stream.packet.header.protocol.set(stream_config.header_segment_id_list),
-        stream.packet.header.data.set(f"0x{bytes(packet_header).hex()}"),
+        stream.packet.header.data.set(bytes(packet_header).hex()),
         stream.enable.set_on(),
         stream.request.arp.get(),
     )

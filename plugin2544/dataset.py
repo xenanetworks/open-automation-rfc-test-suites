@@ -181,3 +181,4 @@ class PluginModel2544(BaseModel):  # Main Model
         peer_config = ports_configuration[peer_slot]
         if not port_config.is_pair(peer_config) or not peer_config.is_pair(port_config):
             raise exceptions.PortPeerInconsistent()
+ 
