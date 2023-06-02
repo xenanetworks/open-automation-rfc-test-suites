@@ -437,3 +437,4 @@ def check_if_frame_loss_success(
             if result.total.rx_loss_frames > frame_loss_conf.pass_criteria_loss:
                 is_test_passed = False
     return is_test_passed
+

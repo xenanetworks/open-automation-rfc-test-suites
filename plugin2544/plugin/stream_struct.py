@@ -285,7 +285,6 @@ class StreamStruct:
 
         self._packet_header = profile.prepare()
         await self._stream.packet.header.data.set(self._packet_header.hex())
- 
 
     async def setup_modifier(self) -> None:
         tokens = []

@@ -8,6 +8,7 @@ from .config_checkers import check_config
 from .common import get_peers_for_source
 from .setup_streams import setup_streams
 from .structure import PortStruct
+
 from ..utils import constants as const, exceptions
 
 if TYPE_CHECKING:
