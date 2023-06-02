@@ -1,0 +1,4 @@
+xoa-converter>=1.0.7
+xoa-core==2.0.0
+xoa-driver==2.0.0
+rich==12.6.0

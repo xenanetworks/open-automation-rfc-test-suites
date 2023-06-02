@@ -92,7 +92,7 @@ class MulticastGroupCapacityTest(BaseTestType):
                 obtained_capture.packet.get() for obtained_capture in stats
             )
             async for packet_result in apply_iter(*packet_tokens):
-                address_string = "".join(packet_result.hex_data[3:6]).replace("0x", "")
+                address_string = "".join(packet_result.hex_data[3:6])
                 address_value = int(address_string, 16)
                 if dest_instance not in self.multicast_group_check_map:
                     self.multicast_group_check_map[dest_instance] = set()

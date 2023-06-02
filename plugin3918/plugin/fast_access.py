@@ -191,6 +191,7 @@ class Data3918:
     def get_uc_def(self) -> UcFlowDefinition:
         return self.mc_definition.uc_flow_def
 
+
     def get_use_gateway_mac(self) -> bool:
         return self.test_configuration.use_gateway_mac_as_dmac
 
