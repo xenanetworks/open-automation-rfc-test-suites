@@ -25,6 +25,7 @@ from .test_type_config import (
     FrameLossConfig,
     AllTestTypeConfig,
 )
+from loguru import logger
 
 if TYPE_CHECKING:
     from .test_resource import ResourceManager
@@ -163,7 +164,7 @@ class TestCaseProcessor:
         final_data = await aggregate_data(self.resources, params, is_final=True)
         if final_fail:
             final_data.set_result_state(const.ResultState.FAIL)
-        self.xoa_out.send_statistics(final_data)
+        # self.xoa_out.send_statistics(final_data)
         return final_data
 
     async def _latency(
@@ -259,6 +260,9 @@ class TestCaseProcessor:
                 self._set_throughput_for_frame_size(
                     final.frame_size, final.tx_rate_percent
                 )
+            else:
+                final = result
+
         else:
             # Step 1: initial counter
             for port_struct in self.resources.port_structs:
@@ -357,13 +361,13 @@ class TestCaseProcessor:
                 statistic_lists.extend(s)
             final = self._average_statistic(statistic_lists)
             if final:
-                self.xoa_out.send_statistics(final)
+                self.xoa_out.send_statistics(final) # send average statistics
         else:
             """calculate average based on same frame size and same rate"""
             for statistic_lists in result.values():
                 final = self._average_statistic(statistic_lists)
                 if final:
-                    self.xoa_out.send_statistics(final)
+                    self.xoa_out.send_statistics(final)  # send average statistics
 
     def cal_average(
         self, test_type_conf: "AllTestTypeConfig", frame_size: Optional[float] = None
@@ -380,6 +384,7 @@ class TestCaseProcessor:
         self, is_test_passed: bool, result: Optional["FinalStatistic"]
     ) -> None:
         if not (result and result.is_final):
+            logger.debug('Add Result: Please check final status')
             return
         if is_test_passed:
             result.set_result_state(const.ResultState.SUCCESS)
@@ -399,7 +404,7 @@ class TestCaseProcessor:
         self.test_results[result.test_case_type][result.frame_size][
             result.tx_rate_percent
         ].append(result)
-        self.xoa_out.send_statistics(result)
+        self.xoa_out.send_statistics(result)    # send final statistics
         self.progress.send(self.xoa_out)
 
     async def _setup_packet_limit(
