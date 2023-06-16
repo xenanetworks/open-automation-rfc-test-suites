@@ -343,17 +343,19 @@ class TotalStatistic(BaseModel):
     tx_burst_frames: int = 0
     tx_burst_bytes: int = 0
     ber_percent: float = 0.0
+    latency: DelayCounter = DelayCounter()
+    jitter: DelayCounter = DelayCounter()
 
     def sum(self, other: "TotalStatistic") -> None:
         for name, value in self:
-            if name in ["tx_counter", "rx_counter"]:
+            if name in ["tx_counter", "rx_counter", "latency", "jitter"]:
                 getattr(self, name).sum(attrgetter(name)(other))
             else:
                 setattr(self, name, value + attrgetter(name)(other))
 
     def avg(self, count: int) -> None:
         for name, value in self:
-            if name in ["tx_counter", "rx_counter"]:
+            if name in ["tx_counter", "rx_counter", "latency", "jitter"]:
                 getattr(self, name).avg(count)
             else:
                 setattr(self, name, math.floor(value / count))
@@ -361,6 +363,8 @@ class TotalStatistic(BaseModel):
     def add(self, port_data: "Statistic") -> None:
         self.tx_counter.add(port_data.tx_counter)
         self.rx_counter.add(port_data.rx_counter)
+        self.latency.sum(port_data.latency)
+        self.jitter.sum(port_data.latency)
         self.fcs_error_frames += port_data.fcs_error_frames
         self.tx_rate_l1_bps_theor += port_data.tx_rate_l1_bps_theor
         self.tx_rate_fps_theor += port_data.tx_rate_fps_theor
