@@ -364,7 +364,7 @@ class TotalStatistic(BaseModel):
         self.tx_counter.add(port_data.tx_counter)
         self.rx_counter.add(port_data.rx_counter)
         self.latency.sum(port_data.latency)
-        self.jitter.sum(port_data.latency)
+        self.jitter.sum(port_data.jitter)
         self.fcs_error_frames += port_data.fcs_error_frames
         self.tx_rate_l1_bps_theor += port_data.tx_rate_l1_bps_theor
         self.tx_rate_fps_theor += port_data.tx_rate_fps_theor
