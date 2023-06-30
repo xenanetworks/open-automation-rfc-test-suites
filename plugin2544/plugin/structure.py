@@ -47,7 +47,7 @@ class PortStruct:
         self.properties = Properties()
         self.lock = asyncio.Lock()
         self._stream_structs: List["StreamStruct"] = []
-        self._statistic = Statistic()  # type ignore
+        self._statistic = Statistic()  # reset every second
 
     def set_should_stop_on_los(self, value: bool) -> None:
         self._should_stop_on_los = value
@@ -468,6 +468,8 @@ class PortStruct:
         if self.port_conf.is_rx_port:
             extra_r: commands.PR_EXTRA.GetDataAttr = results[0]
             self._statistic.fcs_error_frames = extra_r.fcs_error_count
+            self._statistic.gap_duration = extra_r.gap_duration
+            self._statistic.gap_count = extra_r.gap_count
 
 
 TypeConf = Union["ThroughputTest", "LatencyTest", "FrameLossRateTest", "BackToBackTest"]

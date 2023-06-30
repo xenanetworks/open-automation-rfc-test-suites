@@ -51,8 +51,8 @@ class FrameSize(BaseModel):
 class MultiStreamConfig(BaseModel):
     enable_multi_stream: bool
     per_port_stream_count: int = Field(gt=0)
-    multi_stream_address_offset: int = Field(gt=0)
-    multi_stream_address_increment: int = Field(gt=0)
+    multi_stream_address_offset: int = Field(ge=1, le=256)
+    multi_stream_address_increment: int = Field(ge=1, le=256)
     multi_stream_mac_base_address: str
 
 

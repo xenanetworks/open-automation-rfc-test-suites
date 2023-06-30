@@ -14,6 +14,7 @@ async def aggregate_data(
     return FinalStatistic(
         test_case_type=params.test_case_type,
         is_final=is_final,
+        loop=params.loop,
         frame_size=params.frame_size,
         repetition=params.repetition,
         tx_rate_percent=params.rate_percent,
