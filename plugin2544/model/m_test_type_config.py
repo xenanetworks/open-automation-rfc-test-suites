@@ -14,9 +14,9 @@ from ..utils import constants
 
 class CommonOptions(BaseModel):
     duration_type: DurationType = DurationType.FRAME
-    duration: float = 1.0
+    duration: float = Field(default=1, ge=1.0, le=1e9)
     duration_unit: DurationUnit = DurationUnit.FRAME
-    repetition: int = Field(gt=0)
+    repetition: int = Field(default=1, ge=1, le=1e6)
 
     @validator("duration_unit", always=True)
     def validate_duration(
@@ -104,8 +104,8 @@ class FrameLossRateTest(BaseModel):
 
     # Convergence(BaseModel):
     use_gap_monitor: bool
-    gap_monitor_start_microsec: int = Field(ge=0)
-    gap_monitor_stop_frames: int = Field(ge=0)
+    gap_monitor_start_microsec: int = Field(ge=0, le=1000)
+    gap_monitor_stop_frames: int = Field(ge=0, le=1000)
 
     # PassCriteriaOptions
     use_pass_criteria: bool
