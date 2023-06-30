@@ -51,8 +51,13 @@ class AddressCollection:
 @dataclass
 class Progress:
     total: int
+    loop: int = 1
     current: int = 0
 
     def send(self, xoa: "TestSuitePipe") -> None:
-        xoa.send_progress(self.current, self.total)
+        xoa.send_progress(self.current, self.total, self.loop)
         self.current += 1
+
+    def add_loop(self, xoa: "TestSuitePipe") -> None:
+        self.current = 0
+        self.loop += 1
