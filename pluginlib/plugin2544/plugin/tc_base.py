@@ -43,18 +43,17 @@ class TestCaseProcessor:
         xoa_out: "TestSuitePipe",
     ) -> None:
         self.resources: "ResourceManager" = resources
-        self.xoa_out = xoa_out
-        self.__test_conf = test_conf
+        self.xoa_out: "TestSuitePipe" = xoa_out
+        self.__test_conf: "TestConfigData" = test_conf
         self.address_refresh_handler: Optional[AddressRefreshHandler] = None
         self.test_results = {}  # save result to calculate average
-        self._test_type_conf = test_type_confs
+        self._all_test_type_conf: List["AllTestTypeConfig"] = test_type_confs  # all test type that need to run
         self.progress = Progress(
-            total=sum(type_conf.process_count for type_conf in self._test_type_conf)
+            total=sum(type_conf.process_count for type_conf in self._all_test_type_conf)
             * len(self.__test_conf.packet_size_list)
         )
-        self._throughput_map = {}
+        self._throughput_map = {}   # save throughput rate for latency relative to throughput use
         self.state_conditions = state_conditions
-        # save throughput rate for latency relative to throughput use
 
     def gen_loop(
         self, type_conf: "AllTestTypeConfig"
@@ -76,9 +75,9 @@ class TestCaseProcessor:
 
     async def start(self) -> None:
         await self.prepare()
-        self.progress.send(self.xoa_out)
         while True:
-            for type_conf in self._test_type_conf:
+            self.progress.send(self.xoa_out)
+            for type_conf in self._all_test_type_conf:
                 for iteration, current_packet_size in self.gen_loop(type_conf):
 
                     await self.resources.setup_tpld_mode(current_packet_size)
@@ -98,6 +97,7 @@ class TestCaseProcessor:
 
             if not self.__test_conf.repeat_test_until_stopped:
                 break
+            self.progress.add_loop(self.xoa_out)
 
     async def run(
         self,
@@ -150,21 +150,21 @@ class TestCaseProcessor:
         each_query_fail = False
         final_fail = False
         while True:
+            # handle live statistic per second
             data = await aggregate_data(self.resources, params, is_final=False)
             t = self.resources.should_quit(start_time, params.duration)
             should_quit, each_query_fail = t
             if each_query_fail:
                 final_fail = True
                 data.set_result_state(const.ResultState.FAIL)
-            self.xoa_out.send_statistics(data)
+            self.xoa_out.send_statistics(data)  # send live data
             if should_quit:
                 break
             await asyncio.sleep(const.INTERVAL_SEND_STATISTICS)
         await asyncio.sleep(const.DELAY_STATISTICS)
-        final_data = await aggregate_data(self.resources, params, is_final=True)
+        final_data = await aggregate_data(self.resources, params, is_final=True)    # handle Final data
         if final_fail:
             final_data.set_result_state(const.ResultState.FAIL)
-        # self.xoa_out.send_statistics(final_data)
         return final_data
 
     async def _latency(
@@ -181,6 +181,7 @@ class TestCaseProcessor:
             # tx_rate_nominal_percent = rate_percent
             rate_percent = rate * factor
             params = StatisticParams(
+                loop=self.progress.loop,
                 test_case_type=test_type_conf.test_type,
                 rate_percent=rate_percent,
                 frame_size=current_packet_size,
@@ -194,7 +195,8 @@ class TestCaseProcessor:
             result = await self.collect(params)
             await self.resources.set_tx_time_limit(0)
             # result.tx_rate_nominal_percent = tx_rate_nominal_percent
-            self._add_result(True, result)
+            result.set_result_state(const.ResultState.DONE)
+            self._add_result(result)
 
     async def _frame_loss(
         self,
@@ -202,11 +204,13 @@ class TestCaseProcessor:
         current_packet_size: float,
         repetition: int,
     ):
+        await self.resources.set_gap_monitor(test_type_conf.use_gap_monitor, test_type_conf.gap_monitor_start_microsec, test_type_conf.gap_monitor_stop_frames)
         for rate_percent in test_type_conf.rate_sweep_list:
             self.resources.set_rate_percent(rate_percent)
             await self.add_learning_steps(current_packet_size)
             await self.start_test(test_type_conf, current_packet_size)
             params = StatisticParams(
+                loop=self.progress.loop,
                 test_case_type=test_type_conf.test_type,
                 rate_percent=rate_percent,
                 frame_size=current_packet_size,
@@ -215,8 +219,9 @@ class TestCaseProcessor:
             )
             result = await self.collect(params)
             await self.resources.set_tx_time_limit(0)
-            is_test_passed = check_if_frame_loss_success(test_type_conf, result)
-            self._add_result(is_test_passed, result)
+            test_state = check_if_frame_loss_success(test_type_conf, result)
+            result.set_result_state(test_state)
+            self._add_result(result)
 
     async def _throughput(
         self,
@@ -229,6 +234,7 @@ class TestCaseProcessor:
         test_passed = False
         boundaries = get_initial_throughput_boundaries(test_type_conf, self.resources)
         params = StatisticParams(
+            loop=self.progress.loop,
             test_case_type=test_type_conf.test_type,
             frame_size=current_packet_size,
             repetition=repetition,
@@ -248,6 +254,9 @@ class TestCaseProcessor:
             self.resources.set_rate_percent(params.rate_percent)
             await self.start_test(test_type_conf, current_packet_size)
             result = await self.collect(params)
+            result.is_final = True
+            self.xoa_out.send_statistics(result)  # send intermediate data: is_final = True & result_state = 'PENDING'
+
             for boundary in boundaries:
                 boundary.update_boundary(result)
             test_passed = all(boundary.port_test_passed for boundary in boundaries)
@@ -263,7 +272,7 @@ class TestCaseProcessor:
             else:
                 final = result
 
-        else:
+        else:   # per port result 
             # Step 1: initial counter
             for port_struct in self.resources.port_structs:
                 port_struct.init_counter(
@@ -281,6 +290,7 @@ class TestCaseProcessor:
             final = FinalStatistic(
                 test_case_type=params.test_case_type,
                 is_final=True,
+                loop=self.progress.loop,
                 frame_size=params.frame_size,
                 repetition=params.repetition,
                 tx_rate_percent=params.rate_percent,
@@ -290,7 +300,14 @@ class TestCaseProcessor:
                 ],
                 # stream_data=aggregate_stream_result(resource),
             )
-        self._add_result(test_passed, final)
+        if final:
+            if not test_passed:
+                final.set_result_state(const.ResultState.FAIL)
+            elif test_type_conf.use_pass_criteria:
+                final.set_result_state(const.ResultState.SUCCESS)
+            else:
+                final.set_result_state(const.ResultState.DONE)
+        self._add_result(final)
 
     async def _back_to_back(
         self,
@@ -298,10 +315,12 @@ class TestCaseProcessor:
         current_packet_size: float,
         repetition: int,
     ) -> None:
-        result = None
         await self.add_learning_steps(current_packet_size)
         for rate_percent in test_type_conf.rate_sweep_list:
+            result = None
+            # logger.debug(f'Rate: {rate_percent}')
             params = StatisticParams(
+                loop=self.progress.loop,
                 test_case_type=test_type_conf.test_type,
                 rate_percent=rate_percent,
                 frame_size=current_packet_size,
@@ -317,17 +336,26 @@ class TestCaseProcessor:
             )
             while True:
                 await asyncio.sleep(const.DELAY_STATISTICS)
-                for boundary in boundaries:
-                    boundary.update_boundaries()
+                # if not any(boundary.port_should_continue for boundary in boundaries):
+                #     logger.debug('Break Loop')
+                #     break
+                port_should_continue = [boundary.port_should_continue for boundary in boundaries]
+                # logger.debug(port_should_continue)
+                if not any(port_should_continue):
+                    break
+                # logger.debug(f'Packet: {boundaries[0].current}')
                 await self._setup_packet_limit(boundaries)
                 await self.start_test(test_type_conf, current_packet_size)
                 result = await self.collect(params)
-                if not any(boundary.port_should_continue for boundary in boundaries):
-                    break
-            self._add_result(
-                all(boundary.port_test_passed for boundary in boundaries),
-                result,
-            )
+                result.is_final = True
+                self.xoa_out.send_statistics(result)  # send intermediate data: is_final = True & result_state = 'PENDING'
+                for boundary in boundaries:
+                    boundary.update_boundaries(result)
+            if all(boundary.port_test_passed for boundary in boundaries):
+                result.set_result_state(const.ResultState.DONE)
+            else:
+                result.set_result_state(const.ResultState.FAIL)
+            self._add_result(result)
 
     def _set_throughput_for_frame_size(self, frame_size: float, rate: float):
         """for latency relative to throughput use, use max throughput rate and only for throughput common result scope"""
@@ -381,15 +409,11 @@ class TestCaseProcessor:
                 self._average_per_frame_size(test_type_conf, f)
 
     def _add_result(
-        self, is_test_passed: bool, result: Optional["FinalStatistic"]
+        self, result: Optional["FinalStatistic"]
     ) -> None:
         if not (result and result.is_final):
             logger.debug('Add Result: Please check final status')
             return
-        if is_test_passed:
-            result.set_result_state(const.ResultState.SUCCESS)
-        else:
-            result.set_result_state(const.ResultState.FAIL)
         if result.test_case_type not in self.test_results:
             self.test_results[result.test_case_type] = {}
         if result.frame_size not in self.test_results[result.test_case_type]:
@@ -432,10 +456,10 @@ class TestCaseProcessor:
 
 def check_if_frame_loss_success(
     frame_loss_conf: "FrameLossConfig", result: "FinalStatistic"
-) -> bool:
-    if not frame_loss_conf.pass_criteria_loss:
-        return True
+) -> const.ResultState:
+    if not frame_loss_conf.use_pass_criteria:
+        return const.ResultState.DONE
     if (frame_loss_conf.is_percentage_pass_criteria and result.total.rx_loss_percent * 100 > frame_loss_conf.pass_criteria_loss) or \
         (not frame_loss_conf.is_percentage_pass_criteria and result.total.rx_loss_frames > frame_loss_conf.pass_criteria_loss):
-        return False
-    return True
+        return const.ResultState.FAIL
+    return const.ResultState.SUCCESS

@@ -4,7 +4,7 @@ from pydantic import BaseModel, validator, Field
 from operator import attrgetter
 from ..utils import constants as const
 import time
-
+from loguru import logger
 if TYPE_CHECKING:
     from .structure import PortStruct
 
@@ -180,6 +180,7 @@ class PortCounter(StreamCounter):
 
 
 class Statistic(BaseModel):
+    """ port statistic storage """
     port_id: str = ""
     is_final: bool = False  # for calculation use
     frame_size: float = 1.0  # for calculation use
@@ -200,6 +201,8 @@ class Statistic(BaseModel):
     actual_rate_percent: float = 0.0
     tx_rate_l1_bps_theor: int = 0
     tx_rate_fps_theor: int = 0
+    gap_count: int = 0
+    gap_duration: int = 0
 
     @validator("tx_rate_l1_bps_theor", always=True)
     def set_theor_l1_bps_rate(cls, _v: int, values: Dict[str, Any]) -> int:
@@ -345,12 +348,14 @@ class TotalStatistic(BaseModel):
     ber_percent: float = 0.0
     latency: DelayCounter = DelayCounter()
     jitter: DelayCounter = DelayCounter()
+    gap_count: int = 0
+    gap_duration: int = 0
 
     def sum(self, other: "TotalStatistic") -> None:
-        for name, value in self:
+        for name, value in self:    # nested structure
             if name in ["tx_counter", "rx_counter", "latency", "jitter"]:
                 getattr(self, name).sum(attrgetter(name)(other))
-            else:
+            else:   # int / float type
                 setattr(self, name, value + attrgetter(name)(other))
 
     def avg(self, count: int) -> None:
@@ -361,6 +366,7 @@ class TotalStatistic(BaseModel):
                 setattr(self, name, math.floor(value / count))
 
     def add(self, port_data: "Statistic") -> None:
+        """ aggregate all port statistic """
         self.tx_counter.add(port_data.tx_counter)
         self.rx_counter.add(port_data.rx_counter)
         self.latency.sum(port_data.latency)
@@ -371,6 +377,8 @@ class TotalStatistic(BaseModel):
         self.rx_loss_frames += max(port_data.loss_frames, 0)
         self.tx_burst_bytes += port_data.burst_bytes_count
         self.tx_burst_frames += port_data.burst_frames
+        self.gap_count += port_data.gap_count
+        self.gap_duration += port_data.gap_duration
         self.rx_loss_percent = (
             self.rx_loss_frames / self.tx_counter.frames
             if self.tx_counter.frames and self.rx_loss_frames >= 0.0
@@ -394,6 +402,7 @@ class TotalStatistic(BaseModel):
 
 class FinalStatistic(BaseModel):
     test_case_type: const.TestType
+    loop: int
     test_suite_type: str = "RFC-2544"
     result_state: const.ResultState = const.ResultState.PENDING
     tx_rate_percent: float
@@ -412,27 +421,34 @@ class FinalStatistic(BaseModel):
     def calculate_total(
         cls, _v: "TotalStatistic", values: Dict[str, Any]
     ) -> TotalStatistic:
+        """ aggregate all the port result """
         total = TotalStatistic()
         for port_data in values["port_data"]:
             total.add(port_data)
+        total.jitter.avg(len(values["port_data"]))
+        total.latency.avg(len(values["port_data"]))
         return total
 
     def set_result_state(self, state: "const.ResultState") -> None:
         self.result_state = state
 
     def sum(self, final: "FinalStatistic") -> None:
+        """ for repetition larger than one, need to sum up all the finalstatistic to calculate average """
         for k, port_statistic in enumerate(self.port_data):
             port_statistic.sum(final.port_data[k])
         self.total.sum(final.total)
 
     def avg(self, count: int) -> None:
+        """ for repetition larger than one, need to sum up all the finalstatistic to calculate average """
         for port_statistic in self.port_data:
             port_statistic.avg(count)
         self.total.avg(count)
 
 
+
 class StatisticParams(BaseModel):
     test_case_type: const.TestType
+    loop: int
     result_state: const.ResultState = const.ResultState.PENDING
     frame_size: float
     duration: float
@@ -442,3 +458,4 @@ class StatisticParams(BaseModel):
 
     def set_rate_percent(self, rate: float) -> None:
         self.rate_percent = rate
+

@@ -276,10 +276,6 @@ class ResourceManager:
             )
         return False
 
-    def tell_progress(self, start_time: float, actual_duration: float) -> None:
-        elapsed = time.time() - start_time
-        self.xoa_out.send_progress(elapsed / actual_duration * 100)
-
     def should_quit(
         self, start_time: float, actual_duration: float
     ) -> Tuple[bool, bool]:

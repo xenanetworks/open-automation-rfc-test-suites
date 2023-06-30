@@ -131,6 +131,10 @@ class FrameLossConfig(SweepTestType):
         return self._conf.pass_criteria_loss_type.is_percentage
 
     @property
+    def use_pass_criteria(self) -> bool:
+        return self._conf.use_pass_criteria
+    
+    @property
     def pass_criteria_loss(self) -> float:
         return self._conf.pass_criteria_loss
 
