@@ -9,7 +9,7 @@ class TestSuitePipe(Interface):
     def send_warning(self, warning: Exception) -> None:
         ...
 
-    def send_progress(self, current: int, total: int) -> None:
+    def send_progress(self, current: int, total: int, loop: int=1) -> None:
         ...
 
 class PStateConditions(Interface):
