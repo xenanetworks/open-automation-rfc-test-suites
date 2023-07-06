@@ -23,6 +23,7 @@ class BackToBackBoutEntry:
         self._port_should_continue: bool = True
         self._port_test_passed: bool = False
         self._port_struct.clear_counter()
+        self._is_less_than_resolution = False
 
     @property
     def port_should_continue(self) -> bool:
@@ -46,7 +47,7 @@ class BackToBackBoutEntry:
             else:
                 self.update_right_bound()
             if self.compare_search_pointer():
-                if no_frame_loss:
+                if not self._is_less_than_resolution and no_frame_loss:
                     self._port_test_passed = True
                 else:
                     self._port_test_passed = False
@@ -71,7 +72,8 @@ class BackToBackBoutEntry:
     def compare_search_pointer(self) -> bool:
         res = self._test_type_conf.burst_resolution
         # logger.debug(f"{self.next} - {self.current}")
-        if abs(self.next - self.current) > res:    # End Searching
+        self._is_less_than_resolution = abs(self.next - self.current) <= res
+        if not self._is_less_than_resolution:    
             # logger.debug('Continue Searching')
             return False
         # End Searching

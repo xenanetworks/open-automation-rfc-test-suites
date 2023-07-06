@@ -376,3 +376,12 @@ class PSPMissing(Exception):
     def __init__(self) -> None:
         self.msg = f"Protocol Segment Profile selected is missing."
         super().__init__(self.msg)
+
+
+class ARPRequestError(Exception):
+    def __init__(self) -> None:
+        self.msg = f"Test aborted: ARP Failure - Unable to resolve all gateway MAC addresses."
+        super().__init__(self.msg)
+
+
+        

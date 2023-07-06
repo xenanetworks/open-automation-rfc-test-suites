@@ -255,7 +255,7 @@ class ResourceManager:
                 port_struct.set_gap_monitor(
                     gap_monitor_start_microsec, gap_monitor_stop_frames
                 )
-                for port_struct in self.tx_ports
+                for port_struct in self.rx_ports
             ]
         )
 
