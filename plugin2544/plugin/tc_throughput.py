@@ -5,7 +5,7 @@ from .test_resource import ResourceManager
 
 from .structure import PortStruct
 from .test_type_config import ThroughputConfig
-
+from loguru import logger
 
 class ThroughputBoutEntry:
     def __init__(self, throughput_conf: "ThroughputConfig", port_struct: "PortStruct"):
@@ -18,6 +18,8 @@ class ThroughputBoutEntry:
         self.best_final_result: Optional[FinalStatistic] = None
         self._port_test_passed = False
         self._port_should_continue = True
+        self._is_less_than_resolution = False
+        
 
     @property
     def port_should_continue(self) -> bool:
@@ -30,23 +32,21 @@ class ThroughputBoutEntry:
     def update_left_bound(self):
         self.left_bound = self.current
         self._last_move = -1
-        if (
-            abs((self.left_bound + self.right_bound) / 2 - self.left_bound)
-            < self._throughput_conf.value_resolution_pct
-        ):
+        # logger.debug(f"{self.left_bound} {self.right_bound} -> {abs((self.left_bound + self.right_bound) / 2 - self.right_bound)}")
+        self._is_less_than_resolution = abs((self.left_bound + self.right_bound) / 2 - self.left_bound) < self._throughput_conf.value_resolution_pct
+        if self._is_less_than_resolution:
             self.next = self.right_bound
             self.left_bound = self.right_bound
         else:
             self.next = (self.left_bound + self.right_bound) / 2
+        # logger.debug(f"update left bound -> {self.left_bound}")
 
     def update_right_bound(self, loss_ratio: float):
         self.right_bound = self.current
         self._last_move = 1
-
-        if (
-            abs((self.left_bound + self.right_bound) / 2 - self.right_bound)
-            < self._throughput_conf.value_resolution_pct
-        ):
+        self._is_less_than_resolution = abs((self.left_bound + self.right_bound) / 2 - self.right_bound) < self._throughput_conf.value_resolution_pct
+        # logger.debug(f"{self.left_bound} {self.right_bound} -> {abs((self.left_bound + self.right_bound) / 2 - self.right_bound)}")
+        if self._is_less_than_resolution:
             self.next = self.left_bound
             self.right_bound = self.left_bound
         if self._throughput_conf.search_type.is_fast:
@@ -56,6 +56,7 @@ class ThroughputBoutEntry:
             )
         else:
             self.next = (self.left_bound + self.right_bound) / 2
+        # logger.debug(f"update right bound -> {self.right_bound}")
 
     def compare_search_pointer(self) -> bool:
         return self.next == self.current
@@ -70,6 +71,7 @@ class ThroughputBoutEntry:
     def update_rate(self):
         self.current = self.next
         self.rate_percent = self.next
+        # logger.debug(f"running rate: {self.current}")
 
     def update_boundary(self, result: Optional["FinalStatistic"]) -> None:
         self._port_should_continue = self._port_test_passed = False
@@ -81,6 +83,7 @@ class ThroughputBoutEntry:
         else:
             loss_ratio = result.total.rx_loss_percent
         loss_ratio_pct = loss_ratio * 100.0
+        # logger.debug(f"{loss_ratio_pct} - {self._throughput_conf.acceptable_loss_pct}")
         if loss_ratio_pct <= self._throughput_conf.acceptable_loss_pct:
             if self._throughput_conf.is_per_source_port:
                 for stream in self._port_struct.stream_structs:
@@ -92,8 +95,9 @@ class ThroughputBoutEntry:
             self.update_left_bound()
         else:
             self.update_right_bound(loss_ratio)
+        # logger.debug(f"next: {self.next}")
         if self.compare_search_pointer():
-            self._port_test_passed = self.pass_threshold()
+            self._port_test_passed = not self._is_less_than_resolution and self.pass_threshold() 
         else:
             self._port_should_continue = True
 

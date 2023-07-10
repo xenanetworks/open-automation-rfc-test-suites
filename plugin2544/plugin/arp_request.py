@@ -6,6 +6,7 @@ from ..utils.field import IPv4Address, IPv6Address, MacAddress
 from ..utils.packet import Ether, IPV4Packet, IPV6Packet
 from ..utils.traffic_definitions import EtherType
 from ..utils.constants import DELAY_LEARNING_ARP
+from ..utils.exceptions import ARPRequestError
 
 
 if TYPE_CHECKING:
@@ -92,7 +93,10 @@ async def send_arp_request(
         stream.enable.set(enums.OnOffWithSuppress.ON),
     )
     await asyncio.sleep(DELAY_LEARNING_ARP)
-    result, *_ = await utils.apply(stream.request.arp.get())
+    try:
+        result, *_ = await utils.apply(stream.request.arp.get())
+    except:
+        raise ARPRequestError()
     peer_mac_address = MacAddress(result.mac_address)
     await stream.delete()
     return peer_mac_address
