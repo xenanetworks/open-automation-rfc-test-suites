@@ -58,8 +58,8 @@ class MultiStreamConfig(BaseModel):
 
 class TogglePortSyncConfig(BaseModel):
     toggle_port_sync: bool
-    sync_off_duration_second: int = Field(gt=0)
-    delay_after_sync_on_second: int = Field(gt=0)
+    sync_off_duration_second: int = Field(gt=0, le=60)
+    delay_after_sync_on_second: int = Field(gt=0, le=60)
 
 
 class TopologyConfig(BaseModel):
@@ -89,40 +89,40 @@ class PortSchedulingConfig(BaseModel):
     # PortScheduling
     enable_speed_reduction_sweep: bool
     use_port_sync_start: bool
-    port_stagger_steps: int = Field(ge=0)
+    port_stagger_steps: int = Field(ge=0, le=31250)
     # TestScheduling
 
 
 class L23LearningOptions(BaseModel):
     # L23LearningOptions
-    learning_rate_pct: float
-    learning_duration_second: int = Field(gt=0)
+    learning_rate_pct: float = Field(gt=0, le=100)
+    learning_duration_second: int = Field(gt=0, le=60000)
     # FlowBasedLearningOptions
 
     # ArpNdpOptions
     arp_refresh_enabled: bool
-    arp_refresh_period_second: float = Field(default=4000.0, ge=0)
+    arp_refresh_period_second: float = Field(default=4000.0, gt=0, le=100000)
     use_gateway_mac_as_dmac: bool
 
 
 class FlowBasedLearningOptions(BaseModel):
     # FlowBasedLearningOptions
     use_flow_based_learning_preamble: bool
-    flow_based_learning_frame_count: int = Field(gt=0)
-    delay_after_flow_based_learning_ms: int = Field(..., ge=50)
+    flow_based_learning_frame_count: int = Field(gt=0, le=100)
+    delay_after_flow_based_learning_ms: int = Field(..., ge=50, le=10000)
 
 
 class ResetErrorHandling(BaseModel):
     # ResetAndErrorHandling
     should_stop_on_los: bool
-    delay_after_port_reset_second: int = Field(gt=0)
+    delay_after_port_reset_second: int = Field(gt=0, le=60)
     # OverallTestTopology
 
 
 class MacLearningOptions(BaseModel):
     # MacLearningOptions
     mac_learning_mode: const.MACLearningMode
-    mac_learning_frame_count: int = Field(gt=0)
+    mac_learning_frame_count: int = Field(gt=0, le=10)
     toggle_port_sync_config: TogglePortSyncConfig
 
 

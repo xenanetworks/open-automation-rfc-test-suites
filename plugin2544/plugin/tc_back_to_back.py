@@ -2,6 +2,7 @@ from .structure import PortStruct
 from typing import List, Optional
 from .test_type_config import BackToBackConfig
 from loguru import logger
+from decimal import Decimal
 from .statistics import FinalStatistic
 
 class BackToBackBoutEntry:
@@ -23,6 +24,7 @@ class BackToBackBoutEntry:
         self._port_should_continue: bool = True
         self._port_test_passed: bool = False
         self._port_struct.clear_counter()
+        self._is_less_than_resolution = False
 
     @property
     def port_should_continue(self) -> bool:
@@ -71,7 +73,8 @@ class BackToBackBoutEntry:
     def compare_search_pointer(self) -> bool:
         res = self._test_type_conf.burst_resolution
         # logger.debug(f"{self.next} - {self.current}")
-        if abs(self.next - self.current) > res:    # End Searching
+        self._is_less_than_resolution = abs(self.next - self.current) <= res
+        if not self._is_less_than_resolution:    
             # logger.debug('Continue Searching')
             return False
         # End Searching

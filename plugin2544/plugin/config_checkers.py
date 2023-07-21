@@ -1,3 +1,8 @@
+"""
+Read port capability and compare with input data
+"""
+
+
 from typing import TYPE_CHECKING, List, Union, Tuple
 from xoa_driver.enums import ProtocolOption
 from ..utils import exceptions, constants as const
@@ -42,10 +47,21 @@ def check_port_config_profile(
 
 
 def check_can_fec(can_fec: int, fec_mode: const.FECModeStr) -> None:
+    """
+    FromP_CAPABILITIES.can_fec:
+        [0] = RS FEC KR, [1] = RS FEC KP, [2] = FC FEC, [31] = Mandatory.
+        Position [0], [1], and [2] are mutually exclusive.
+        If [31] is set, the port does not support OFF.
+        If [0] is set, the port supports enums ON, and supposedly RS_FEC and RS_FEC_KR.
+        If [1] is set, the port supports enums ON, and supposedly RS_FEC and RS_FEC_KP.
+        If [2] is set, the port supports enum FC_FEC.
+        NOTE: if [0] or [1] is set, the UI should show RS FEC but the command should use ON. Upon receiving ON, the port will automatically select the corresponding RS FEC mode, either KR or KP version.
+    """
     bin_str = bin(can_fec)[2:].zfill(32)
     is_mandatory = int(bin_str[-32])
     is_fc_fec_supported = int(bin_str[-3])
-    if is_mandatory and fec_mode == const.FECModeStr.OFF:
+    # check user config and check if capability supported.
+    if is_mandatory and fec_mode == const.FECModeStr.OFF:   # [31] = Mandatory which is not support OFF mode
         raise exceptions.FECModeRequired()
     elif fec_mode == const.FECModeStr.FC_FEC and not is_fc_fec_supported:
         raise exceptions.FECModeTypeNotSupport(const.FECModeStr.FC_FEC)
@@ -56,10 +72,8 @@ def check_can_fec(can_fec: int, fec_mode: const.FECModeStr) -> None:
 def check_custom_port_config(
     capabilities: "commands.P_CAPABILITIES.GetDataAttr", port_conf: "PortConfiguration"
 ) -> None:
-    if (
-        port_conf.port_rate_cap_profile.is_custom
-        and port_conf.port_rate > capabilities.max_speed * 1_000_000
-    ):
+
+    if port_conf.port_rate_cap_profile.is_custom and port_conf.port_rate > capabilities.max_speed * 1_000_000:
         raise exceptions.PortRateError(
             port_conf.port_rate, capabilities.max_speed * 1_000_000
         )
@@ -90,7 +104,9 @@ def check_port_modifiers(
     port_conf: "PortConfiguration",
     is_stream_based: bool,
 ) -> None:
+    
     if not port_conf.is_tx_port:
+        # Modifers only set for tx port
         return
 
     modifier_count = port_conf.profile.modifier_count
@@ -98,6 +114,7 @@ def check_port_modifiers(
         if modifier_count > capabilities.max_modifiers:
             raise exceptions.ModifierExceed(modifier_count, capabilities.max_modifiers)
     else:
+        # not support to configure modifier if flow creation type is modifier based
         if modifier_count > 0:
             raise exceptions.ModifierBasedNotSupportDefineModifier()
 
@@ -105,7 +122,7 @@ def check_port_modifiers(
 def check_stream_limitations(
     port_struct: "PortStruct", per_port_stream_count: int, is_stream_based: bool
 ) -> None:
-    if (not is_stream_based) or (not port_struct._port_conf.is_tx_port):
+    if (not is_stream_based) or (not port_struct.port_conf.is_tx_port):
         return
     stream_count = len(port_struct.properties.peers) * per_port_stream_count
     if stream_count > port_struct.capabilities.max_streams_per_port:
@@ -215,6 +232,7 @@ def check_micro_tpld(
 def check_port_test_config(
     port_struct: "PortStruct", test_conf: "TestConfigData"
 ) -> None:
+
     if test_conf.frame_sizes.packet_size_type.is_mix:
         packet_size_list = test_conf.mixed_packet_length
     else:

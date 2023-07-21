@@ -81,6 +81,7 @@ def get_peers_for_source(
 
 
 def find_dest_port_structs(control_ports: List["PortStruct"]) -> List["PortStruct"]:
+    """ return a list of rx port structs"""
     return [
         port_struct for port_struct in control_ports if port_struct.port_conf.is_rx_port
     ]

@@ -209,6 +209,7 @@ AllTestTypeConfigClass = [
 def get_available_test_type_config(
     test_type_datas: "t_model.TestTypesConfiguration",
 ) -> List["AllTestTypeConfig"]:
+    """ Get test case configs which are enabled"""
     all_data = [
         test_type_datas.throughput_test,
         test_type_datas.latency_test,
