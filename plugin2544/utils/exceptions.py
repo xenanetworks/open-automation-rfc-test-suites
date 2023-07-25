@@ -14,10 +14,10 @@ class BXMPWarning(Warning):
         return self.str
 
 
-class StopTestByLossSignal(Warning):
-    def __init__(self) -> None:
-        self.msg = f"Test is stopped due to the loss of signal of ports."
-        super().__init__(self.msg)
+# class StopTestByLossSignal(Warning):
+#     def __init__(self) -> None:
+#         self.msg = f"Test is stopped due to the loss of signal of ports."
+#         super().__init__(self.msg)
 
 
 class BroadReachModeNotSupport(Warning):
@@ -330,21 +330,21 @@ class WrongTesterTypeError(Exception):
 
 class LossofPortOwnership(Exception):
     def __init__(self, port: "xoa_ports.GenericL23Port") -> None:
-        self.msg = f"Test is stopped due to the loss of ownership of Port <module_id: {port.kind.module_id}-port_id: {port.kind.port_id}>."
+        self.msg = f"Lost ownership of Port <module_id: {port.kind.module_id}-port_id: {port.kind.port_id}>."
         super().__init__(self.msg)
 
 
 class LossofTester(Exception):
     def __init__(self, tester: xoa_testers.L23Tester, chassis_id: str) -> None:
         self.msg = (
-            f"Test is stopped due to the loss of connection to Tester <{chassis_id}>."
+            f"Lost connection to Tester <{chassis_id}>."
         )
         super().__init__(self.msg)
 
 
 class LossofPortSignal(Exception):
     def __init__(self, port: "xoa_ports.GenericL23Port") -> None:
-        self.msg = f"Test is stopped due to the loss of signal (LOS) of Port <module_id: {port.kind.module_id}-port_id: {port.kind.port_id}>."
+        self.msg = f"Lost signal (LOS) of Port <module_id: {port.kind.module_id}-port_id: {port.kind.port_id}>."
         super().__init__(self.msg)
 
 
@@ -381,6 +381,12 @@ class PSPMissing(Exception):
 class ARPRequestError(Exception):
     def __init__(self) -> None:
         self.msg = f"Test aborted: ARP Failure - Unable to resolve all gateway MAC addresses."
+        super().__init__(self.msg)
+
+
+class TestAbort(Exception):
+    def __init__(self) -> None:
+        self.msg = "Test Abort."
         super().__init__(self.msg)
 
 

@@ -75,7 +75,7 @@ class ResourceManager:
         )
 
     async def free(self) -> None:
-        await asyncio.gather(*[port_struct.free() for port_struct in self.port_structs])
+        await asyncio.gather(*[port_struct.free(stop_test=True) for port_struct in self.port_structs])
 
     def build_map(self) -> None:
         for port_struct in self.tx_ports:
@@ -93,7 +93,7 @@ class ResourceManager:
         check_config(list(self.__testers.values()), self.port_structs, self.__test_conf)
         self.build_map()
         await self.stop_traffic()
-        await asyncio.sleep(self.__test_conf.delay_after_port_reset_second)
+        await asyncio.sleep(self.__test_conf.delay_after_port_reset_second) # delay after reset
         await self.setup_ports(latency_mode)
         await self.setup_sweep_reduction()
         await self.add_toggle_port_sync_state_steps()
@@ -171,6 +171,10 @@ class ResourceManager:
         await asyncio.sleep(self.__test_conf.delay_after_sync_on_second)
 
     def resolve_port_relations(self) -> None:
+        """ 
+        resolve port relations according to topology and direction, and register peer for port;
+        test_port_index is for calculating tid & logical macaddress use
+        """
         topology = self.__test_conf.topology
         test_port_index = 0
         if topology.is_mesh_topology:
@@ -286,7 +290,7 @@ class ResourceManager:
         )
         los = self.los()
         if los:
-            self.xoa_out.send_warning(exceptions.StopTestByLossSignal())
+            raise exceptions.TestAbort()
         should_quit = test_finished or los or actual_duration_elapsed
         port_should_stop = [port._should_stop_on_los for port in self.port_structs]
         should_fail = los and any(port_should_stop)

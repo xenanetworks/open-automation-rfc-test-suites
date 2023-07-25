@@ -2,6 +2,7 @@ from .structure import PortStruct
 from typing import List, Optional
 from .test_type_config import BackToBackConfig
 from loguru import logger
+from decimal import Decimal
 from .statistics import FinalStatistic
 
 class BackToBackBoutEntry:
@@ -47,7 +48,7 @@ class BackToBackBoutEntry:
             else:
                 self.update_right_bound()
             if self.compare_search_pointer():
-                if not self._is_less_than_resolution and no_frame_loss:
+                if no_frame_loss:
                     self._port_test_passed = True
                 else:
                     self._port_test_passed = False

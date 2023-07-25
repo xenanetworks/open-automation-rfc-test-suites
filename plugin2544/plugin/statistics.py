@@ -1,9 +1,8 @@
 import math
 from typing import Any, Dict, List, Union, TYPE_CHECKING
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, validator
 from operator import attrgetter
 from ..utils import constants as const
-import time
 from loguru import logger
 if TYPE_CHECKING:
     from .structure import PortStruct
@@ -70,7 +69,7 @@ class StreamCounter(BaseModel):
     tx_l1_bps: float = 0.0
 
     def add_stream_counter(self, counter: "StreamCounter") -> None:
-        """update stream counter by pr stream"""
+        """update stream counter by pt stream"""
         self.frames += counter.frames  # _cal_port_tx_frames  + _cal_port_rx_frames
         self.bps += counter.bps
         self.pps += counter.pps
@@ -83,6 +82,7 @@ class StreamCounter(BaseModel):
         frame_size: float,
         interframe_gap: float,
     ) -> None:
+        """ calculate stream rate based on stream counter """
         self.frame_rate = self.frames / duration
         self.l2_bit_rate = self.frame_rate * 8.0 * frame_size
         self.l1_bit_rate = self.frame_rate * 8.0 * (frame_size + interframe_gap)
@@ -94,7 +94,6 @@ class StreamCounter(BaseModel):
 
 class PRStatistic(BaseModel):
     """pr stream statistic"""
-
     rx_stream_counter: StreamCounter = StreamCounter()
     latency: DelayData = DelayData(counter_type=const.CounterType.LATENCY)
     jitter: DelayData = DelayData(counter_type=const.CounterType.JITTER)
@@ -103,7 +102,6 @@ class PRStatistic(BaseModel):
 
 class StreamStatisticData(BaseModel):
     """stream statistic"""
-
     src_port_id: str = ""
     dest_port_id: str = ""
     src_port_addr: str = ""
@@ -125,7 +123,7 @@ class StreamStatisticData(BaseModel):
     def calculate(
         self, tx_port_struct: "PortStruct", rx_port_struct: "PortStruct"
     ) -> None:
-        """for stream based mode to recalculate port statistic based on best result storage"""
+        """for stream based mode to recalculate port statistic based on best result storage """
         tx_port_struct.statistic.aggregate_tx_statistic(self)
         rx_port_struct.statistic.add_rx(self.rx_counter)
         rx_port_struct.statistic.add_latency(DelayData.parse_obj(self.latency))
@@ -169,6 +167,7 @@ class PortCounter(StreamCounter):
         frame_size: float,
         interframe_gap: float,
     ) -> None:
+        """ calculate port rate based on port statistics """
         super().calculate_stream_rate(is_final, duration, frame_size, interframe_gap)
         self.l2_bps = math.floor(self.l2_bit_rate) if is_final else self.bps
         self.fps = math.floor(self.frame_rate) if is_final else self.pps
@@ -179,8 +178,12 @@ class PortCounter(StreamCounter):
         )
 
 
-class Statistic(BaseModel):
-    """ port statistic storage """
+class PortStatistic(BaseModel):
+    """ 
+    port statistic storage 
+    PT_stream data should aggregate on TX port TX counter
+    PR_stream data should aggregate on Rx port RX counter
+    """
     port_id: str = ""
     is_final: bool = False  # for calculation use
     frame_size: float = 1.0  # for calculation use
@@ -216,7 +219,8 @@ class Statistic(BaseModel):
             / (values["interframe_gap"] + values["frame_size"])
         )
 
-    def sum(self, other: "Statistic") -> None:
+    def sum(self, other: "PortStatistic") -> None:
+        """ sum up port statistic from other finalstatistic for average calculation"""
         self.tx_counter.sum(other.tx_counter)
         self.rx_counter.sum(other.rx_counter)
 
@@ -233,6 +237,7 @@ class Statistic(BaseModel):
             setattr(self, f, value + attrgetter(f)(other))
 
     def avg(self, count: int) -> None:
+        """ average port statistic from other finalstatistic for average calculation"""
         self.tx_counter.avg(count)
         self.rx_counter.avg(count)
 
@@ -249,7 +254,7 @@ class Statistic(BaseModel):
             setattr(self, f, math.floor(value / count))
 
     def aggregate_tx_statistic(self, stream_statistic: "StreamStatisticData") -> None:
-        """aggregate tx port statistic based on stream statistic"""
+        """aggregate tx port statistic based on pt stream statistic"""
         self.add_tx(stream_statistic.tx_counter)
         self.add_burst_frames(stream_statistic.burst_frames)
         self.add_burst_bytes_count(stream_statistic.rx_counter.bytes_count)
@@ -265,24 +270,27 @@ class Statistic(BaseModel):
         self.add_rx(pr_statistic.rx_stream_counter)
         self.add_latency(pr_statistic.latency)
         self.add_jitter(pr_statistic.jitter)
-        # self.add_extra(pr_statistic.fcs)
 
     def add_tx(self, tx_stream_counter: "StreamCounter") -> None:
+        """ add tx stream counter into port counter from pr_stream statistic """
         tx_stream_counter.calculate_stream_rate(
             self.is_final, self.duration, self.frame_size, self.interframe_gap
         )
         self.tx_counter.add_stream_counter(tx_stream_counter)
 
     def add_rx(self, rx_stream_counter: "StreamCounter") -> None:
+        """ add rx stream counter into port counter from pr_stream statistic """
         rx_stream_counter.calculate_stream_rate(
             self.is_final, self.duration, self.frame_size, self.interframe_gap
         )
         self.rx_counter.add_stream_counter(rx_stream_counter)
 
     def add_latency(self, delay_data: "DelayData") -> None:
+        """ add rx latency counter into port counter from pr_stream statistic """
         self.latency.update(delay_data)
 
     def add_jitter(self, delay_data: "DelayData") -> None:
+        """ add rx jitter counter into port counter from pr_stream statistic """
         self.jitter.update(delay_data)
 
     def add_burst_frames(self, frame_count: int) -> None:
@@ -298,6 +306,7 @@ class Statistic(BaseModel):
             self.loss_frames += max(live_loss_frames, 0)
 
     def calculate_rate(self) -> None:
+        """ after collect data from stream, need to calculate rate"""
         self.loss_ratio = (
             self.loss_frames / self.tx_counter.frames
             if self.tx_counter.frames and self.loss_frames >= 0.0
@@ -313,6 +322,7 @@ class Statistic(BaseModel):
 
 
 class TotalCounter(BaseModel):
+    """ Counter for TotalStatistic """
     frames: int = 0
     l1_bps: int = 0
     l2_bps: int = 0
@@ -320,6 +330,7 @@ class TotalCounter(BaseModel):
     bytes_count: int = 0
 
     def add(self, counter: "PortCounter") -> None:
+        """ sum up port counter """
         self.frames += counter.frames
         self.l1_bps += counter.l1_bps
         self.l2_bps += counter.l2_bps
@@ -327,15 +338,18 @@ class TotalCounter(BaseModel):
         self.bytes_count += counter.bytes_count
 
     def sum(self, other: "TotalCounter") -> None:
+        """ sum up total counter for average final statistic """
         for name, value in self:
             setattr(self, name, value + attrgetter(name)(other))
 
     def avg(self, count: int) -> None:
+        """ average total counter for average final statistic """
         for name, value in self:
             setattr(self, name, math.floor(value / count))
 
 
 class TotalStatistic(BaseModel):
+    """ Total Statistic for a FinalStatistic """
     tx_counter: TotalCounter = TotalCounter()
     rx_counter: TotalCounter = TotalCounter()
     fcs_error_frames: int = 0
@@ -352,6 +366,7 @@ class TotalStatistic(BaseModel):
     gap_duration: int = 0
 
     def sum(self, other: "TotalStatistic") -> None:
+        """ To calculate average from all final statistics, need to sum up all statistic first"""
         for name, value in self:    # nested structure
             if name in ["tx_counter", "rx_counter", "latency", "jitter"]:
                 getattr(self, name).sum(attrgetter(name)(other))
@@ -359,14 +374,15 @@ class TotalStatistic(BaseModel):
                 setattr(self, name, value + attrgetter(name)(other))
 
     def avg(self, count: int) -> None:
+        """ To calculate average from all final statistics, after sum up all statistic, need to average them"""
         for name, value in self:
-            if name in ["tx_counter", "rx_counter", "latency", "jitter"]:
+            if name in ["tx_counter", "rx_counter", "latency", "jitter"]:   # nested structure
                 getattr(self, name).avg(count)
             else:
-                setattr(self, name, math.floor(value / count))
+                setattr(self, name, math.floor(value / count))  
 
-    def add(self, port_data: "Statistic") -> None:
-        """ aggregate all port statistic """
+    def add(self, port_data: "PortStatistic") -> None:
+        """ aggregate all port statistic to get the total statistic """
         self.tx_counter.add(port_data.tx_counter)
         self.rx_counter.add(port_data.rx_counter)
         self.latency.sum(port_data.latency)
@@ -401,6 +417,7 @@ class TotalStatistic(BaseModel):
 
 
 class FinalStatistic(BaseModel):
+    """ Statistic Result for every query """
     test_case_type: const.TestType
     loop: int
     test_suite_type: str = "RFC-2544"
@@ -410,7 +427,7 @@ class FinalStatistic(BaseModel):
     frame_size: float
     repetition: Union[int, str] = "avg"
     rate_result_scope: const.RateResultScopeType = const.RateResultScopeType.COMMON
-    port_data: List[Statistic] = []
+    port_data: List[PortStatistic] = []
     total: TotalStatistic = TotalStatistic()
 
     class Config:

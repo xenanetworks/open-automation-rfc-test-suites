@@ -84,7 +84,8 @@ class ThroughputBoutEntry:
             loss_ratio = result.total.rx_loss_percent
         loss_ratio_pct = loss_ratio * 100.0
         # logger.debug(f"{loss_ratio_pct} - {self._throughput_conf.acceptable_loss_pct}")
-        if loss_ratio_pct <= self._throughput_conf.acceptable_loss_pct:
+        is_acceptable_loss = loss_ratio_pct <= self._throughput_conf.acceptable_loss_pct
+        if is_acceptable_loss:
             if self._throughput_conf.is_per_source_port:
                 for stream in self._port_struct.stream_structs:
                     stream.set_best_result()
@@ -97,7 +98,8 @@ class ThroughputBoutEntry:
             self.update_right_bound(loss_ratio)
         # logger.debug(f"next: {self.next}")
         if self.compare_search_pointer():
-            self._port_test_passed = not self._is_less_than_resolution and self.pass_threshold() 
+            return
+            # self._port_test_passed = is_acceptable_loss and self.pass_threshold() 
         else:
             self._port_should_continue = True
 

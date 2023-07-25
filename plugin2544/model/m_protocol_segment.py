@@ -2,10 +2,10 @@ import re
 from enum import Enum
 from random import randint
 from typing import Any, Callable, Dict, Generator, List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic.class_validators import validator
 from xoa_driver.enums import ProtocolOption, ModifierAction
-
+from ..utils.exceptions import ModifierRangeError
 
 class BinaryString(str):
     @classmethod
@@ -117,7 +117,7 @@ class SegmentType(Enum):
 
 class ValueRange(BaseModel):
     start_value: int
-    step_value: int
+    step_value: int = Field(gt=0)
     stop_value: int
     action: ModifierActionOption
     restart_for_each_port: bool
@@ -156,7 +156,7 @@ class ValueRange(BaseModel):
 
 class HWModifier(BaseModel):
     start_value: int
-    step_value: int
+    step_value: int = Field(gt=0)
     stop_value: int
     repeat: int
     offset: int
@@ -166,6 +166,13 @@ class HWModifier(BaseModel):
 
     class Config:
         underscore_attrs_are_private = True
+
+    @validator('stop_value', pre=True, always=True)
+    def validate_modifier_value(cls, v: int, values: Dict[str, Any]):
+        if (v - values['start_value']) % values['step_value']:
+            raise ModifierRangeError(values['start_value'], v, values['step_value'])
+        return v
+
 
     def set_byte_segment_position(self, position: int) -> None:
         self._byte_segment_position = position
