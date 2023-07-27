@@ -1,7 +1,7 @@
 import asyncio
 from copy import deepcopy
 from typing import List, Optional, TYPE_CHECKING
-from xoa_driver import utils, enums
+from xoa_driver import utils, enums, misc
 from ..model.m_protocol_segment import (
     HWModifier,
     ModifierActionOption,
@@ -22,7 +22,7 @@ from .statistics import (
 from ..utils.field import MacAddress, IPv4Address, IPv6Address
 from ..utils import constants as const, protocol_segments as ps, exceptions
 from collections import defaultdict
-
+from loguru import logger
 
 if TYPE_CHECKING:
     from .structure import PortStruct
@@ -36,6 +36,7 @@ class PTStream:
         self.statistic = StreamCounter()
 
     async def query(self) -> None:
+        """ query statistic on TX port """
         tx_frames = await self.tx_port.port_ins.statistics.tx.obtain_from_stream(
             self.stream_id
         ).get()
@@ -56,6 +57,7 @@ class PRStream:
         self.statistic: "PRStatistic" = PRStatistic()
 
     async def query(self) -> None:
+        """ query statistic on rx port """
         rx = self.rx_port.port_ins.statistics.rx.access_tpld(self.tpld_id)
         rx_frames, error, ji, latency = await utils.apply(
             rx.traffic.get(),
@@ -135,17 +137,17 @@ class StreamStruct:
             modifier_range = self._tx_port.properties.get_modifier_range(
                 self._stream_id
             )
-            return [
-                HWModifier(
-                    mask="00FF0000",
+            hm = HWModifier(
+                    mask="00FF",
                     start_value=modifier_range[0],
                     stop_value=modifier_range[1],
                     step_value=1,
                     action=ModifierActionOption.INC,
                     repeat=1,
-                    offset=0,
-                )
-            ]
+                    offset=4,
+            )
+            hm.set_byte_segment_position(4)
+            return [hm]
 
     @property
     def best_result(self) -> Optional["StreamStatisticData"]:
@@ -182,7 +184,7 @@ class StreamStruct:
             ),
             self._stream.payload.content.set(
                 test_conf.payload_type.to_xmp(),
-                test_conf.payload_pattern,
+                misc.Hex(test_conf.payload_pattern), 
             ),
             self._stream.tpld_id.set(test_payload_identifier=self._tpldid),
             self._stream.insert_packets_checksum.set(enums.OnOff.ON),
@@ -224,6 +226,11 @@ class StreamStruct:
             )
 
     async def query(self) -> None:
+        """
+        aggregate pr_stream data into _stream_statistic
+        pt_stream statistic should calculate in TX Port
+        pr_stream statistic should calculate in RX port
+        """
         pr_streams = [
             PRStream(self._tx_port, port, self._tpldid) for port in self._rx_ports
         ]
@@ -245,13 +252,18 @@ class StreamStruct:
         # polling TX and RX statistic not at the same time, may cause the rx statistic larger than tx statistic
         self._stream_statistic.tx_counter.add_stream_counter(pt_stream.statistic)
         for pr_stream in pr_streams:
+            # aggregate data on rx port statistic based on pr_stream
             self._stream_statistic.add_pr_stream_statistic(pr_stream.statistic)
             async with pr_stream.rx_port.lock:
                 pr_stream.rx_port.statistic.aggregate_rx_statistic(pr_stream.statistic)
         async with self._tx_port.lock:
+            # aggregate data on tx port statistic based on pt_stream
             self._tx_port.statistic.aggregate_tx_statistic(self._stream_statistic)
 
     async def set_packet_header(self) -> None:
+        """
+        get packet header based on segment
+        """
         # Insert all configured header segments in order
         profile = self._tx_port.port_conf.profile.copy(deep=True)
         for index, segment in enumerate(profile.segments):
@@ -284,30 +296,24 @@ class StreamStruct:
                 )
 
         self._packet_header = profile.prepare()
-        await self._stream.packet.header.data.set(self._packet_header.hex())
+        await self._stream.packet.header.data.set(self._packet_header.hex())    # type: ignore
 
     async def setup_modifier(self) -> None:
-        tokens = []
         modifiers = self._stream.packet.header.modifiers
         await modifiers.configure(len(self.hw_modifiers))
         for mid, hw_modifier in enumerate(self.hw_modifiers):
             modifier = modifiers.obtain(mid)
-            tokens.append(
-                modifier.specification.set(
-                    position=hw_modifier.byte_segment_position,
-                    mask=hw_modifier.mask,
-                    action=hw_modifier.action.to_xmp(),
-                    repetition=hw_modifier.repeat,
-                )
+            await modifier.specification.set(
+                position=hw_modifier.byte_segment_position,
+                mask=misc.Hex(f"{hw_modifier.mask}0000"),    
+                action=hw_modifier.action.to_xmp(),
+                repetition=hw_modifier.repeat,
             )
-            tokens.append(
-                modifier.range.set(
-                    min_val=hw_modifier.start_value,
-                    step=hw_modifier.step_value,
-                    max_val=hw_modifier.stop_value,
-                )
+            await modifier.range.set(
+                min_val=hw_modifier.start_value,
+                step=hw_modifier.step_value,
+                max_val=hw_modifier.stop_value,
             )
-        await utils.apply(*tokens)
 
     async def set_packet_size(
         self, packet_size_type: enums.LengthType, min_size: int, max_size: int

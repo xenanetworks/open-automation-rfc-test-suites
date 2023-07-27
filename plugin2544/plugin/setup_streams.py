@@ -14,7 +14,8 @@ if TYPE_CHECKING:
 async def setup_streams(
     port_structs: List["PortStruct"], test_conf: "TestConfigData"
 ) -> None:
-    if not test_conf.is_stream_based:
+    if not test_conf.is_stream_based:   
+        # add modifier on TX ports
         test_port_index_map = {
             port_struct.properties.test_port_index: port_struct
             for port_struct in port_structs
@@ -23,7 +24,7 @@ async def setup_streams(
             if port_struct.port_conf.is_tx_port:
                 add_modifier_based_stream(port_struct, test_port_index_map)
 
-    else:
+    else:   # configure stream based stream
         for port_struct in port_structs:
             for peer_struct in port_struct.properties.peers:
                 peer_struct.properties.arp_mac_address = await set_arp_request(
@@ -31,7 +32,7 @@ async def setup_streams(
                     peer_struct,
                     test_conf.use_gateway_mac_as_dmac,
                 )
-        if test_conf.enable_multi_stream:
+        if test_conf.enable_multi_stream:   # configure multi stream
             add_multi_streams(port_structs, test_conf)
         else:
             add_standard_streams(port_structs, test_conf)
@@ -47,6 +48,7 @@ def get_stream_offsets(
     port_index: str,
     peer_index: str,
 ) -> List["StreamOffset"]:
+    """ stream offset is used to generate stream mac addr and ip addr"""
     if (port_index, peer_index) in offset_table:
         return offset_table[(port_index, peer_index)]
     elif (peer_index, port_index) in offset_table:
@@ -61,6 +63,7 @@ def setup_offset_table(
     tx_ports: List["PortStruct"],
     multi_stream_config: "MultiStreamConfig",
 ) -> Dict[Tuple[str, str], List["StreamOffset"]]:
+    """ generate a offset table for logical mac address and ip address """
     offset_table = {}
     offset = multi_stream_config.multi_stream_address_offset
     inc = multi_stream_config.multi_stream_address_increment

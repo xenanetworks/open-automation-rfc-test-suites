@@ -5,7 +5,7 @@ import math
 from typing import List, Optional, Generator, TYPE_CHECKING, Tuple
 from .learning import (
     AddressRefreshHandler,
-    add_L3_learning_preamble_steps,
+    add_L2L3_learning_preamble_steps,
     add_flow_based_learning_preamble_steps,
     add_mac_learning_steps,
     schedule_arp_refresh,
@@ -58,6 +58,7 @@ class TestCaseProcessor:
     def gen_loop(
         self, type_conf: "AllTestTypeConfig"
     ) -> Generator[Tuple[int, float], None, None]:
+        """ get repetition and frame size according to outer loop mode """
         max_iteration = type_conf.common_options.repetition
         if self.__test_conf.is_iteration_outer_loop_mode:
             for iteration in range(1, max_iteration + 1):
@@ -70,6 +71,7 @@ class TestCaseProcessor:
 
     async def prepare(self) -> None:
         if (not self.resources.has_l3) or (not self.__test_conf.arp_refresh_enabled):
+            # Only L3 and enable ARP Refresh can have the address refresh handler
             return None
         self.address_refresh_handler = await setup_address_arp_refresh(self.resources)
 
@@ -124,7 +126,7 @@ class TestCaseProcessor:
 
     async def add_learning_steps(self, current_packet_size: float) -> None:
         await self.resources.stop_traffic()
-        await add_L3_learning_preamble_steps(self.resources, current_packet_size)
+        await add_L2L3_learning_preamble_steps(self.resources, current_packet_size)
         await add_mac_learning_steps(self.resources, const.MACLearningMode.EVERYTRIAL)
         await add_flow_based_learning_preamble_steps(
             self.resources, current_packet_size
@@ -206,8 +208,8 @@ class TestCaseProcessor:
     ):
         await self.resources.set_gap_monitor(test_type_conf.use_gap_monitor, test_type_conf.gap_monitor_start_microsec, test_type_conf.gap_monitor_stop_frames)
         for rate_percent in test_type_conf.rate_sweep_list:
-            self.resources.set_rate_percent(rate_percent)
             await self.add_learning_steps(current_packet_size)
+            self.resources.set_rate_percent(rate_percent)   # must set rate after learning steps and before start test
             await self.start_test(test_type_conf, current_packet_size)
             params = StatisticParams(
                 loop=self.progress.loop,
@@ -231,7 +233,6 @@ class TestCaseProcessor:
     ):
         await self.add_learning_steps(current_packet_size)
         result = None
-        test_passed = False
         boundaries = get_initial_throughput_boundaries(test_type_conf, self.resources)
         params = StatisticParams(
             loop=self.progress.loop,
@@ -259,7 +260,6 @@ class TestCaseProcessor:
 
             for boundary in boundaries:
                 boundary.update_boundary(result)
-            test_passed = all(boundary.port_test_passed for boundary in boundaries)
             await self.resources.set_tx_time_limit(0)
 
         if not test_type_conf.is_per_source_port:
@@ -301,12 +301,8 @@ class TestCaseProcessor:
                 # stream_data=aggregate_stream_result(resource),
             )
         if final:
-            if not test_passed:
-                final.set_result_state(const.ResultState.FAIL)
-            elif test_type_conf.use_pass_criteria:
-                final.set_result_state(const.ResultState.SUCCESS)
-            else:
-                final.set_result_state(const.ResultState.DONE)
+            rs = check_if_throughput_success(test_type_conf, final)
+            final.set_result_state(rs)
         self._add_result(final)
 
     async def _back_to_back(
@@ -453,7 +449,6 @@ class TestCaseProcessor:
                     ]
                 )
 
-
 def check_if_frame_loss_success(
     frame_loss_conf: "FrameLossConfig", result: "FinalStatistic"
 ) -> const.ResultState:
@@ -463,3 +458,21 @@ def check_if_frame_loss_success(
         (not frame_loss_conf.is_percentage_pass_criteria and result.total.rx_loss_frames > frame_loss_conf.pass_criteria_loss):
         return const.ResultState.FAIL
     return const.ResultState.SUCCESS
+
+def check_if_throughput_success(
+        throughput_conf: "ThroughputConfig", result: "FinalStatistic"
+) -> const.ResultState:
+    result_state = const.ResultState.DONE
+    if result.total.rx_loss_percent > throughput_conf.acceptable_loss_pct:  # check acceptable loss
+        result_state = const.ResultState.FAIL
+    elif throughput_conf.use_pass_criteria:     # check pass criteria
+        if result.tx_rate_percent >= throughput_conf.pass_criteria_throughput_pct:
+            result_state = const.ResultState.SUCCESS
+        else:
+            result_state = const.ResultState.FAIL
+        if throughput_conf.is_per_source_port:  # check actual_rate_percent for each port
+            for port_data in result.port_data:
+                if port_data.actual_rate_percent < throughput_conf.pass_criteria_throughput_pct:
+                    result_state = const.ResultState.FAIL
+                    break
+    return result_state

@@ -8,7 +8,7 @@ from ..utils import exceptions, constants as const
 from ..utils.scheduler import schedule
 from ..utils.field import IPv4Address, IPv6Address
 from ..utils.packet import ARPPacket, MacAddress, NDPPacket
-
+from loguru import logger
 
 if TYPE_CHECKING:
     from xoa_driver import misc
@@ -205,6 +205,11 @@ class AddressRefreshHandler:
             self.interval = interval / 1000.0  # ms -> second
 
     def set_current_state(self, state: "const.TestState") -> "AddressRefreshHandler":
+        """
+        It will send arp refresh packet in two stage
+        1. L3 learning
+        2. Testcase running traffic
+        """
         self.state = state
         if self.state == const.TestState.L3_LEARNING:
             self.tokens = [
@@ -256,14 +261,12 @@ async def schedule_arp_refresh(
             await send_l3_learning_packets(resources, address_refresh_handler)
 
 
-async def add_L3_learning_preamble_steps(
+async def add_L2L3_learning_preamble_steps(
     resources: "ResourceManager",
     current_packet_size: float,
     address_refresh_handler: Optional["AddressRefreshHandler"] = None,
 ) -> None:  # AddL3LearningPreambleSteps
-    if not address_refresh_handler:
-        return
-    address_refresh_handler.set_current_state(const.TestState.L3_LEARNING)
+    """ set time limit and learning rate, then run traffic to warm up """
     resources.set_rate_percent(resources.test_conf.learning_rate_pct)
     await setup_source_port_rates(resources, current_packet_size)
     await resources.set_tx_time_limit(
@@ -271,10 +274,12 @@ async def add_L3_learning_preamble_steps(
     )
 
     await resources.start_traffic()
-    await asyncio.gather(*address_refresh_handler.tokens)
-    await schedule_arp_refresh(
-        resources, address_refresh_handler, const.TestState.L3_LEARNING
-    )
+    if address_refresh_handler:
+        address_refresh_handler.set_current_state(const.TestState.L3_LEARNING)
+        await asyncio.gather(*address_refresh_handler.tokens)
+        await schedule_arp_refresh(
+            resources, address_refresh_handler, const.TestState.L3_LEARNING
+        )
     while resources.test_running():
         await resources.query_traffic_status()
         await asyncio.sleep(const.INTERVAL_CHECK_LEARNING_TRAFFIC)
@@ -285,6 +290,7 @@ async def add_flow_based_learning_preamble_steps(
     resources: "ResourceManager",
     current_packet_size: float,
 ) -> None:  # AddFlowBasedLearningPreambleSteps
+    """ set frame limit and learning rate and run traffic """
     if (
         not resources.test_conf.use_flow_based_learning_preamble
     ):
@@ -303,23 +309,22 @@ async def add_flow_based_learning_preamble_steps(
 
 
 def make_mac_token(
-    send_struct: "PortStruct", hex_data: str, mac_learning_frame_count: int
-) -> List["misc.Token"]:
-    tasks = []
+    send_struct: "PortStruct", hex_data: str
+) -> "misc.Token":
+    # logger.debug(send_struct.port_identity.name)
     packet = hex_data
     max_cap = send_struct.capabilities.max_xmit_one_packet_length
     cur_length = len(hex_data) // 2
     if cur_length > max_cap:
         raise exceptions.PacketLengthExceed(cur_length, max_cap)
-    for _ in range(mac_learning_frame_count):
-        tasks.append(send_struct.send_packet(packet))  # P_XMITONE
-    return tasks
+    return send_struct.send_packet(packet)  # P_XMITONE
 
 
 async def add_mac_learning_steps(
     resources: "ResourceManager",
     require_mode: "const.MACLearningMode",
 ) -> None:
+    """ send raw packet for mac learning """
     if (
         require_mode
         != resources.test_conf.mac_learning_mode
@@ -335,20 +340,23 @@ async def add_mac_learning_steps(
     tasks = []
     done_struct = []
     for port_struct in resources.port_structs:
-        for stream_struct in port_struct._stream_structs:
+        for stream_struct in port_struct.stream_structs:
             src_hex_data = f"{none_mac}{stream_struct._addr_coll.smac.to_hexstring()}{four_f}{paddings}"
-            if port_struct not in done_struct:
+            if port_struct.port_identity.name not in done_struct:
                 tokens = make_mac_token(
-                    port_struct, src_hex_data, mac_learning_frame_count
+                    port_struct, src_hex_data
                 )
-                tasks.extend(tokens)
-                done_struct.append(port_struct)
+                tasks.append(tokens)
+                done_struct.append(port_struct.port_identity.name)
             for dest_port_struct in stream_struct._rx_ports:
                 dest_hex_data = f"{none_mac}{stream_struct._addr_coll.dmac.to_hexstring()}{four_f}{paddings}"
-                if dest_port_struct not in done_struct:
-                    tokens = make_mac_token(
-                        dest_port_struct, dest_hex_data, mac_learning_frame_count
-                    )
-                    tasks.extend(tokens)
-    await asyncio.gather(*tasks)
-    await asyncio.sleep(const.DELAY_LEARNING_MAC)
+                if dest_port_struct.port_identity.name in done_struct:
+                    continue
+                tokens = make_mac_token(
+                    dest_port_struct, dest_hex_data
+                )
+                done_struct.append(dest_port_struct.port_identity.name)
+                tasks.append(tokens)
+    for _ in range(mac_learning_frame_count):
+        await asyncio.gather(*tasks)
+        await asyncio.sleep(const.DELAY_LEARNING_MAC)
