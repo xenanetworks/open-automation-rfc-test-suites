@@ -1,0 +1,7 @@
+name: "Anlt"
+version: "1.0.0"
+core_version: ">=2.0.0" 
+author: 
+  - "RDI"
+entry_object: "TestSuiteAnlt"
+data_model: "ModelAnlt"
