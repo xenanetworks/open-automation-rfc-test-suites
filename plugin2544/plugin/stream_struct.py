@@ -305,7 +305,7 @@ class StreamStruct:
             modifier = modifiers.obtain(mid)
             await modifier.specification.set(
                 position=hw_modifier.byte_segment_position,
-                mask=misc.Hex(f"{hw_modifier.mask}0000"),    
+                mask=misc.Hex(f"{hw_modifier.mask}"),    
                 action=hw_modifier.action.to_xmp(),
                 repetition=hw_modifier.repeat,
             )
